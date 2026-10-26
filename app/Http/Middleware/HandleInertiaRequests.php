@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\BusinessDate;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -29,10 +30,29 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+        $property = null;
+        $businessDate = null;
+
+        if ($user) {
+            $user->load(['tenant', 'property']);
+            $property = $user->property ?? $user->tenant?->properties()->first();
+            if ($property) {
+                $bDateRecord = BusinessDate::where('property_id', $property->id)->first();
+                $businessDate = $bDateRecord?->current_business_date?->format('Y-m-d') ?? now()->format('Y-m-d');
+            }
+        }
+
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
+                'property' => $property,
+                'businessDate' => $businessDate,
+            ],
+            'flash' => [
+                'success' => $request->session()->get('success'),
+                'error' => $request->session()->get('error'),
             ],
         ];
     }

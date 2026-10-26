@@ -9,7 +9,9 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReservationController;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/dashboard');
+Route::get('/', function () {
+    return auth()->check() ? redirect()->route('dashboard') : redirect()->route('login');
+});
 
 Route::middleware(['auth', 'verified'])->group(function () {
     // 1. Dashboard

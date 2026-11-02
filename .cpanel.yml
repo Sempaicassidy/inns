@@ -1,7 +1,6 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/haulaent/public_html
+    - export DEPLOYPATH=/home/haulaent/inns.haulaenterprises.co.tz
     - /bin/cp -R * $DEPLOYPATH
     - /bin/cp -f .htaccess $DEPLOYPATH 2>/dev/null || true
-

@@ -37,6 +37,9 @@ class DatabaseSeeder extends Seeder
             'slug' => 'haula-hospitality',
             'subdomain' => 'serengeti',
             'plan' => 'enterprise',
+            'max_branches' => 5,
+            'subscription_status' => 'active',
+            'license_expiry' => Carbon::today()->addYear(),
             'is_active' => true,
             'settings' => [
                 'vat_percentage' => 18,
@@ -49,6 +52,7 @@ class DatabaseSeeder extends Seeder
         $property = Property::create([
             'tenant_id' => $tenant->id,
             'name' => 'Haula Serengeti Safari Lodge & Camp',
+            'is_main' => true,
             'code' => 'HSSL',
             'property_type' => 'lodge',
             'timezone' => 'Africa/Dar_es_Salaam',
@@ -76,6 +80,37 @@ class DatabaseSeeder extends Seeder
             'status' => 'open',
         ]);
 
+        // Branch 2: Zanzibar Beach Resort
+        $branchZanzibar = Property::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Haula Beach Resort & Spa - Zanzibar',
+            'is_main' => false,
+            'code' => 'HBRZ',
+            'property_type' => 'resort',
+            'timezone' => 'Africa/Dar_es_Salaam',
+            'currency' => 'TZS',
+            'checkin_time' => '14:00',
+            'checkout_time' => '11:00',
+            'tax_config' => [
+                'vat_rate' => 0.18,
+                'service_charge' => 0.05,
+                'tourism_levy' => 0.015,
+            ],
+            'address' => 'Nungwi Beachfront, North Coast',
+            'city' => 'Zanzibar',
+            'country' => 'Tanzania',
+            'phone' => '+255 777 555 444',
+            'email' => 'zanzibar@haula.co.tz',
+            'is_active' => true,
+        ]);
+
+        BusinessDate::create([
+            'tenant_id' => $tenant->id,
+            'property_id' => $branchZanzibar->id,
+            'current_business_date' => $today->toDateString(),
+            'status' => 'open',
+        ]);
+
         // 3. Create Users
         $admin = User::create([
             'tenant_id' => $tenant->id,
@@ -85,6 +120,7 @@ class DatabaseSeeder extends Seeder
             'phone' => '+255 712 000 001',
             'password' => Hash::make('password'),
             'role' => 'general_manager',
+            'can_manage_branches' => true,
             'status' => 'active',
             'pin_code' => '1234',
             'locale' => 'en',
@@ -495,7 +531,7 @@ class DatabaseSeeder extends Seeder
         $folio2->recalculateBalance();
 
         // 11. Upcoming Confirmed Reservation (Arrival Today)
-        Reservation::create([
+        $res3 = Reservation::create([
             'tenant_id' => $tenant->id,
             'property_id' => $property->id,
             'ref_no' => 'RES-2026-0003',
@@ -512,8 +548,20 @@ class DatabaseSeeder extends Seeder
             'created_by' => $receptionist->id,
         ]);
 
+        ReservationRoom::create([
+            'tenant_id' => $tenant->id,
+            'reservation_id' => $res3->id,
+            'room_type_id' => $suiteType->id,
+            'room_id' => $createdRooms['Suite 102']->id,
+            'rate_plan_id' => $fbPlan->id,
+            'check_in' => $today,
+            'check_out' => $today->copy()->addDays(3),
+            'rate_price_minor' => 55000000,
+            'status' => 'confirmed',
+        ]);
+
         // 12. Upcoming Confirmed Reservation (Arrival Tomorrow)
-        Reservation::create([
+        $res4 = Reservation::create([
             'tenant_id' => $tenant->id,
             'property_id' => $property->id,
             'ref_no' => 'RES-2026-0004',
@@ -527,6 +575,18 @@ class DatabaseSeeder extends Seeder
             'total_minor' => 44000000,
             'deposit_minor' => 0,
             'created_by' => $receptionist->id,
+        ]);
+
+        ReservationRoom::create([
+            'tenant_id' => $tenant->id,
+            'reservation_id' => $res4->id,
+            'room_type_id' => $standardType->id,
+            'room_id' => $createdRooms['Cottage 202']->id,
+            'rate_plan_id' => $bbPlan->id,
+            'check_in' => $today->copy()->addDays(1),
+            'check_out' => $today->copy()->addDays(3),
+            'rate_price_minor' => 22000000,
+            'status' => 'confirmed',
         ]);
 
         // 13. Housekeeping Tasks for Dirty Rooms

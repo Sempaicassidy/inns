@@ -6,6 +6,9 @@ export interface User {
     email: string;
     phone?: string;
     role: string;
+    roles?: string[] | null;
+    active_role?: string | null;
+    can_manage_branches?: boolean;
     status: string;
     locale: string;
     email_verified_at?: string;
@@ -19,6 +22,8 @@ export interface Tenant {
     slug: string;
     subdomain?: string;
     plan: string;
+    max_branches?: number;
+    subscription_status?: string;
     is_active: boolean;
 }
 
@@ -26,6 +31,7 @@ export interface Property {
     id: string;
     tenant_id: string;
     name: string;
+    is_main?: boolean;
     code?: string;
     property_type: 'hotel' | 'lodge' | 'camp' | 'resort' | 'guest_house';
     timezone: string;
@@ -33,7 +39,11 @@ export interface Property {
     checkin_time: string;
     checkout_time: string;
     city?: string;
+    address?: string;
     country: string;
+    phone?: string;
+    email?: string;
+    is_active?: boolean;
 }
 
 export interface RoomType {
@@ -46,6 +56,7 @@ export interface RoomType {
     base_price_minor: number;
     amenities?: string[];
     description?: string;
+    rate_plans?: RatePlan[];
 }
 
 export interface Room {
@@ -57,6 +68,24 @@ export interface Room {
     status_hk: 'clean' | 'dirty' | 'inspected' | 'out_of_order' | 'out_of_service';
     is_active: boolean;
     room_type?: RoomType;
+    roomType?: RoomType;
+    current_guest?: string | null;
+    current_guest_phone?: string | null;
+    current_check_in?: string | null;
+    current_check_out?: string | null;
+    current_reservation_id?: string | null;
+    current_reservation_number?: string | null;
+    current_folio_id?: string | null;
+    current_folio_balance_minor?: number;
+    is_due_out?: boolean;
+    active_task?: {
+        id: string;
+        task_type: string;
+        priority: string;
+        status: string;
+        assigned_to_name: string;
+        notes?: string;
+    } | null;
 }
 
 export interface RatePlan {
@@ -96,15 +125,20 @@ export interface ReservationRoom {
     check_out: string;
     rate_price_minor: number;
     status: string;
+    guest_name?: string;
     room_type?: RoomType;
+    roomType?: RoomType;
     room?: Room;
     reservation?: Reservation;
+    ratePlan?: RatePlan;
+    rate_plan?: RatePlan;
 }
 
 export interface Reservation {
     id: string;
     property_id: string;
     ref_no: string;
+    reservation_number?: string;
     guest_id: string;
     company_id?: string;
     source: string;
@@ -119,6 +153,8 @@ export interface Reservation {
     guest?: Guest;
     reservation_rooms?: ReservationRoom[];
     folios?: Folio[];
+    created_at?: string;
+    updated_at?: string;
 }
 
 export interface Stay {
@@ -200,10 +236,40 @@ export type PageProps<
     auth: {
         user: User;
         property?: Property;
+        branches?: Array<{
+            id: string;
+            name: string;
+            code?: string;
+            city?: string;
+            property_type: string;
+            is_main?: boolean;
+        }>;
+        can_manage_branches?: boolean;
         businessDate?: string;
+        sms_balance?: number;
+        sms_wallet?: {
+            balance_credits: number;
+            total_purchased: number;
+            total_used: number;
+            status: string;
+        } | null;
+        notifications?: Array<{
+            id: string;
+            type: string;
+            title: string;
+            message: string;
+            count?: number;
+            url?: string;
+            color?: string;
+            time?: string;
+            severity?: string;
+            is_persistent?: boolean;
+        }>;
+        unread_notifications_count?: number;
     };
     flash?: {
         success?: string;
         error?: string;
+        highlight_term?: string;
     };
 };

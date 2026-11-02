@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\Property;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,9 +20,12 @@ class AuthenticatedSessionController extends Controller
      */
     public function create(): Response
     {
+        $branches = Property::where('is_active', true)->get(['id', 'name', 'code', 'city']);
+
         return Inertia::render('Auth/Login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => session('status'),
+            'branches' => $branches,
         ]);
     }
 
@@ -33,7 +38,34 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        if ($request->filled('branch_id')) {
+            session(['current_property_id' => $request->branch_id]);
+            $request->user()->update(['property_id' => $request->branch_id]);
+        }
+
+        $user = $request->user();
+
+        if ($user && $user->isSuperAdmin()) {
+            session(['active_role' => 'super_admin']);
+
+            return redirect()->route('saas-admin.index');
+        }
+
+        // If user has multiple roles, take them to role selection screen first
+        if ($user && $user->hasMultipleRoles()) {
+            session()->forget('active_role');
+
+            return redirect()->route('role.select');
+        }
+
+        $singleRole = $user?->roles_list[0] ?? $user?->role ?? 'general_manager';
+        session(['active_role' => $singleRole]);
+        $targetRoute = User::getRoleDashboardRoute($singleRole);
+
+        // Clear any stored intended URL to ensure clean landing based on assigned role
+        session()->forget('url.intended');
+
+        return redirect()->route($targetRoute);
     }
 
     /**

@@ -1,3 +1,4 @@
+import NewReservationModal from '@/Components/NewReservationModal';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Guest, PageProps, RatePlan, Reservation, Room, RoomType } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
@@ -44,7 +45,9 @@ export default function ReservationsIndex({
     guests,
     filters,
 }: ReservationsIndexProps) {
-    const [isNewBookingModalOpen, setIsNewBookingModalOpen] = useState(false);
+    const [isNewBookingModalOpen, setIsNewBookingModalOpen] = useState(
+        typeof window !== 'undefined' && (new URLSearchParams(window.location.search).has('new') || window.location.pathname.endsWith('/create'))
+    );
     const [checkInRes, setCheckInRes] = useState<Reservation | null>(null);
     const [selectedRoomId, setSelectedRoomId] = useState('');
 
@@ -130,39 +133,39 @@ export default function ReservationsIndex({
     const getStatusBadge = (status: Reservation['status']) => {
         switch (status) {
             case 'checked_in':
-                return <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded text-[11px] font-bold">Checked-In</span>;
+                return <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded text-[11px] font-bold">Checked-In</span>;
             case 'confirmed':
-                return <span className="bg-amber-500/15 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded text-[11px] font-bold">Confirmed</span>;
+                return <span className="bg-sky-50 text-sky-700 border border-sky-200 px-2 py-0.5 rounded text-[11px] font-bold">Confirmed</span>;
             case 'tentative':
-                return <span className="bg-purple-500/15 text-purple-400 border border-purple-500/30 px-2 py-0.5 rounded text-[11px] font-bold">Tentative</span>;
+                return <span className="bg-sky-50 text-sky-800 border border-sky-200 px-2 py-0.5 rounded text-[11px] font-bold">Tentative</span>;
             case 'checked_out':
-                return <span className="bg-slate-700/60 text-slate-300 border border-slate-600 px-2 py-0.5 rounded text-[11px] font-semibold">Checked-Out</span>;
+                return <span className="bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded text-[11px] font-semibold">Checked-Out</span>;
             case 'cancelled':
-                return <span className="bg-rose-500/15 text-rose-400 border border-rose-500/30 px-2 py-0.5 rounded text-[11px] font-semibold">Cancelled</span>;
+                return <span className="bg-slate-100 text-slate-500 border border-slate-200 px-2 py-0.5 rounded text-[11px] font-semibold">Cancelled</span>;
             default:
-                return <span className="bg-slate-800 text-slate-400 px-2 py-0.5 rounded text-[11px]">{status}</span>;
+                return <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[11px]">{status}</span>;
         }
     };
 
     return (
         <AuthenticatedLayout>
-            <Head title="Reservations & Front Desk - Haula HMS" />
+            <Head title="THE INNS" />
 
             {/* Header Toolbar */}
-            <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs mb-4 sm:mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4">
                 <div className="flex items-center space-x-3">
-                    <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400">
-                        <BedDouble className="w-6 h-6 stroke-[2.2]" />
+                    <div className="p-2 sm:p-2.5 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 shrink-0">
+                        <BedDouble className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-black text-white tracking-tight">Reservations & Front Desk</h1>
-                        <p className="text-xs text-slate-400">
-                            Manage bookings, room assignments, walk-ins and guest folios
+                        <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">Reservations & Front Desk</h1>
+                        <p className="text-[11px] sm:text-xs text-slate-500">
+                            Bookings, room assignments, walk-ins and guest folios
                         </p>
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                <div className="flex items-center gap-2 w-full md:w-auto">
                     {/* Search Bar */}
                     <form onSubmit={handleSearch} className="relative flex-1 md:w-64">
                         <input
@@ -170,27 +173,28 @@ export default function ReservationsIndex({
                             name="search"
                             defaultValue={filters.search}
                             placeholder="Search Ref, Guest or Phone..."
-                            className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition"
                         />
-                        <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
+                        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                     </form>
 
                     <button
                         onClick={() => setIsNewBookingModalOpen(true)}
-                        className="inline-flex items-center space-x-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold px-4 py-2 rounded-xl shadow-lg shadow-amber-500/20 text-xs transition"
+                        className="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3.5 py-2 rounded-xl shadow-xs text-xs transition active-press shrink-0"
                     >
                         <UserPlus className="w-4 h-4 stroke-[2.5]" />
-                        <span>New Booking / Walk-In</span>
+                        <span className="hidden sm:inline">New Booking / Walk-In</span>
+                        <span className="sm:hidden">New Booking</span>
                     </button>
                 </div>
             </div>
 
             {/* Status Filter Tabs */}
-            <div className="flex items-center space-x-2 mb-6 overflow-x-auto pb-2 text-xs">
+            <div className="flex items-center space-x-1.5 sm:space-x-2 mb-4 sm:mb-6 overflow-x-auto no-scrollbar pb-1 text-xs">
                 {[
                     { label: 'All Bookings', value: '' },
                     { label: 'Confirmed', value: 'confirmed' },
-                    { label: 'In-House (Checked-In)', value: 'checked_in' },
+                    { label: 'In-House', value: 'checked_in' },
                     { label: 'Tentative', value: 'tentative' },
                     { label: 'Checked-Out', value: 'checked_out' },
                     { label: 'Cancelled', value: 'cancelled' },
@@ -198,10 +202,10 @@ export default function ReservationsIndex({
                     <button
                         key={tab.value}
                         onClick={() => handleFilterStatus(tab.value)}
-                        className={`px-3.5 py-1.5 rounded-xl font-semibold transition whitespace-nowrap ${
+                        className={`px-3 py-1.5 rounded-xl font-semibold transition whitespace-nowrap active-press text-xs ${
                             filters.status === tab.value
-                                ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                                : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                                ? 'bg-blue-600 text-white font-bold shadow-xs'
+                                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
                         }`}
                     >
                         {tab.label}
@@ -209,11 +213,136 @@ export default function ReservationsIndex({
                 ))}
             </div>
 
-            {/* Reservations Table */}
-            <div className="bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden">
+            {/* MOBILE CARDS VIEW (<sm screens) */}
+            <div className="sm:hidden space-y-3 mb-6">
+                {reservations.data.length === 0 ? (
+                    <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-400 text-xs">
+                        No reservations found matching your criteria.
+                    </div>
+                ) : (
+                    reservations.data.map((res) => {
+                        const resRoom = res.reservation_rooms?.[0];
+                        const folio = res.folios?.[0];
+                        return (
+                            <div
+                                key={res.id}
+                                id={`res-${res.id}`}
+                                data-highlightable="true"
+                                className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3"
+                            >
+                                {/* Top: Guest Name, Ref & Status */}
+                                <div className="flex items-start justify-between gap-2">
+                                    <div>
+                                        <div className="flex items-center space-x-2">
+                                            <span className="font-bold text-slate-900 text-sm">
+                                                {res.guest?.first_name} {res.guest?.last_name}
+                                            </span>
+                                            <span className="font-mono text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded font-bold">
+                                                {res.ref_no}
+                                            </span>
+                                        </div>
+                                        <div className="text-[11px] text-slate-500 mt-0.5">
+                                            {res.guest?.phone ? (
+                                                <a href={`tel:${res.guest.phone}`} className="text-blue-600 underline">
+                                                    {res.guest.phone}
+                                                </a>
+                                            ) : (
+                                                'No phone'
+                                            )}{' '}
+                                            &bull; {res.guest?.nationality || 'Guest'}
+                                        </div>
+                                    </div>
+                                    <div>{getStatusBadge(res.status)}</div>
+                                </div>
+
+                                {/* Room & Dates Bar */}
+                                <div className="bg-slate-50/70 p-2.5 rounded-xl border border-slate-100 grid grid-cols-2 gap-2 text-xs">
+                                    <div>
+                                        <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                                            Room & Type
+                                        </span>
+                                        <span className="font-bold text-slate-900 block truncate">
+                                            {resRoom?.room ? `Room ${resRoom.room.room_number}` : 'Unassigned'}
+                                        </span>
+                                        <span className="text-[10px] text-slate-500 block truncate">
+                                            {resRoom?.room_type?.name || 'Standard'}
+                                        </span>
+                                    </div>
+
+                                    <div>
+                                        <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                                            Dates & Total
+                                        </span>
+                                        <span className="font-mono font-semibold text-slate-800 text-[11px] block">
+                                            {res.check_in} &rarr; {res.check_out}
+                                        </span>
+                                        <span className="font-mono font-bold text-slate-900 text-xs block">
+                                            {formatTZS(res.total_minor)}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Actions Row */}
+                                <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                                    <div className="flex items-center space-x-1.5">
+                                        {/* Check In Action */}
+                                        {res.status === 'confirmed' && (
+                                            <button
+                                                onClick={() => {
+                                                    setCheckInRes(res);
+                                                    setSelectedRoomId(resRoom?.room_id || '');
+                                                }}
+                                                className="inline-flex items-center space-x-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-xs transition active-press"
+                                            >
+                                                <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                                                <span>Check In</span>
+                                            </button>
+                                        )}
+
+                                        {/* Check Out Action */}
+                                        {res.status === 'checked_in' && (
+                                            <button
+                                                onClick={() => handleCheckOut(res.id)}
+                                                className="inline-flex items-center space-x-1 bg-slate-900 hover:bg-slate-800 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-xs transition active-press"
+                                            >
+                                                <LogOut className="w-3.5 h-3.5 stroke-[2.5]" />
+                                                <span>Check Out</span>
+                                            </button>
+                                        )}
+
+                                        {/* View Folio */}
+                                        {folio && (
+                                            <Link
+                                                href={route('folios.show', folio.id)}
+                                                className="inline-flex items-center space-x-1 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition active-press"
+                                            >
+                                                <CreditCard className="w-3.5 h-3.5 text-blue-600" />
+                                                <span>Folio</span>
+                                            </Link>
+                                        )}
+                                    </div>
+
+                                    {/* Cancel */}
+                                    {['confirmed', 'tentative'].includes(res.status) && (
+                                        <button
+                                            onClick={() => handleCancel(res.id)}
+                                            className="text-slate-400 hover:text-rose-600 p-1.5 text-xs font-semibold"
+                                        >
+                                            Cancel
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })
+                )}
+            </div>
+
+            {/* DESKTOP RESERVATIONS TABLE (Hidden on mobile >=sm) */}
+            <div className="hidden sm:block bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden mb-6">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
-                        <thead className="bg-slate-950 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800">
+                        <thead className="bg-slate-50 text-slate-600 font-bold uppercase tracking-wider border-b border-slate-200">
                             <tr>
                                 <th className="py-3.5 px-4">Ref #</th>
                                 <th className="py-3.5 px-4">Guest Information</th>
@@ -224,10 +353,10 @@ export default function ReservationsIndex({
                                 <th className="py-3.5 px-4 text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-800/60 text-slate-200">
+                        <tbody className="divide-y divide-slate-100 text-slate-800">
                             {reservations.data.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="py-12 text-center text-slate-500">
+                                    <td colSpan={7} className="py-12 text-center text-slate-400">
                                         No reservations found matching your criteria.
                                     </td>
                                 </tr>
@@ -236,41 +365,46 @@ export default function ReservationsIndex({
                                     const resRoom = res.reservation_rooms?.[0];
                                     const folio = res.folios?.[0];
                                     return (
-                                        <tr key={res.id} className="hover:bg-slate-850/50 transition">
-                                            <td className="py-4 px-4 font-mono font-bold text-amber-400">
+                                        <tr
+                                            key={res.id}
+                                            id={`res-${res.id}`}
+                                            data-highlightable="true"
+                                            className="hover:bg-slate-50/80 transition"
+                                        >
+                                            <td className="py-4 px-4 font-mono font-bold text-sky-700">
                                                 {res.ref_no}
-                                                <div className="text-[10px] text-slate-500 uppercase tracking-wider font-sans">
+                                                <div className="text-[10px] text-slate-400 uppercase tracking-wider font-sans font-medium">
                                                     {res.source.replace('_', ' ')}
                                                 </div>
                                             </td>
                                             <td className="py-4 px-4">
-                                                <div className="font-bold text-white text-sm">
+                                                <div className="font-bold text-slate-900 text-sm">
                                                     {res.guest?.first_name} {res.guest?.last_name}
                                                 </div>
-                                                <div className="text-[11px] text-slate-400 mt-0.5">
+                                                <div className="text-[11px] text-slate-500 mt-0.5">
                                                     {res.guest?.phone} &bull; {res.guest?.nationality}
                                                 </div>
                                             </td>
                                             <td className="py-4 px-4">
-                                                <div className="font-semibold text-slate-100">
+                                                <div className="font-semibold text-slate-900">
                                                     {resRoom?.room ? `Room ${resRoom.room.room_number}` : (
-                                                        <span className="text-amber-400/90 italic font-normal">Unassigned Room</span>
+                                                        <span className="text-sky-600 italic font-medium">Unassigned Room</span>
                                                     )}
                                                 </div>
-                                                <div className="text-[11px] text-slate-400">
+                                                <div className="text-[11px] text-slate-500">
                                                     {resRoom?.room_type?.name}
                                                 </div>
                                             </td>
                                             <td className="py-4 px-4 font-mono">
-                                                <div className="text-slate-200">{res.check_in} &rarr; {res.check_out}</div>
-                                                <div className="text-[10px] text-slate-400 font-sans">
+                                                <div className="text-slate-800 font-semibold">{res.check_in} &rarr; {res.check_out}</div>
+                                                <div className="text-[10px] text-slate-500 font-sans">
                                                     {res.adults} Adults{res.children > 0 && `, ${res.children} Kids`}
                                                 </div>
                                             </td>
                                             <td className="py-4 px-4 font-mono">
-                                                <div className="font-bold text-white">{formatTZS(res.total_minor)}</div>
+                                                <div className="font-bold text-slate-900">{formatTZS(res.total_minor)}</div>
                                                 {res.deposit_minor > 0 && (
-                                                    <div className="text-[10px] text-emerald-400">Dep: {formatTZS(res.deposit_minor)}</div>
+                                                    <div className="text-[10px] text-emerald-600 font-semibold">Dep: {formatTZS(res.deposit_minor)}</div>
                                                 )}
                                             </td>
                                             <td className="py-4 px-4">
@@ -284,7 +418,7 @@ export default function ReservationsIndex({
                                                             setCheckInRes(res);
                                                             setSelectedRoomId(resRoom?.room_id || '');
                                                         }}
-                                                        className="inline-flex items-center space-x-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-2.5 py-1.5 rounded-lg text-xs shadow-sm transition"
+                                                        className="inline-flex items-center space-x-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2.5 py-1.5 rounded-lg text-xs shadow-xs transition active-press"
                                                     >
                                                         <Check className="w-3.5 h-3.5 stroke-[2.5]" />
                                                         <span>Check In</span>
@@ -295,7 +429,7 @@ export default function ReservationsIndex({
                                                 {res.status === 'checked_in' && (
                                                     <button
                                                         onClick={() => handleCheckOut(res.id)}
-                                                        className="inline-flex items-center space-x-1 bg-rose-500 hover:bg-rose-400 text-slate-950 font-bold px-2.5 py-1.5 rounded-lg text-xs shadow-sm transition"
+                                                        className="inline-flex items-center space-x-1 bg-slate-900 hover:bg-slate-800 text-white font-bold px-2.5 py-1.5 rounded-lg text-xs shadow-xs transition active-press"
                                                     >
                                                         <LogOut className="w-3.5 h-3.5 stroke-[2.5]" />
                                                         <span>Check Out</span>
@@ -306,9 +440,9 @@ export default function ReservationsIndex({
                                                 {folio && (
                                                     <Link
                                                         href={route('folios.show', folio.id)}
-                                                        className="inline-flex items-center space-x-1 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2.5 py-1.5 rounded-lg text-xs font-semibold"
+                                                        className="inline-flex items-center space-x-1 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition active-press"
                                                     >
-                                                        <CreditCard className="w-3.5 h-3.5 text-amber-400" />
+                                                        <CreditCard className="w-3.5 h-3.5 text-sky-600" />
                                                         <span>Folio</span>
                                                     </Link>
                                                 )}
@@ -317,7 +451,7 @@ export default function ReservationsIndex({
                                                 {['confirmed', 'tentative'].includes(res.status) && (
                                                     <button
                                                         onClick={() => handleCancel(res.id)}
-                                                        className="text-slate-500 hover:text-rose-400 p-1"
+                                                        className="text-slate-400 hover:text-slate-700 p-1 transition"
                                                         title="Cancel Booking"
                                                     >
                                                         <X className="w-4 h-4" />
@@ -334,7 +468,7 @@ export default function ReservationsIndex({
 
                 {/* Pagination */}
                 {reservations.total > 15 && (
-                    <div className="p-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                    <div className="p-4 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 bg-slate-50">
                         <span>Showing {reservations.data.length} of {reservations.total} reservations</span>
                         <div className="flex space-x-1">
                             {reservations.links.map((link, idx) => (
@@ -344,8 +478,8 @@ export default function ReservationsIndex({
                                     dangerouslySetInnerHTML={{ __html: link.label }}
                                     className={`px-3 py-1 rounded-lg border ${
                                         link.active
-                                            ? 'bg-amber-500 text-slate-950 font-bold border-amber-500'
-                                            : 'bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800'
+                                            ? 'bg-sky-500 text-white font-bold border-sky-500'
+                                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                                     } ${!link.url && 'opacity-40 cursor-not-allowed'}`}
                                 />
                             ))}
@@ -356,33 +490,33 @@ export default function ReservationsIndex({
 
             {/* Check-In Room Assignment Modal */}
             {checkInRes && (
-                <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
-                        <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
-                            <h3 className="font-bold text-white text-sm">
+                <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+                    <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-200 mb-4">
+                            <h3 className="font-bold text-slate-900 text-sm">
                                 Check In Guest: {checkInRes.guest?.first_name} {checkInRes.guest?.last_name}
                             </h3>
-                            <button onClick={() => setCheckInRes(null)} className="text-slate-400 hover:text-white">
+                            <button onClick={() => setCheckInRes(null)} className="text-slate-400 hover:text-slate-700">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
 
                         <form onSubmit={submitCheckIn} className="space-y-4 text-xs">
-                            <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 text-slate-300 space-y-1">
-                                <p><strong>Ref #:</strong> {checkInRes.ref_no}</p>
-                                <p><strong>Dates:</strong> {checkInRes.check_in} &rarr; {checkInRes.check_out}</p>
-                                <p><strong>Requested Type:</strong> {checkInRes.reservation_rooms?.[0]?.room_type?.name}</p>
+                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-slate-700 space-y-1">
+                                <p><strong className="text-slate-900">Ref #:</strong> <span className="font-mono text-sky-700 font-bold">{checkInRes.ref_no}</span></p>
+                                <p><strong className="text-slate-900">Dates:</strong> {checkInRes.check_in} &rarr; {checkInRes.check_out}</p>
+                                <p><strong className="text-slate-900">Requested Type:</strong> {checkInRes.reservation_rooms?.[0]?.room_type?.name}</p>
                             </div>
 
                             <div>
-                                <label className="text-slate-300 font-semibold block mb-1">
+                                <label className="text-slate-700 font-semibold block mb-1">
                                     Assign Clean / Inspected Room *
                                 </label>
                                 <select
                                     required
                                     value={selectedRoomId}
                                     onChange={(e) => setSelectedRoomId(e.target.value)}
-                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-white focus:border-amber-400"
+                                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
                                 >
                                     <option value="">-- Choose Room --</option>
                                     {rooms
@@ -395,18 +529,18 @@ export default function ReservationsIndex({
                                 </select>
                             </div>
 
-                            <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
+                            <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-200">
                                 <button
                                     type="button"
                                     onClick={() => setCheckInRes(null)}
-                                    className="px-4 py-2 rounded-xl text-slate-300 hover:bg-slate-800"
+                                    className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold transition active-press"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={!selectedRoomId}
-                                    className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl shadow-lg disabled:opacity-50"
+                                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-md disabled:opacity-50 transition active-press"
                                 >
                                     Complete Check-In
                                 </button>
@@ -416,216 +550,15 @@ export default function ReservationsIndex({
                 </div>
             )}
 
-            {/* Complete New Booking / Walk-In Modal */}
-            {isNewBookingModalOpen && (
-                <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl my-8">
-                        <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
-                            <div>
-                                <h3 className="font-bold text-white text-base">New Guest Reservation & Walk-In</h3>
-                                <p className="text-xs text-slate-400">Capture guest details, room allotment, rates and deposit</p>
-                            </div>
-                            <button onClick={() => setIsNewBookingModalOpen(false)} className="text-slate-400 hover:text-white">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <form onSubmit={submitNewBooking} className="space-y-4 text-xs">
-                            <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
-                                <h4 className="font-bold text-amber-400 uppercase tracking-wider text-[11px] mb-2">
-                                    1. Guest Information
-                                </h4>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="text-slate-300 font-semibold block mb-1">First Name *</label>
-                                        <input
-                                            type="text"
-                                            required
-                                            value={data.first_name}
-                                            onChange={(e) => setData('first_name', e.target.value)}
-                                            className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                                            placeholder="Sarah"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-slate-300 font-semibold block mb-1">Last Name *</label>
-                                        <input
-                                            type="text"
-                                            required
-                                            value={data.last_name}
-                                            onChange={(e) => setData('last_name', e.target.value)}
-                                            className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                                            placeholder="Jenkins"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-slate-300 font-semibold block mb-1">Phone Number</label>
-                                        <input
-                                            type="text"
-                                            value={data.phone}
-                                            onChange={(e) => setData('phone', e.target.value)}
-                                            className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                                            placeholder="+255 754 000 000"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-slate-300 font-semibold block mb-1">Email</label>
-                                        <input
-                                            type="email"
-                                            value={data.email}
-                                            onChange={(e) => setData('email', e.target.value)}
-                                            className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                                            placeholder="guest@example.com"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-slate-300 font-semibold block mb-1">Nationality</label>
-                                        <input
-                                            type="text"
-                                            value={data.nationality}
-                                            onChange={(e) => setData('nationality', e.target.value)}
-                                            className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-slate-300 font-semibold block mb-1">ID / Passport Number</label>
-                                        <input
-                                            type="text"
-                                            value={data.id_number}
-                                            onChange={(e) => setData('id_number', e.target.value)}
-                                            className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
-                                            placeholder="Passport / NIDA"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
-                                <h4 className="font-bold text-amber-400 uppercase tracking-wider text-[11px] mb-2">
-                                    2. Room & Stay Details
-                                </h4>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="text-slate-300 font-semibold block mb-1">Room Type *</label>
-                                        <select
-                                            value={data.room_type_id}
-                                            onChange={(e) => {
-                                                const rt = roomTypes.find(t => t.id === e.target.value);
-                                                setData({
-                                                    ...data,
-                                                    room_type_id: e.target.value,
-                                                    rate_price: rt ? rt.base_price_minor / 100 : data.rate_price,
-                                                });
-                                            }}
-                                            className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                                        >
-                                            {roomTypes.map((rt) => (
-                                                <option key={rt.id} value={rt.id}>
-                                                    {rt.name} ({formatTZS(rt.base_price_minor)})
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="text-slate-300 font-semibold block mb-1">Assign Room (Optional)</label>
-                                        <select
-                                            value={data.room_id}
-                                            onChange={(e) => setData('room_id', e.target.value)}
-                                            className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                                        >
-                                            <option value="">Auto-Assign Later</option>
-                                            {rooms
-                                                .filter(r => r.status_occupancy === 'vacant')
-                                                .map((r) => (
-                                                    <option key={r.id} value={r.id}>
-                                                        Room {r.room_number} ({r.status_hk})
-                                                    </option>
-                                                ))}
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label className="text-slate-300 font-semibold block mb-1">Check-In Date *</label>
-                                        <input
-                                            type="date"
-                                            required
-                                            value={data.check_in}
-                                            onChange={(e) => setData('check_in', e.target.value)}
-                                            className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-slate-300 font-semibold block mb-1">Check-Out Date *</label>
-                                        <input
-                                            type="date"
-                                            required
-                                            value={data.check_out}
-                                            onChange={(e) => setData('check_out', e.target.value)}
-                                            className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="text-slate-300 font-semibold block mb-1">Rate Plan *</label>
-                                        <select
-                                            value={data.rate_plan_id}
-                                            onChange={(e) => setData('rate_plan_id', e.target.value)}
-                                            className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white"
-                                        >
-                                            {ratePlans.map((rp) => (
-                                                <option key={rp.id} value={rp.id}>
-                                                    {rp.name} ({rp.meal_plan})
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="text-slate-300 font-semibold block mb-1">Rate Per Night (TZS) *</label>
-                                        <input
-                                            type="number"
-                                            required
-                                            value={data.rate_price}
-                                            onChange={(e) => setData('rate_price', Number(e.target.value))}
-                                            className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Immediate Walk-In Check-In */}
-                            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
-                                <div>
-                                    <span className="font-semibold text-white block">Immediate Walk-In Check-In</span>
-                                    <span className="text-[11px] text-slate-400">Generate stay record, open folio and occupy room immediately</span>
-                                </div>
-                                <input
-                                    type="checkbox"
-                                    checked={data.check_in_now}
-                                    onChange={(e) => setData('check_in_now', e.target.checked)}
-                                    className="rounded border-slate-800 text-amber-500 focus:ring-amber-400 w-4 h-4 bg-slate-900"
-                                />
-                            </div>
-
-                            <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsNewBookingModalOpen(false)}
-                                    className="px-4 py-2 rounded-xl text-slate-300 hover:bg-slate-800"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={processing}
-                                    className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-amber-500/20 disabled:opacity-50"
-                                >
-                                    {processing ? 'Processing...' : 'Confirm & Save Booking'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+            {/* New Reservation Modal matching CloudLodge UI (Autocomplete + Floors + Multi-Room) */}
+            <NewReservationModal
+                isOpen={isNewBookingModalOpen}
+                onClose={() => setIsNewBookingModalOpen(false)}
+                rooms={rooms}
+                roomTypes={roomTypes}
+                ratePlans={ratePlans}
+                guests={guests}
+            />
         </AuthenticatedLayout>
     );
 }

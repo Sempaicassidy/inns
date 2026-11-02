@@ -5,6 +5,13 @@ use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));
 
+// Polyfill for PHP < 8.4 environments (e.g. PHP 8.3 in WAMP)
+if (!function_exists('request_parse_body')) {
+    function request_parse_body(): array {
+        return [$_POST, $_FILES];
+    }
+}
+
 // Determine if the application is in maintenance mode...
 if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php')) {
     require $maintenance;

@@ -14,10 +14,12 @@ use App\Models\ReservationRoom;
 use App\Models\Room;
 use App\Models\RoomType;
 use App\Models\Stay;
+use App\Models\SystemNotification;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -26,6 +28,13 @@ class ReservationController extends Controller
     public function index(Request $request): Response
     {
         $status = $request->input('status');
+        if (! $status) {
+            if ($request->routeIs('reservations.checkin')) {
+                $status = 'confirmed';
+            } elseif ($request->routeIs('reservations.checkout')) {
+                $status = 'checked_in';
+            }
+        }
         $search = $request->input('search');
 
         $reservations = Reservation::with(['guest', 'company', 'reservationRooms.roomType', 'reservationRooms.room', 'folios'])
@@ -62,23 +71,55 @@ class ReservationController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        // Sanitize empty strings for nullable UUID/foreign key fields
+        $cleanup = [];
+        foreach (['guest_id', 'room_type_id', 'room_id', 'rate_plan_id'] as $field) {
+            if ($request->has($field) && ($request->input($field) === '' || $request->input($field) === 'null')) {
+                $cleanup[$field] = null;
+            }
+        }
+        if (! empty($cleanup)) {
+            $request->merge($cleanup);
+        }
+
+        // Auto-split guest_name if first_name/last_name are missing
+        if ($request->has('guest_name') && ! $request->filled('first_name')) {
+            $parts = explode(' ', trim($request->input('guest_name')), 2);
+            $request->merge([
+                'first_name' => $parts[0] ?? 'Guest',
+                'last_name' => $parts[1] ?? ($parts[0] ?? 'Guest'),
+            ]);
+        }
+        if ($request->has('guest_phone') && ! $request->filled('phone')) {
+            $request->merge(['phone' => $request->input('guest_phone')]);
+        }
+        if ($request->has('guest_email') && ! $request->filled('email')) {
+            $request->merge(['email' => $request->input('guest_email')]);
+        }
+
+        $source = $request->input('source');
+        if (! in_array($source, ['walk_in', 'phone', 'email', 'website', 'booking_com', 'agent', 'corporate'])) {
+            $request->merge(['source' => 'walk_in']);
+        }
+
         $validated = $request->validate([
-            'guest_id' => 'nullable|uuid',
-            'first_name' => 'required_without:guest_id|string|max:100',
-            'last_name' => 'required_without:guest_id|string|max:100',
+            'guest_id' => 'nullable|string|uuid',
+            'first_name' => 'required_without:guest_id|nullable|string|max:100',
+            'last_name' => 'required_without:guest_id|nullable|string|max:100',
             'phone' => 'nullable|string|max:30',
             'email' => 'nullable|email|max:100',
             'nationality' => 'nullable|string|max:50',
             'id_number' => 'nullable|string|max:50',
-            'room_type_id' => 'required|uuid',
-            'room_id' => 'nullable|uuid',
-            'rate_plan_id' => 'required|uuid',
+            'room_type_id' => 'nullable|string',
+            'room_id' => 'nullable|string',
+            'room_ids' => 'nullable|array',
+            'rate_plan_id' => 'nullable|string',
             'check_in' => 'required|date',
             'check_out' => 'required|date|after:check_in',
             'adults' => 'required|integer|min:1',
             'children' => 'nullable|integer|min:0',
             'source' => 'required|string',
-            'rate_price' => 'required|numeric|min:0',
+            'rate_price' => 'nullable|numeric|min:0',
             'deposit' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
             'check_in_now' => 'nullable|boolean',
@@ -86,16 +127,35 @@ class ReservationController extends Controller
 
         $user = $request->user();
         $property = $user->property ?? Property::first();
+        $tenantId = $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
 
-        DB::transaction(function () use ($validated, $user, $property) {
+        // Resolve room and room type intelligently if not explicitly given
+        $selectedRoomIds = ! empty($validated['room_ids']) ? $validated['room_ids'] : array_filter([$validated['room_id'] ?? null]);
+        $primaryRoomId = $selectedRoomIds[0] ?? $validated['room_id'] ?? null;
+        $primaryRoom = $primaryRoomId ? Room::find($primaryRoomId) : null;
+
+        $roomTypeId = $validated['room_type_id']
+            ?? ($primaryRoom?->room_type_id ?? RoomType::where('is_active', true)->first()?->id);
+        $roomType = $roomTypeId ? RoomType::find($roomTypeId) : null;
+
+        $ratePlanId = $validated['rate_plan_id']
+            ?? RatePlan::where('is_active', true)->first()?->id;
+
+        $ratePrice = isset($validated['rate_price']) && is_numeric($validated['rate_price']) && $validated['rate_price'] > 0
+            ? (float) $validated['rate_price']
+            : (($roomType?->base_price_minor ?? 35000000) / 100);
+
+        DB::transaction(function () use ($validated, $user, $property, $tenantId, $selectedRoomIds, $primaryRoomId, $roomTypeId, $ratePlanId, $ratePrice) {
             // Find or create guest
             if (! empty($validated['guest_id'])) {
                 $guest = Guest::findOrFail($validated['guest_id']);
             } else {
+                $firstName = ! empty($validated['first_name']) ? $validated['first_name'] : 'Walk-In';
+                $lastName = ! empty($validated['last_name']) ? $validated['last_name'] : 'Guest';
                 $guest = Guest::create([
-                    'tenant_id' => $user->tenant_id,
-                    'first_name' => $validated['first_name'],
-                    'last_name' => $validated['last_name'],
+                    'tenant_id' => $tenantId,
+                    'first_name' => $firstName,
+                    'last_name' => $lastName,
                     'phone' => $validated['phone'] ?? null,
                     'email' => $validated['email'] ?? null,
                     'nationality' => $validated['nationality'] ?? 'Tanzanian',
@@ -107,19 +167,21 @@ class ReservationController extends Controller
             $checkIn = Carbon::parse($validated['check_in']);
             $checkOut = Carbon::parse($validated['check_out']);
             $nights = max(1, $checkIn->diffInDays($checkOut));
-            $ratePriceMinor = (int) ($validated['rate_price'] * 100);
-            $totalMinor = $ratePriceMinor * $nights;
+            $ratePriceMinor = (int) ($ratePrice * 100);
+            $roomCount = max(1, count($selectedRoomIds));
+            $totalMinor = $ratePriceMinor * $nights * $roomCount;
             $depositMinor = ! empty($validated['deposit']) ? (int) ($validated['deposit'] * 100) : 0;
 
-            // Generate Ref No
+            // Generate guaranteed unique Ref No
             $year = now()->year;
-            $seq = Reservation::whereYear('created_at', $year)->count() + 1;
-            $refNo = sprintf('RES-%d-%04d', $year, $seq);
+            do {
+                $refNo = sprintf('RES-%d-%04d%s', $year, rand(1000, 9999), strtoupper(Str::random(2)));
+            } while (Reservation::where('ref_no', $refNo)->where('property_id', $property->id)->exists());
 
             $status = ! empty($validated['check_in_now']) ? 'checked_in' : 'confirmed';
 
             $reservation = Reservation::create([
-                'tenant_id' => $user->tenant_id,
+                'tenant_id' => $tenantId,
                 'property_id' => $property->id,
                 'ref_no' => $refNo,
                 'guest_id' => $guest->id,
@@ -135,22 +197,44 @@ class ReservationController extends Controller
                 'created_by' => $user->id,
             ]);
 
-            $resRoom = ReservationRoom::create([
-                'tenant_id' => $user->tenant_id,
-                'reservation_id' => $reservation->id,
-                'room_type_id' => $validated['room_type_id'],
-                'room_id' => $validated['room_id'] ?? null,
-                'rate_plan_id' => $validated['rate_plan_id'],
-                'check_in' => $validated['check_in'],
-                'check_out' => $validated['check_out'],
-                'rate_price_minor' => $ratePriceMinor,
-                'status' => $status,
-            ]);
+            // Create ReservationRoom for each room selected (or primary room)
+            $createdRooms = [];
+            if (! empty($selectedRoomIds)) {
+                foreach ($selectedRoomIds as $rId) {
+                    $rmObj = Room::find($rId);
+                    $rtId = $rmObj?->room_type_id ?? $roomTypeId;
+                    $createdRooms[] = ReservationRoom::create([
+                        'tenant_id' => $tenantId,
+                        'reservation_id' => $reservation->id,
+                        'room_type_id' => $rtId,
+                        'room_id' => $rId,
+                        'rate_plan_id' => $ratePlanId,
+                        'check_in' => $validated['check_in'],
+                        'check_out' => $validated['check_out'],
+                        'rate_price_minor' => $ratePriceMinor,
+                        'status' => $status,
+                    ]);
+                }
+            } else {
+                $createdRooms[] = ReservationRoom::create([
+                    'tenant_id' => $tenantId,
+                    'reservation_id' => $reservation->id,
+                    'room_type_id' => $roomTypeId,
+                    'room_id' => $primaryRoomId,
+                    'rate_plan_id' => $ratePlanId,
+                    'check_in' => $validated['check_in'],
+                    'check_out' => $validated['check_out'],
+                    'rate_price_minor' => $ratePriceMinor,
+                    'status' => $status,
+                ]);
+            }
+
+            $primaryResRoom = $createdRooms[0];
 
             // Create Folio
             $folioNumber = sprintf('FOL-%05d', Folio::count() + 1);
             $folio = Folio::create([
-                'tenant_id' => $user->tenant_id,
+                'tenant_id' => $tenantId,
                 'property_id' => $property->id,
                 'reservation_id' => $reservation->id,
                 'folio_number' => $folioNumber,
@@ -162,7 +246,7 @@ class ReservationController extends Controller
 
             if ($depositMinor > 0) {
                 Payment::create([
-                    'tenant_id' => $user->tenant_id,
+                    'tenant_id' => $tenantId,
                     'folio_id' => $folio->id,
                     'business_date' => $checkIn->toDateString(),
                     'payment_method' => 'cash',
@@ -174,41 +258,68 @@ class ReservationController extends Controller
             }
 
             // If check in now
-            if (! empty($validated['check_in_now']) && ! empty($validated['room_id'])) {
-                $room = Room::findOrFail($validated['room_id']);
-                $room->update(['status_occupancy' => 'occupied']);
+            if (! empty($validated['check_in_now'])) {
+                foreach ($createdRooms as $rr) {
+                    if ($rr->room_id) {
+                        $rm = Room::find($rr->room_id);
+                        if ($rm) {
+                            $rm->update(['status_occupancy' => 'occupied']);
+                            $stay = Stay::create([
+                                'tenant_id' => $tenantId,
+                                'reservation_room_id' => $rr->id,
+                                'room_id' => $rm->id,
+                                'guest_id' => $guest->id,
+                                'checked_in_at' => now(),
+                            ]);
+                            $folio->update(['stay_id' => $stay->id]);
 
-                $stay = Stay::create([
-                    'tenant_id' => $user->tenant_id,
-                    'reservation_room_id' => $resRoom->id,
-                    'room_id' => $room->id,
-                    'guest_id' => $guest->id,
-                    'checked_in_at' => now(),
-                ]);
-
-                $folio->update(['stay_id' => $stay->id]);
-
-                // Post first night charge
-                FolioLine::create([
-                    'tenant_id' => $user->tenant_id,
-                    'folio_id' => $folio->id,
-                    'business_date' => $checkIn->toDateString(),
-                    'line_type' => 'room',
-                    'description' => "Night Accommodation - Room {$room->room_number}",
-                    'amount_minor' => $ratePriceMinor,
-                    'tax_minor' => (int) ($ratePriceMinor * 0.18 / 1.18),
-                    'posted_by' => $user->id,
-                ]);
+                            // Post first night charge
+                            FolioLine::create([
+                                'tenant_id' => $tenantId,
+                                'folio_id' => $folio->id,
+                                'business_date' => $checkIn->toDateString(),
+                                'line_type' => 'room',
+                                'description' => "Night Accommodation - Room {$rm->room_number}",
+                                'amount_minor' => $ratePriceMinor,
+                                'tax_minor' => (int) ($ratePriceMinor * 0.18 / 1.18),
+                                'posted_by' => $user->id,
+                            ]);
+                        }
+                    }
+                }
             }
 
             $folio->recalculateBalance();
         });
+
+        try {
+            SystemNotification::send(
+                tenantId: $tenantId,
+                title: 'New Booking Created',
+                message: "New reservation created for check-in: {$validated['check_in']} to {$validated['check_out']}.",
+                category: 'reservation',
+                severity: 'info',
+                actionUrl: route('reservations.index'),
+                targetRole: 'receptionist',
+                propertyId: $property?->id
+            );
+        } catch (\Throwable $e) {
+        }
+
+        if ($request->headers->has('referer')) {
+            return back()->with('success', 'Reservation created successfully!');
+        }
 
         return redirect()->route('reservations.index')->with('success', 'Reservation created successfully!');
     }
 
     public function checkIn(Request $request, Reservation $reservation): RedirectResponse
     {
+        $source = $request->input('source');
+        if (! in_array($source, ['walk_in', 'phone', 'email', 'website', 'booking_com', 'agent', 'corporate'])) {
+            $request->merge(['source' => 'walk_in']);
+        }
+
         $validated = $request->validate([
             'room_id' => 'required|uuid|exists:rooms,id',
         ]);
@@ -216,14 +327,27 @@ class ReservationController extends Controller
         $user = $request->user();
         $property = $user->property ?? Property::first();
         $room = Room::findOrFail($validated['room_id']);
+        $tenantId = $reservation->tenant_id ?? $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
 
-        DB::transaction(function () use ($reservation, $room, $user, $property) {
+        DB::transaction(function () use ($reservation, $room, $user, $property, $tenantId) {
             $room->update(['status_occupancy' => 'occupied']);
 
             $reservation->update(['status' => 'checked_in']);
 
             $resRoom = $reservation->reservationRooms()->first();
-            if ($resRoom) {
+            if (! $resRoom) {
+                $resRoom = ReservationRoom::create([
+                    'tenant_id' => $tenantId,
+                    'reservation_id' => $reservation->id,
+                    'room_type_id' => $room->room_type_id,
+                    'room_id' => $room->id,
+                    'rate_plan_id' => RatePlan::first()?->id ?? '',
+                    'check_in' => $reservation->check_in,
+                    'check_out' => $reservation->check_out,
+                    'rate_price_minor' => $room->roomType?->base_price_minor ?? 35000000,
+                    'status' => 'checked_in',
+                ]);
+            } else {
                 $resRoom->update([
                     'room_id' => $room->id,
                     'status' => 'checked_in',
@@ -231,8 +355,8 @@ class ReservationController extends Controller
             }
 
             $stay = Stay::create([
-                'tenant_id' => $user->tenant_id,
-                'reservation_room_id' => $resRoom?->id,
+                'tenant_id' => $tenantId,
+                'reservation_room_id' => $resRoom->id,
                 'room_id' => $room->id,
                 'guest_id' => $reservation->guest_id,
                 'checked_in_at' => now(),
@@ -241,7 +365,7 @@ class ReservationController extends Controller
             $folio = $reservation->folios()->first();
             if (! $folio) {
                 $folio = Folio::create([
-                    'tenant_id' => $user->tenant_id,
+                    'tenant_id' => $tenantId,
                     'property_id' => $property->id,
                     'reservation_id' => $reservation->id,
                     'stay_id' => $stay->id,
@@ -258,7 +382,7 @@ class ReservationController extends Controller
             // Post room charge if not posted yet
             $rateAmount = $resRoom?->rate_price_minor ?? ($reservation->total_minor / max(1, $reservation->check_in->diffInDays($reservation->check_out)));
             FolioLine::create([
-                'tenant_id' => $user->tenant_id,
+                'tenant_id' => $tenantId,
                 'folio_id' => $folio->id,
                 'business_date' => now()->toDateString(),
                 'line_type' => 'room',
@@ -277,8 +401,9 @@ class ReservationController extends Controller
     public function checkOut(Request $request, Reservation $reservation): RedirectResponse
     {
         $user = $request->user();
+        $tenantId = $reservation->tenant_id ?? $user->tenant_id ?? Tenant::first()?->id;
 
-        DB::transaction(function () use ($reservation, $user) {
+        DB::transaction(function () use ($reservation, $tenantId) {
             $resRoom = $reservation->reservationRooms()->first();
             $room = $resRoom?->room;
 
@@ -301,7 +426,7 @@ class ReservationController extends Controller
 
                 // Create housekeeping cleaning task
                 HousekeepingTask::create([
-                    'tenant_id' => $user->tenant_id,
+                    'tenant_id' => $tenantId,
                     'property_id' => $reservation->property_id,
                     'room_id' => $room->id,
                     'task_type' => 'checkout_clean',
@@ -328,5 +453,49 @@ class ReservationController extends Controller
         });
 
         return back()->with('success', 'Reservation has been cancelled.');
+    }
+
+    public function update(Request $request, Reservation $reservation): RedirectResponse
+    {
+        $source = $request->input('source');
+        if (! in_array($source, ['walk_in', 'phone', 'email', 'website', 'booking_com', 'agent', 'corporate'])) {
+            $request->merge(['source' => 'walk_in']);
+        }
+
+        $validated = $request->validate([
+            'check_in' => 'nullable|date',
+            'check_out' => 'nullable|date|after:check_in',
+            'room_id' => 'nullable|uuid|exists:rooms,id',
+            'rate_price' => 'nullable|numeric|min:0',
+        ]);
+
+        DB::transaction(function () use ($reservation, $validated) {
+            $checkIn = ! empty($validated['check_in']) ? Carbon::parse($validated['check_in']) : $reservation->check_in;
+            $checkOut = ! empty($validated['check_out']) ? Carbon::parse($validated['check_out']) : $reservation->check_out;
+
+            $reservation->check_in = $checkIn;
+            $reservation->check_out = $checkOut;
+
+            if (isset($validated['rate_price']) && is_numeric($validated['rate_price'])) {
+                $nights = max(1, $checkIn->diffInDays($checkOut));
+                $reservation->total_minor = (int) ($validated['rate_price'] * 100 * $nights);
+            }
+
+            $reservation->save();
+
+            foreach ($reservation->reservationRooms as $rr) {
+                $rr->check_in = $checkIn;
+                $rr->check_out = $checkOut;
+                if (! empty($validated['room_id'])) {
+                    $rr->room_id = $validated['room_id'];
+                }
+                if (isset($validated['rate_price']) && is_numeric($validated['rate_price'])) {
+                    $rr->rate_price_minor = (int) ($validated['rate_price'] * 100);
+                }
+                $rr->save();
+            }
+        });
+
+        return back()->with('success', 'Reservation stay amended successfully!');
     }
 }

@@ -111,7 +111,9 @@ class NightAuditController extends Controller
             }
 
             // Calculate total payments collected today
-            $totalPayments = Payment::where('property_id', $property->id)
+            $totalPayments = Payment::whereHas('folio', function ($q) use ($property) {
+                $q->where('property_id', $property->id);
+            })
                 ->whereDate('business_date', $currentDate->toDateString())
                 ->where('status', 'confirmed')
                 ->sum('amount_minor');

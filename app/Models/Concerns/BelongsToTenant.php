@@ -20,7 +20,7 @@ trait BelongsToTenant
         });
 
         static::addGlobalScope('tenant', function (Builder $builder) {
-            if (auth()->check() && auth()->user()->tenant_id) {
+            if (auth()->check() && ! auth()->user()->isSuperAdmin() && auth()->user()->tenant_id) {
                 $builder->where($builder->qualifyColumn('tenant_id'), auth()->user()->tenant_id);
             }
         });

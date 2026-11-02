@@ -35,4 +35,17 @@ return [
         ],
     ],
 
+    'swalasms' => [
+        'api_key' => env('SWALASMS_API_KEY', env('SWAHILIES_API_KEY', 'swl_live_3rRTD7pHVgLewdEEmDZNvk762gvfkMefkzl7ESSQ6xQi7QNL')),
+        'base_url' => env('SWALASMS_BASE_URL', 'https://api.swalasms.com'),
+        'sender_id' => env('SWALASMS_SENDER_ID', 'SWALATECH'),
+        'env' => env('SWALASMS_ENV', 'live'),
+    ],
+
+    'swahilies' => [
+        'api_key' => env('SWAHILIES_API_KEY', 'swl_live_3rRTD7pHVgLewdEEmDZNvk762gvfkMefkzl7ESSQ6xQi7QNL'),
+        'base_url' => env('SWAHILIES_BASE_URL', 'https://api.swalasms.com'),
+        'env' => env('SWAHILIES_ENV', 'live'),
+    ],
+
 ];

@@ -17,6 +17,7 @@ class Property extends Model
     protected $fillable = [
         'tenant_id',
         'name',
+        'is_main',
         'code',
         'property_type',
         'timezone',
@@ -35,6 +36,7 @@ class Property extends Model
     protected function casts(): array
     {
         return [
+            'is_main' => 'boolean',
             'is_active' => 'boolean',
             'tax_config' => 'array',
         ];

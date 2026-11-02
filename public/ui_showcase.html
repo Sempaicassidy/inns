@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>THE INNS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Bootstrap 5 & Bootstrap Icons (Modern Responsive Architecture) -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<style>
+/* ==========================================================================
+   1. BOOTSTRAP 5 DESIGN TOKENS (LIGHT BLUE, SUCCESS & PURE WHITE)
+   Based on SRS Appendix B & C (Pages 78-115) & Executive Directive
+   ========================================================================== */
+:root {
+  /* Bootstrap 5 Theme Color Overrides */
+  --bs-primary: #0284c7;
+  --bs-primary-rgb: 2, 132, 199;
+  --bs-success: #198754;
+  --bs-success-rgb: 25, 135, 84;
+  --bs-info: #38bdf8;
+  --bs-info-rgb: 56, 189, 248;
+  --bs-body-bg: #FFFFFF;
+  --bs-body-color: #0F172A;
+
+  /* Canvas & Surface - Pure White Rule */
+  --bg-app: #FFFFFF;
+  --bg-surface: #FFFFFF;
+  --bg-surface-elevated: #F8FAFC;
+  --bg-surface-hover: #F0F9FF;
+  --bg-input: #FFFFFF;
+  
+  /* Borders (WCAG AA Compliant) */
+  --border-subtle: #E2E8F0;
+  --border-medium: #CBD5E1;
+  --border-active: #0284C7;
+
+  /* Typography */
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Text Colors */
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-tertiary: #94A3B8;
+  --text-inverse: #FFFFFF;
+
+  /* Accents - Strictly White, Light Blue, and Success */
+  --blue-primary: #0284C7;
+  --blue-hover: #0369A1;
+  --blue-light: #38BDF8;
+  --blue-subtle: #F0F9FF;
+  --blue-border: #BAE6FD;
+  --blue-glow: rgba(2, 132, 199, 0.20);
+
+  --emerald-success: #198754;
+  --emerald-subtle: #ECFDF5;
+  --emerald-border: #A7F3D0;
+
+  /* Subtle Luxury Shadows */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.07);
+  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.10);
+  --shadow-blue: 0 8px 24px rgba(2, 132, 199, 0.22);
+
+  /* Touch Targets & Radii */
+  --touch-min: 44px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+}
+
+/* Base Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ==========================================================================
+   2. TOP PROTOTYPE BAR & VIEWPORT CONTROLS
+   ========================================================================== */
+.prototype-controller {
+  background: #FFFFFF;
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-sm);
+}
+
+.prototype-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.prototype-badge {
+  background: var(--blue-primary);
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.viewport-switchers {
+  display: flex;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  padding: 3px;
+  gap: 2px;
+}
+
+.viewport-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-spring);
+}
+
+.viewport-btn.active {
+  background: var(--blue-primary);
+  color: #FFFFFF;
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Main Container Simulator */
+.preview-wrapper {
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: 24px 20px 80px 20px;
+  transition: max-width var(--duration-normal) var(--ease-spring);
+  background: var(--bg-app);
+}
+
+.preview-wrapper.mobile-view {
+  max-width: 420px;
+  padding: 12px 10px 90px 10px;
+}
+
+.preview-wrapper.tablet-view {
+  max-width: 780px;
+}
+
+/* ==========================================================================
+   3. SIDEBAR NAVIGATION & APP ARCHITECTURE
+   ========================================================================== */
+.app-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.hms-sidebar {
+  width: 270px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 70px;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sidebar-date-pill {
+  margin-top: 14px;
+  padding: 8px 12px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 18px 0;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all var(--duration-fast);
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.sidebar-link:hover {
+  background: var(--bg-surface-elevated);
+  color: var(--text-primary);
+}
+
+.sidebar-link.active {
+  background: var(--blue-subtle);
+  color: var(--blue-primary);
+  border-color: var(--blue-border);
+  font-weight: 700;
+}
+
+.sidebar-user-box {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.content-workspace {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 992px) {
+  .app-layout {
+    flex-direction: column;
+  }
+  .hms-sidebar {
+    width: 100%;
+    position: static;
+  }
+}
+
+.hotel-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hotel-logo-box {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  background: var(--blue-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  font-weight: 800;
+  font-size: 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.hotel-info h1 {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.hotel-info p {
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--emerald-success);
+  display: inline-block;
+  box-shadow: 0 0 8px rgba(25, 135, 84, 0.4);
+  animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+/* User Role Chip with Quick Switcher Button */
+.role-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--duration-fast);
+}
+
+.role-pill:hover {
+  border-color: var(--blue-primary);
+  background: var(--bg-surface-hover);
+}
+
+.role-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--blue-subtle);
+  color: var(--blue-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 12px;
+  border: 1px solid var(--blue-primary);
+}
+
+/* ==========================================================================
+   4. METRIC CARDS (BOOTSTRAP 5 CARDS & VIPIMO)
+   ========================================================================== */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.metric-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--duration-fast) var(--ease-spring), border-color var(--duration-fast), box-shadow var(--duration-fast);
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-medium);
+  box-shadow: var(--shadow-md);
+}
+
+.metric-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: transparent;
+}
+
+.metric-card.accent-lightblue::after { background: var(--blue-light); }
+.metric-card.accent-emerald::after { background: var(--emerald-success); }
+.metric-card.accent-primary::after { background: var(--blue-primary); }
+.metric-card.accent-neutral::after { background: var(--border-medium); }
+
+.metric-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.metric-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.metric-icon {
+  font-size: 18px;
+}
+
+.metric-value {
+  font-size: 26px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.metric-footer {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.badge-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.badge-tag.up { background: var(--emerald-subtle); color: var(--emerald-success); border: 1px solid var(--emerald-border); }
+.badge-tag.primary { background: var(--blue-subtle); color: var(--blue-primary); border: 1px solid var(--blue-border); }
+.badge-tag.neutral { background: var(--bg-surface-elevated); color: var(--text-secondary); border: 1px solid var(--border-subtle); }
+
+/* ==========================================================================
+   5. INTERACTIVE ROOM STATUS RACK (HOUSEKEEPING & FRONT DESK)
+   ========================================================================== */
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.section-title h2 {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.rooms-rack-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 32px;
+}
+
+.room-tile {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  position: relative;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--duration-fast) var(--ease-spring);
+}
+
+.room-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.room-tile.clean {
+  border-left: 4px solid var(--emerald-success);
+}
+
+.room-tile.dirty {
+  border-left: 4px solid var(--blue-primary);
+  background: #F0F9FF;
+}
+
+.room-tile.occupied {
+  border-left: 4px solid var(--blue-primary);
+}
+
+.room-tile.maintenance {
+  border-left: 4px solid var(--border-medium);
+  opacity: 0.8;
+}
+
+.room-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.room-no {
+  font-size: 17px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+.room-type {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+
+.room-guest-meta {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 12px;
+}
+
+.room-status-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.badge-clean { background: var(--emerald-subtle); color: var(--emerald-success); border: 1px solid var(--emerald-border); }
+.badge-dirty { background: var(--blue-subtle); color: var(--blue-primary); border: 1px solid var(--blue-border); }
+.badge-occupied { background: var(--blue-subtle); color: var(--blue-primary); border: 1px solid var(--blue-border); }
+.badge-maintenance { background: var(--bg-surface-elevated); color: var(--text-secondary); border: 1px solid var(--border-subtle); }
+
+/* ==========================================================================
+   6. FORMS, BOOTSTRAP 5 INPUT FIELDS & CURRENCY INPUT
+   ========================================================================== */
+.form-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  margin-bottom: 32px;
+  box-shadow: var(--shadow-sm);
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-addon-left {
+  position: absolute;
+  left: 14px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.input-field {
+  width: 100%;
+  height: var(--touch-min);
+  background: var(--bg-input);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  padding: 0 14px;
+  transition: all var(--duration-fast);
+  outline: none;
+}
+
+.input-field.has-addon {
+  padding-left: 54px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.input-field:focus {
+  border-color: var(--blue-primary);
+  box-shadow: 0 0 0 3px var(--blue-subtle);
+}
+
+/* Custom Select */
+.select-field {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 14px;
+  cursor: pointer;
+}
+
+/* ==========================================================================
+   7. BOOTSTRAP 5 BUTTON SYSTEM (LIGHT BLUE & SUCCESS)
+   ========================================================================== */
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.btn {
+  height: var(--touch-min);
+  padding: 0 20px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all var(--duration-fast) var(--ease-spring);
+  user-select: none;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background-color: var(--blue-primary) !important;
+  color: #FFFFFF !important;
+  border-color: var(--blue-primary) !important;
+  box-shadow: var(--shadow-sm);
+  font-weight: 600;
+}
+
+.btn-primary:hover, .btn-primary:focus {
+  background-color: var(--blue-hover) !important;
+  border-color: var(--blue-hover) !important;
+  box-shadow: var(--shadow-md);
+}
+
+.btn-secondary {
+  background-color: #FFFFFF;
+  border-color: var(--border-medium);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+  font-weight: 600;
+}
+
+.btn-secondary:hover {
+  background-color: var(--bg-surface-elevated);
+  border-color: var(--text-secondary);
+}
+
+.btn-success {
+  background-color: var(--emerald-success) !important;
+  border-color: var(--emerald-success) !important;
+  color: #FFFFFF !important;
+  box-shadow: var(--shadow-sm);
+  font-weight: 600;
+}
+
+.btn-success:hover, .btn-success:focus {
+  background-color: #157347 !important;
+  border-color: #146c43 !important;
+}
+
+.btn-outline-danger {
+  background: transparent;
+  border-color: var(--border-medium);
+  color: var(--text-secondary);
+}
+
+.btn-outline-danger:hover {
+  background: var(--bg-surface-elevated);
+  color: var(--text-primary);
+}
+
+/* ==========================================================================
+   8. 80MM THERMAL RECEIPT & A4 PRINT PREVIEW
+   ========================================================================== */
+.print-demo-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  margin-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.receipt-80mm {
+  width: 290px;
+  background: #FFFFFF;
+  color: #000000;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  line-height: 1.35;
+  padding: 20px 16px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  margin: 18px 0;
+  border-top: 5px dashed #CBD5E1;
+  border-bottom: 5px dashed #CBD5E1;
+}
+
+.receipt-center { text-align: center; }
+.receipt-bold { font-weight: bold; }
+.receipt-title { font-size: 15px; margin-bottom: 2px; }
+.receipt-divider { border-bottom: 1px dashed #000000; margin: 8px 0; }
+.receipt-row { display: flex; justify-content: space-between; margin: 3px 0; }
+.receipt-qr {
+  width: 80px;
+  height: 80px;
+  margin: 10px auto;
+  border: 2px solid #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+/* ==========================================================================
+   9. MULTI-ROLE SWITCHER MODAL WITH QUICK PIN
+   ========================================================================== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 16px;
+}
+
+.modal-overlay.open {
+  display: flex;
+}
+
+.modal-card {
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 440px;
+  padding: 26px;
+  box-shadow: var(--shadow-lg);
+  animation: modal-enter var(--duration-normal) var(--ease-spring);
+}
+
+@keyframes modal-enter {
+  from { transform: translateY(16px) scale(0.97); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.roles-selection {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.role-option-btn {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  text-align: left;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--duration-fast);
+}.role-option-btn:hover, .role-option-btn.selected {
+  border-color: var(--blue-primary);
+  background: var(--blue-subtle);
+}
+
+.pin-display {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.pin-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--border-medium);
+  background: transparent;
+  transition: all var(--duration-fast);
+}
+
+.pin-dot.filled {
+  background: var(--blue-primary);
+  border-color: var(--blue-primary);
+  box-shadow: 0 0 8px var(--blue-primary);
+}
+
+.keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  max-width: 240px;
+  margin: 0 auto;
+}
+
+.key-btn {
+  height: 48px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--duration-fast);
+}
+
+.key-btn:active {
+  background: var(--blue-primary);
+  color: #FFFFFF;
+  transform: scale(0.95);
+}
+
+/* ==========================================================================
+   10. MOBILE BOTTOM NAVIGATION (MOBILE-FIRST)
+   ========================================================================== */
+.mobile-bottom-bar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: #FFFFFF;
+  border-top: 1px solid var(--border-subtle);
+  box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.05);
+  z-index: 50;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0 10px;
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 600;
+  flex: 1;
+  height: 100%;
+  cursor: pointer;
+}
+
+.mobile-nav-item.active {
+  color: var(--blue-primary);
+  font-weight: 700;
+}
+
+.mobile-nav-icon {
+  font-size: 18px;
+}
+
+@media (max-width: 768px) {
+  .mobile-bottom-bar {
+    display: flex;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- TOP PROTOTYPE CONTROL TOOLBAR -->
+<div class="prototype-controller">
+  <div class="prototype-title">
+    <span class="prototype-badge">Bootstrap 5 • Light Blue & White</span>
+    <span style="font-size: 13px; font-weight: 800; color: var(--text-primary);">Haula HMS — Pure White & Light Blue Architecture</span>
+  </div>
+
+  <div class="viewport-switchers">
+    <button class="viewport-btn" onclick="setViewport('mobile')">📱 Mobile (390px)</button>
+    <button class="viewport-btn" onclick="setViewport('tablet')">📟 Tablet (768px)</button>
+    <button class="viewport-btn active" onclick="setViewport('desktop')">💻 Desktop (Full)</button>
+  </div>
+</div>
+
+<!-- MAIN VIEWPORT CONTAINER -->
+<div id="preview-container" class="preview-wrapper">
+
+  <div class="app-layout">
+    <!-- 1. LEFT SIDEBAR (VERTICAL NAVIGATION) -->
+    <aside class="hms-sidebar">
+      <div class="sidebar-brand">
+        <div class="hotel-logo-box">H</div>
+        <div class="hotel-info">
+          <h1>Haula Serengeti</h1>
+          <p><span class="live-dot"></span> System Live</p>
+        </div>
+      </div>
+
+      <div class="sidebar-date-pill">
+        <span style="color: var(--text-secondary);"><span class="live-dot" style="width: 6px; height: 6px; margin-right: 4px;"></span>Business Date:</span>
+        <span style="font-family: var(--font-mono); color: var(--blue-primary); font-weight: bold;">2026-10-27</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-tertiary); padding: 0 8px 4px 8px; letter-spacing: 0.05em;">Modules</div>
+        <a class="sidebar-link active">📊 Dashboard & KPIs</a>
+        <a class="sidebar-link">📅 Gantt Room Matrix</a>
+        <a class="sidebar-link">🛎️ Reservations & Walk-Ins</a>
+        <a class="sidebar-link">💳 Folios & Billing</a>
+        <a class="sidebar-link">✨ Housekeeping Rack</a>
+        <a class="sidebar-link">🌙 Night Audit Wizard</a>
+      </nav>
+
+      <div class="sidebar-user-box">
+        <div class="role-pill" onclick="openRoleModal()" style="width: 100%; justify-content: flex-start;">
+          <div class="role-avatar" id="current-avatar">C</div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 12px; font-weight: 800; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" id="current-user-name">Eng. Cassidy</div>
+            <div style="font-size: 10px; color: var(--blue-primary); font-weight: 700; text-transform: uppercase;" id="current-role-badge">General Manager</div>
+          </div>
+          <span style="font-size: 10px; color: var(--blue-primary); font-family: var(--font-mono);">🔑</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 2. RIGHT WORKSPACE CONTENT -->
+    <div class="content-workspace">
+
+  <!-- 1. LIVE PERFORMANCE METRICS (VIPIMO & TYPOGRAPHY) -->
+  <div class="metrics-grid">
+    <div class="metric-card accent-primary">
+      <div class="metric-header">
+        <span class="metric-label">Occupancy Rate</span>
+        <span class="metric-icon">📊</span>
+      </div>
+      <div class="metric-value">84.6%</div>
+      <div class="metric-footer">
+        <span class="badge-tag up">▲ +12%</span> vs last week (11/13 Rooms)
+      </div>
+    </div>
+
+    <div class="metric-card accent-emerald">
+      <div class="metric-header">
+        <span class="metric-label">Today's Revenue</span>
+        <span class="metric-icon">💳</span>
+      </div>
+      <div class="metric-value">TZS 3,840,000</div>
+      <div class="metric-footer">
+        <span class="badge-tag up">M-Pesa 68%</span> &bull; Cash 32%
+      </div>
+    </div>
+
+    <div class="metric-card accent-primary">
+      <div class="metric-header">
+        <span class="metric-label">ADR (Avg Daily Rate)</span>
+        <span class="metric-icon">🏕️</span>
+      </div>
+      <div class="metric-value">TZS 350,000</div>
+      <div class="metric-footer">
+        <span class="badge-tag primary">RevPAR TZS 296,000</span>
+      </div>
+    </div>
+
+    <div class="metric-card accent-emerald">
+      <div class="metric-header">
+        <span class="metric-label">Turnover & Housekeeping</span>
+        <span class="metric-icon">✨</span>
+      </div>
+      <div class="metric-value">2 Dirty / 9 Clean</div>
+      <div class="metric-footer">
+        <span class="badge-tag up">2 Needs Prep</span> Next Arrival 14:00
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. ROOM STATUS TILES (TACTILE RACK) -->
+  <div class="section-title">
+    <div>
+      <h2>Room Rack & Housekeeping Matrix</h2>
+      <p style="font-size: 11px; color: var(--text-secondary);">Touch any room to toggle status instantly (Clean &bull; Dirty &bull; Inspected &bull; Occupied)</p>
+    </div>
+    <div class="button-row">
+      <button class="btn btn-secondary" style="height: 34px; font-size: 11px;" onclick="simulateBulkClean()">✨ Mark All Inspected</button>
+    </div>
+  </div>
+
+  <div class="rooms-rack-grid" id="rooms-rack">
+    <!-- Room 1 -->
+    <div class="room-tile occupied" onclick="toggleRoomStatus(this)">
+      <div class="room-top">
+        <span class="room-no">Tent 01</span>
+        <span class="room-type">Safari Tent</span>
+      </div>
+      <div class="room-guest-meta">Juma Mwangi &bull; 2 Adults</div>
+      <span class="room-status-badge badge-occupied">● Occupied</span>
+    </div>
+
+    <!-- Room 2 -->
+    <div class="room-tile clean" onclick="toggleRoomStatus(this)">
+      <div class="room-top">
+        <span class="room-no">Tent 02</span>
+        <span class="room-type">Safari Tent</span>
+      </div>
+      <div class="room-guest-meta">Vacant &bull; Ready to sell</div>
+      <span class="room-status-badge badge-clean">● Clean</span>
+    </div>
+
+    <!-- Room 3 -->
+    <div class="room-tile dirty" onclick="toggleRoomStatus(this)">
+      <div class="room-top">
+        <span class="room-no">Tent 03</span>
+        <span class="room-type">Safari Tent</span>
+      </div>
+      <div class="room-guest-meta">Checkout at 10:00 &bull; Needs Linen</div>
+      <span class="room-status-badge badge-dirty">● Dirty</span>
+    </div>
+
+    <!-- Room 4 -->
+    <div class="room-tile occupied" onclick="toggleRoomStatus(this)">
+      <div class="room-top">
+        <span class="room-no">Suite 101</span>
+        <span class="room-type">Savannah Suite</span>
+      </div>
+      <div class="room-guest-meta">Sarah Jenkins &bull; Honeymoon</div>
+      <span class="room-status-badge badge-occupied">● Occupied</span>
+    </div>
+
+    <!-- Room 5 -->
+    <div class="room-tile clean" onclick="toggleRoomStatus(this)">
+      <div class="room-top">
+        <span class="room-no">Suite 102</span>
+        <span class="room-type">Savannah Suite</span>
+      </div>
+      <div class="room-guest-meta">Inspected by Supervisor</div>
+      <span class="room-status-badge badge-clean">● Inspected</span>
+    </div>
+
+    <!-- Room 6 -->
+    <div class="room-tile maintenance" onclick="toggleRoomStatus(this)">
+      <div class="room-top">
+        <span class="room-no">Villa 01</span>
+        <span class="room-type">Family Villa</span>
+      </div>
+      <div class="room-guest-meta">AC Filter Repair &bull; OOO</div>
+      <span class="room-status-badge badge-maintenance">● Out of Order</span>
+    </div>
+  </div>
+
+  <!-- 3. INPUT FORM & HUMANIC BILLING / CHECK-IN FORM -->
+  <div class="form-card">
+    <div class="section-title">
+      <div>
+        <h2>Front Desk Quick Walk-In & Payment Capture</h2>
+        <p style="font-size: 11px; color: var(--text-secondary);">Engineered for speed (average check-in time under 90 seconds)</p>
+      </div>
+      <span class="badge-tag up" style="font-family: var(--font-mono);">ID: #RES-2026-9041</span>
+    </div>
+
+    <div class="form-grid-2">
+      <div class="field-group">
+        <label class="field-label">Guest Full Name *</label>
+        <div class="input-container">
+          <input type="text" class="input-field" placeholder="e.g. Salim Rashid Bakari" value="Salim Rashid Bakari">
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Phone (M-Pesa / SMS Notification) *</label>
+        <div class="input-container">
+          <input type="text" class="input-field" placeholder="+255 7XX XXX XXX" value="+255 754 123 456">
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Rate Plan & Meal Type</label>
+        <select class="input-field select-field">
+          <option selected>Full Board Safari Package (FB)</option>
+          <option>Half Board (HB)</option>
+          <option>Bed & Breakfast (BB)</option>
+          <option>Room Only (RO)</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">
+          <span>Charge Amount (TZS) *</span>
+          <span style="color: var(--blue-primary); font-size: 11px;">Fixed Currency Tag</span>
+        </label>
+        <div class="input-container">
+          <span class="input-addon-left">TZS</span>
+          <input type="text" class="input-field has-addon" value="380,000" onkeyup="formatCurrency(this)">
+        </div>
+      </div>
+    </div>
+
+    <div class="button-row">
+      <button class="btn btn-primary" onclick="recordDemoPayment()">
+        <span>💳 Instant Check-In & M-Pesa STK Push</span>
+      </button>
+      <button class="btn btn-secondary">
+        <span>📄 Open Guest Folio</span>
+      </button>
+      <button class="btn btn-secondary">
+        <span>Discard</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 4. 80MM ESC/POS THERMAL RECEIPT & PRINT SIMULATOR -->
+  <div class="print-demo-box">
+    <div style="text-align: center; margin-bottom: 14px;">
+      <h2>80mm ESC/POS Thermal Receipt Engine</h2>
+      <p style="font-size: 11px; color: var(--text-secondary);">Direct hardware printing standard for front desk, bars and restaurants</p>
+    </div>
+
+    <div class="receipt-80mm" id="thermal-receipt">
+      <div class="receipt-center receipt-bold receipt-title">HAULA SERENGETI LODGE</div>
+      <div class="receipt-center">Ikoma Gate, Serengeti National Park</div>
+      <div class="receipt-center">TIN: 144-892-301 &bull; VRN: 40019283K</div>
+      <div class="receipt-center receipt-bold">TEL: +255 784 900 112</div>
+      <div class="receipt-divider"></div>
+      <div class="receipt-center receipt-bold">TAX INVOICE / FISCAL RECEIPT</div>
+      <div class="receipt-divider"></div>
+      <div class="receipt-row"><span>RECEIPT NO:</span> <span class="receipt-bold">#RCT-89402</span></div>
+      <div class="receipt-row"><span>DATE/TIME:</span> <span>2026-10-27 10:45</span></div>
+      <div class="receipt-row"><span>ROOM / FOLIO:</span> <span class="receipt-bold">Tent 01 (Folio #401)</span></div>
+      <div class="receipt-row"><span>GUEST NAME:</span> <span>Juma Mwangi</span></div>
+      <div class="receipt-row"><span>CASHIER:</span> <span>Neema (ID: 04)</span></div>
+      <div class="receipt-divider"></div>
+      <div class="receipt-row receipt-bold"><span>ITEM / SERVICE</span> <span>AMOUNT</span></div>
+      <div class="receipt-divider"></div>
+      <div class="receipt-row"><span>1x Safari Tent (1 Night)</span> <span>350,000</span></div>
+      <div class="receipt-row"><span>1x Game Drive Excursion</span> <span>120,000</span></div>
+      <div class="receipt-row"><span>2x Serengeti Bush Lunch</span> <span>70,000</span></div>
+      <div class="receipt-divider"></div>
+      <div class="receipt-row"><span>SUBTOTAL:</span> <span>540,000</span></div>
+      <div class="receipt-row"><span>VAT (18% INCLUDED):</span> <span>82,372</span></div>
+      <div class="receipt-row"><span>TOURISM LEVY (1%):</span> <span>5,400</span></div>
+      <div class="receipt-divider"></div>
+      <div class="receipt-row receipt-bold" style="font-size: 14px;"><span>TOTAL (TZS):</span> <span>540,000</span></div>
+      <div class="receipt-divider"></div>
+      <div class="receipt-row"><span>PAID (M-PESA):</span> <span>540,000</span></div>
+      <div class="receipt-row"><span>BALANCE DUE:</span> <span class="receipt-bold">0.00</span></div>
+      <div class="receipt-row"><span>REF TXN:</span> <span>MP-892401829</span></div>
+      <div class="receipt-qr">
+        [ TRA QR CODE ]
+      </div>
+      <div class="receipt-center" style="font-size: 10px;">TRA FISCAL VERIFICATION CODE</div>
+      <div class="receipt-center receipt-bold" style="font-size: 11px;">7890-EFD-4019-2026</div>
+      <div class="receipt-divider"></div>
+      <div class="receipt-center receipt-bold">ASANTE SANA &bull; KARIBU TENA</div>
+      <div class="receipt-center" style="font-size: 10px;">www.haula-hospitality.com</div>
+    </div>
+
+    <div class="button-row" style="margin-top: 14px;">
+      <button class="btn btn-primary" onclick="printReceipt()">🖨️ Print 80mm ESC/POS Thermal Receipt</button>
+      <button class="btn btn-secondary" onclick="alert('Digital Statement PDF has been downloaded.')">📥 Download A4 Guest Statement</button>
+    </div> <!-- end .content-workspace -->
+  </div> <!-- end .app-layout -->
+</div> <!-- end #preview-container -->
+
+<!-- 5. MULTI-ROLE SWITCHER & 4-DIGIT SECURITY PIN MODAL -->
+<div class="modal-overlay" id="role-modal">
+  <div class="modal-card">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+      <div>
+        <h3 style="font-size: 16px; font-weight: 800; color: var(--text-primary);">Role Switcher & Security PIN</h3>
+        <p style="font-size: 11px; color: var(--text-secondary);">Authenticate shift takeover or supervisor override</p>
+      </div>
+      <button onclick="closeRoleModal()" style="background: transparent; border: none; font-size: 18px; color: var(--text-secondary); cursor: pointer;">✕</button>
+    </div>
+
+    <div class="roles-selection">
+      <div class="role-option-btn selected" onclick="selectRole('Eng. Cassidy', 'General Manager', '1234', this)">
+        <div style="font-weight: 800; font-size: 12px;">General Manager</div>
+        <div style="font-size: 10px; color: var(--text-secondary);">Full System Overrides</div>
+      </div>
+      <div class="role-option-btn" onclick="selectRole('Salma J.', 'Front Desk Supervisor', '2244', this)">
+        <div style="font-weight: 800; font-size: 12px;">Front Desk Sup.</div>
+        <div style="font-size: 10px; color: var(--text-secondary);">Check-in & Folio Void</div>
+      </div>
+      <div class="role-option-btn" onclick="selectRole('Baraka M.', 'Cashier & POS', '5566', this)">
+        <div style="font-weight: 800; font-size: 12px;">Cashier Shift</div>
+        <div style="font-size: 10px; color: var(--text-secondary);">Direct Shift Close</div>
+      </div>
+      <div class="role-option-btn" onclick="selectRole('Neema K.', 'Night Auditor', '9900', this)">
+        <div style="font-weight: 800; font-size: 12px;">Night Auditor</div>
+        <div style="font-size: 10px; color: var(--text-secondary);">Date Roll & Charge Post</div>
+      </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 10px;">
+      <p style="font-size: 11px; color: var(--text-secondary);">Enter 4-digit PIN for: <strong id="target-role-label" style="color: var(--blue-primary);">General Manager: 1234</strong></p>
+      <div class="pin-display">
+        <div class="pin-dot" id="dot-1"></div>
+        <div class="pin-dot" id="dot-2"></div>
+        <div class="pin-dot" id="dot-3"></div>
+        <div class="pin-dot" id="dot-4"></div>
+      </div>
+    </div>
+
+    <div class="keypad-grid">
+      <div class="key-btn" onclick="enterPin('1')">1</div>
+      <div class="key-btn" onclick="enterPin('2')">2</div>
+      <div class="key-btn" onclick="enterPin('3')">3</div>
+      <div class="key-btn" onclick="enterPin('4')">4</div>
+      <div class="key-btn" onclick="enterPin('5')">5</div>
+      <div class="key-btn" onclick="enterPin('6')">6</div>
+      <div class="key-btn" onclick="enterPin('7')">7</div>
+      <div class="key-btn" onclick="enterPin('8')">8</div>
+      <div class="key-btn" onclick="enterPin('9')">9</div>
+      <div class="key-btn" onclick="clearPin()" style="font-size: 12px; color: var(--text-secondary);">C</div>
+      <div class="key-btn" onclick="enterPin('0')">0</div>
+      <div class="key-btn" onclick="verifyPin()" style="font-size: 14px; color: var(--emerald-success);">✓</div>
+    </div>
+  </div>
+</div>
+
+<!-- 6. FIXED 64PX MOBILE BOTTOM NAVIGATION -->
+<nav class="mobile-bottom-bar">
+  <div class="mobile-nav-item active">
+    <span class="mobile-nav-icon">📊</span>
+    <span>Dashboard</span>
+  </div>
+  <div class="mobile-nav-item">
+    <span class="mobile-nav-icon">📅</span>
+    <span>Gantt</span>
+  </div>
+  <div class="mobile-nav-item">
+    <span class="mobile-nav-icon">🛎️</span>
+    <span>Bookings</span>
+  </div>
+  <div class="mobile-nav-item">
+    <span class="mobile-nav-icon">🧹</span>
+    <span>Rooms</span>
+  </div>
+  <div class="mobile-nav-item" onclick="openRoleModal()">
+    <span class="mobile-nav-icon">👤</span>
+    <span>Staff PIN</span>
+  </div>
+</nav>
+
+<script>
+/* ==========================================================================
+   INTERACTIVE LOGIC FOR PROTOTYPE PREVIEW
+   ========================================================================== */
+
+// 1. Viewport Switcher
+function setViewport(mode) {
+  const container = document.getElementById('preview-container');
+  const buttons = document.querySelectorAll('.viewport-btn');
+  buttons.forEach(b => b.classList.remove('active'));
+
+  container.classList.remove('mobile-view', 'tablet-view');
+
+  if (mode === 'mobile') {
+    container.classList.add('mobile-view');
+    event.target.classList.add('active');
+  } else if (mode === 'tablet') {
+    container.classList.add('tablet-view');
+    event.target.classList.add('active');
+  } else {
+    event.target.classList.add('active');
+  }
+}
+
+// 2. Interactive Room Status Toggle
+function toggleRoomStatus(tile) {
+  const badge = tile.querySelector('.room-status-badge');
+  if (tile.classList.contains('clean')) {
+    tile.classList.remove('clean');
+    tile.classList.add('dirty');
+    badge.className = 'room-status-badge badge-dirty';
+    badge.innerText = '● Dirty';
+  } else if (tile.classList.contains('dirty')) {
+    tile.classList.remove('dirty');
+    tile.classList.add('occupied');
+    badge.className = 'room-status-badge badge-occupied';
+    badge.innerText = '● Occupied';
+  } else if (tile.classList.contains('occupied')) {
+    tile.classList.remove('occupied');
+    tile.classList.add('clean');
+    badge.className = 'room-status-badge badge-clean';
+    badge.innerText = '● Clean';
+  }
+}
+
+function simulateBulkClean() {
+  document.querySelectorAll('.room-tile').forEach(tile => {
+    if (!tile.classList.contains('maintenance')) {
+      tile.className = 'room-tile clean';
+      const badge = tile.querySelector('.room-status-badge');
+      badge.className = 'room-status-badge badge-clean';
+      badge.innerText = '● Clean';
+    }
+  });
+}
+
+// 3. Form Currency Formatter
+function formatCurrency(input) {
+  let val = input.value.replace(/\D/g, '');
+  if (val) {
+    input.value = new Intl.NumberFormat('en-US').format(parseInt(val, 10));
+  }
+}
+
+// 4. Role Switcher & PIN
+let currentEnteredPin = '';
+let selectedRoleData = { name: 'Eng. Cassidy', role: 'General Manager', pin: '1234' };
+
+function openRoleModal() {
+  document.getElementById('role-modal').classList.add('open');
+  clearPin();
+}
+
+function closeRoleModal() {
+  document.getElementById('role-modal').classList.remove('open');
+  clearPin();
+}
+
+function selectRole(name, role, pin, elem) {
+  document.querySelectorAll('.role-option-btn').forEach(b => b.classList.remove('selected'));
+  elem.classList.add('selected');
+  selectedRoleData = { name, role, pin };
+  document.getElementById('target-role-label').innerText = `${role}: ${pin}`;
+  clearPin();
+}
+
+function enterPin(digit) {
+  if (currentEnteredPin.length < 4) {
+    currentEnteredPin += digit;
+    updatePinDots();
+    if (currentEnteredPin.length === 4) {
+      setTimeout(verifyPin, 100);
+    }
+  }
+}
+
+function clearPin() {
+  currentEnteredPin = '';
+  updatePinDots();
+}
+
+function updatePinDots() {
+  for (let i = 1; i <= 4; i++) {
+    const dot = document.getElementById(`dot-${i}`);
+    if (i <= currentEnteredPin.length) {
+      dot.classList.add('filled');
+    } else {
+      dot.classList.remove('filled');
+    }
+  }
+}
+
+function verifyPin() {
+  if (currentEnteredPin === selectedRoleData.pin) {
+    document.getElementById('current-user-name').innerText = selectedRoleData.name;
+    document.getElementById('current-role-badge').innerText = selectedRoleData.role;
+    document.getElementById('current-avatar').innerText = selectedRoleData.name.charAt(0);
+    closeRoleModal();
+    alert(`Ruhusa imethibitishwa! Umefanikiwa kubadili role kuwa: ${selectedRoleData.role}`);
+  } else {
+    alert('PIN siyo sahihi! Tafadhali tumia: ' + selectedRoleData.pin);
+    clearPin();
+  }
+}
+
+function recordDemoPayment() {
+  alert('M-Pesa STK Push ya TZS 380,000 imetumwa kwenda kwa Salim Rashid (+255 754 123 456). Malipo yamethibitishwa kiotomatiki!');
+}
+
+function printReceipt() {
+  window.print();
+}
+</script>
+</body>
+</html>

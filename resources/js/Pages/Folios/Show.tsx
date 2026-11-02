@@ -24,6 +24,7 @@ interface FolioShowProps extends PageProps {
 export default function FolioShow({ folio, auth }: FolioShowProps) {
     const [isAddChargeModalOpen, setIsAddChargeModalOpen] = useState(false);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const [isThermalReceiptOpen, setIsThermalReceiptOpen] = useState(false);
 
     const guest = folio.reservation?.guest;
     const room = folio.stay?.room;
@@ -82,63 +83,75 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
         });
     };
 
-    const handlePrint = () => {
+    const handlePrintA4 = () => {
+        window.print();
+    };
+
+    const handlePrintThermal = () => {
         window.print();
     };
 
     return (
         <AuthenticatedLayout>
-            <Head title={`Folio ${folio.folio_number} - Haula HMS`} />
+            <Head title={`Folio ${folio.folio_number} - THE INNS`} />
 
             {/* Back to Folios */}
             <div className="mb-4 print:hidden">
                 <Link
                     href={route('folios.index')}
-                    className="inline-flex items-center space-x-1.5 text-xs font-semibold text-slate-400 hover:text-white"
+                    className="inline-flex items-center space-x-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900"
                 >
                     <ArrowLeft className="w-4 h-4" />
                     <span>Back to Folios List</span>
                 </Link>
             </div>
 
-            {/* Statement Container (Optimized for Screen and Print) */}
-            <div className="bg-slate-900 rounded-3xl border border-slate-800 shadow-2xl p-6 sm:p-8 max-w-4xl mx-auto print:bg-white print:text-black print:border-none print:shadow-none print:p-0">
-                {/* Printable Header */}
-                <div className="border-b border-slate-800 print:border-gray-300 pb-6 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 rounded-2xl bg-amber-500/10 print:bg-amber-100 flex items-center justify-center text-amber-400 print:text-amber-600">
-                            <Hotel className="w-6 h-6" />
+            {/* Statement Container (Pure White Luxury) */}
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-4 sm:p-8 max-w-4xl mx-auto print:bg-white print:text-black print:border-none print:shadow-none print:p-0">
+                {/* Header */}
+                <div className="border-b border-slate-100 pb-5 mb-5 sm:pb-6 sm:mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center space-x-3.5">
+                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-700 shadow-xs shrink-0">
+                            <Hotel className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-black text-white print:text-black tracking-tight">
+                            <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
                                 {auth.property?.name || 'Haula Serengeti Safari Lodge'}
                             </h2>
-                            <p className="text-xs text-slate-400 print:text-gray-600">
+                            <p className="text-[11px] sm:text-xs text-slate-500">
                                 Official Guest Folio Statement &bull; TIN: 102-458-999
                             </p>
                         </div>
                     </div>
 
-                    <div className="flex items-center space-x-2 print:hidden">
+                    <div className="flex flex-wrap items-center gap-2 print:hidden w-full sm:w-auto">
                         <button
-                            onClick={handlePrint}
-                            className="inline-flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold px-3 py-2 rounded-xl text-xs transition"
+                            onClick={() => setIsThermalReceiptOpen(true)}
+                            className="inline-flex items-center space-x-1.5 bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-300 font-bold px-3 py-2 rounded-xl text-xs transition active-press cursor-pointer flex-1 sm:flex-none justify-center"
                         >
-                            <Printer className="w-4 h-4 text-amber-400" />
-                            <span>Print Statement</span>
+                            <Receipt className="w-4 h-4 text-sky-700" />
+                            <span>Thermal Slip</span>
+                        </button>
+
+                        <button
+                            onClick={handlePrintA4}
+                            className="inline-flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold px-3 py-2 rounded-xl text-xs transition active-press cursor-pointer shadow-xs flex-1 sm:flex-none justify-center"
+                        >
+                            <Printer className="w-4 h-4 text-slate-500" />
+                            <span>Print A4</span>
                         </button>
 
                         <button
                             onClick={() => setIsAddChargeModalOpen(true)}
-                            className="inline-flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold px-3 py-2 rounded-xl text-xs transition"
+                            className="inline-flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold px-3 py-2 rounded-xl text-xs transition active-press cursor-pointer shadow-xs flex-1 sm:flex-none justify-center"
                         >
-                            <Plus className="w-4 h-4 text-emerald-400" />
+                            <Plus className="w-4 h-4 text-emerald-600" />
                             <span>Post Charge</span>
                         </button>
 
                         <button
                             onClick={() => setIsPaymentModalOpen(true)}
-                            className="inline-flex items-center space-x-1.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs shadow-lg shadow-emerald-500/20 transition"
+                            className="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-3.5 py-2 rounded-xl text-xs shadow-xs transition active-press cursor-pointer flex-1 sm:flex-none justify-center"
                         >
                             <CreditCard className="w-4 h-4 stroke-[2.5]" />
                             <span>Record Payment</span>
@@ -146,38 +159,38 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
                     </div>
                 </div>
 
-                {/* Folio Metadata & Guest Info */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 bg-slate-950/60 print:bg-gray-50 p-4 rounded-2xl border border-slate-800 print:border-gray-200 text-xs">
+                {/* Folio Metadata & Guest Info (White Card) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-5 sm:mb-6 bg-slate-50/70 p-3.5 sm:p-4 rounded-2xl border border-slate-200 text-xs">
                     <div>
-                        <span className="text-slate-400 print:text-gray-500 block font-medium">Guest Name</span>
-                        <span className="text-sm font-bold text-white print:text-black mt-0.5 block">
+                        <span className="text-slate-500 block font-bold uppercase tracking-wider text-[10px]">Guest Name</span>
+                        <span className="text-sm font-bold text-slate-900 mt-0.5 block">
                             {guest ? `${guest.first_name} ${guest.last_name}` : 'Direct Customer'}
                         </span>
-                        <span className="text-slate-400 print:text-gray-600 block mt-0.5">
+                        <span className="text-slate-500 block mt-0.5 font-medium">
                             {guest?.phone} &bull; {guest?.nationality}
                         </span>
                     </div>
 
                     <div>
-                        <span className="text-slate-400 print:text-gray-500 block font-medium">Room & Reservation</span>
-                        <span className="text-sm font-mono font-bold text-amber-400 print:text-amber-700 mt-0.5 block">
+                        <span className="text-slate-500 block font-bold uppercase tracking-wider text-[10px]">Room & Reservation</span>
+                        <span className="text-sm font-mono font-bold text-sky-800 mt-0.5 block">
                             {room ? `Room ${room.room_number}` : 'N/A'}
                         </span>
-                        <span className="text-slate-400 print:text-gray-600 block mt-0.5 font-mono">
+                        <span className="text-slate-500 block mt-0.5 font-mono">
                             Ref: {folio.reservation?.ref_no || 'Direct'}
                         </span>
                     </div>
 
                     <div>
-                        <span className="text-slate-400 print:text-gray-500 block font-medium">Folio Status</span>
+                        <span className="text-slate-500 block font-bold uppercase tracking-wider text-[10px]">Folio Status</span>
                         <div className="flex items-center space-x-2 mt-1">
-                            <span className="text-sm font-mono font-bold text-white print:text-black">
+                            <span className="text-sm font-mono font-bold text-slate-900">
                                 {folio.folio_number}
                             </span>
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                                 folio.status === 'settled'
-                                    ? 'bg-emerald-500/20 text-emerald-400'
-                                    : 'bg-amber-500/20 text-amber-400'
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                    : 'bg-sky-100 text-sky-800 border border-sky-200'
                             }`}>
                                 {folio.status.toUpperCase()}
                             </span>
@@ -185,26 +198,26 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
                     </div>
                 </div>
 
-                {/* Financial Summary Cards */}
-                <div className="grid grid-cols-3 gap-3 mb-6">
-                    <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 print:border-gray-200">
-                        <span className="text-[11px] text-slate-400 print:text-gray-600 block">Total Charges</span>
-                        <span className="text-base sm:text-lg font-black text-white print:text-black font-mono mt-0.5 block">
+                {/* Financial Summary Cards - 1 Col on Mobile, 3 on Desktop */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 mb-6">
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-xs">
+                        <span className="text-[11px] text-slate-500 block font-semibold uppercase">Total Charges</span>
+                        <span className="text-base sm:text-lg font-black text-slate-900 font-mono mt-0.5 block">
                             {formatTZS(folio.total_charges_minor)}
                         </span>
                     </div>
 
-                    <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 print:border-gray-200">
-                        <span className="text-[11px] text-slate-400 print:text-gray-600 block">Total Payments</span>
-                        <span className="text-base sm:text-lg font-black text-emerald-400 print:text-emerald-700 font-mono mt-0.5 block">
+                    <div className="bg-emerald-50/60 p-4 rounded-xl border border-emerald-200 shadow-xs">
+                        <span className="text-[11px] text-emerald-800 block font-semibold uppercase">Total Payments</span>
+                        <span className="text-base sm:text-lg font-black text-emerald-700 font-mono mt-0.5 block">
                             {formatTZS(folio.total_payments_minor)}
                         </span>
                     </div>
 
-                    <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 print:border-gray-200">
-                        <span className="text-[11px] text-slate-400 print:text-gray-600 block">Current Balance Due</span>
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-xs">
+                        <span className="text-[11px] text-slate-500 block font-semibold uppercase">Current Balance Due</span>
                         <span className={`text-base sm:text-lg font-black font-mono mt-0.5 block ${
-                            folio.balance_minor > 0 ? 'text-rose-400 print:text-red-600' : 'text-emerald-400 print:text-green-700'
+                            folio.balance_minor > 0 ? 'text-sky-800' : 'text-emerald-700'
                         }`}>
                             {formatTZS(folio.balance_minor)}
                         </span>
@@ -213,14 +226,14 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
 
                 {/* Section 1: Itemized Charges */}
                 <div className="mb-6">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400 print:text-black mb-2 flex items-center space-x-1.5">
-                        <Receipt className="w-3.5 h-3.5" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 mb-2 flex items-center space-x-1.5">
+                        <Receipt className="w-3.5 h-3.5 text-sky-600" />
                         <span>Itemized Charges</span>
                     </h3>
 
-                    <div className="overflow-x-auto rounded-xl border border-slate-800 print:border-gray-300">
+                    <div className="overflow-x-auto rounded-xl border border-slate-200">
                         <table className="w-full text-left text-xs">
-                            <thead className="bg-slate-950 print:bg-gray-100 text-slate-400 print:text-gray-600 border-b border-slate-800 print:border-gray-300 font-semibold uppercase tracking-wider">
+                            <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-bold uppercase tracking-wider">
                                 <tr>
                                     <th className="py-2.5 px-3">Date</th>
                                     <th className="py-2.5 px-3">Department</th>
@@ -229,25 +242,25 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
                                     <th className="py-2.5 px-3 text-right">Amount (TZS)</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-800/60 print:divide-gray-200 text-slate-200 print:text-black">
+                            <tbody className="divide-y divide-slate-100 text-slate-800">
                                 {folio.lines?.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className="py-4 text-center text-slate-500">
+                                        <td colSpan={5} className="py-4 text-center text-slate-400">
                                             No charges posted yet.
                                         </td>
                                     </tr>
                                 ) : (
                                     folio.lines?.map((line) => (
-                                        <tr key={line.id} className="hover:bg-slate-850/40 print:hover:bg-transparent">
-                                            <td className="py-2.5 px-3 font-mono">{line.business_date}</td>
-                                            <td className="py-2.5 px-3 uppercase text-[10px] tracking-wider font-semibold text-amber-400 print:text-gray-700">
+                                        <tr key={line.id} className="hover:bg-slate-50/80">
+                                            <td className="py-2.5 px-3 font-mono text-slate-600">{line.business_date}</td>
+                                            <td className="py-2.5 px-3 uppercase text-[10px] tracking-wider font-bold text-sky-800">
                                                 {line.line_type}
                                             </td>
-                                            <td className="py-2.5 px-3 font-medium">{line.description}</td>
-                                            <td className="py-2.5 px-3 text-right font-mono text-slate-400 print:text-gray-600">
+                                            <td className="py-2.5 px-3 font-semibold text-slate-900">{line.description}</td>
+                                            <td className="py-2.5 px-3 text-right font-mono text-slate-500">
                                                 {formatTZS(line.tax_minor)}
                                             </td>
-                                            <td className="py-2.5 px-3 text-right font-mono font-bold text-white print:text-black">
+                                            <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">
                                                 {formatTZS(line.amount_minor)}
                                             </td>
                                         </tr>
@@ -260,14 +273,14 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
 
                 {/* Section 2: Payments Recorded */}
                 <div className="mb-6">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400 print:text-black mb-2 flex items-center space-x-1.5">
-                        <CreditCard className="w-3.5 h-3.5" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 mb-2 flex items-center space-x-1.5">
+                        <CreditCard className="w-3.5 h-3.5 text-emerald-600" />
                         <span>Payments Received</span>
                     </h3>
 
-                    <div className="overflow-x-auto rounded-xl border border-slate-800 print:border-gray-300">
+                    <div className="overflow-x-auto rounded-xl border border-slate-200">
                         <table className="w-full text-left text-xs">
-                            <thead className="bg-slate-950 print:bg-gray-100 text-slate-400 print:text-gray-600 border-b border-slate-800 print:border-gray-300 font-semibold uppercase tracking-wider">
+                            <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-bold uppercase tracking-wider">
                                 <tr>
                                     <th className="py-2.5 px-3">Date</th>
                                     <th className="py-2.5 px-3">Payment Method</th>
@@ -276,27 +289,27 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
                                     <th className="py-2.5 px-3 text-right">Amount Paid</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-800/60 print:divide-gray-200 text-slate-200 print:text-black">
+                            <tbody className="divide-y divide-slate-100 text-slate-800">
                                 {folio.payments?.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className="py-4 text-center text-slate-500">
+                                        <td colSpan={5} className="py-4 text-center text-slate-400">
                                             No payments recorded yet.
                                         </td>
                                     </tr>
                                 ) : (
                                     folio.payments?.map((payment) => (
-                                        <tr key={payment.id} className="hover:bg-slate-850/40 print:hover:bg-transparent">
-                                            <td className="py-2.5 px-3 font-mono">{payment.business_date}</td>
-                                            <td className="py-2.5 px-3 uppercase text-[10px] tracking-wider font-bold text-emerald-400 print:text-green-700">
+                                        <tr key={payment.id} className="hover:bg-slate-50/80">
+                                            <td className="py-2.5 px-3 font-mono text-slate-600">{payment.business_date}</td>
+                                            <td className="py-2.5 px-3 uppercase text-[10px] tracking-wider font-bold text-emerald-700">
                                                 {payment.payment_method}
                                             </td>
-                                            <td className="py-2.5 px-3 font-mono text-slate-300 print:text-gray-700">
+                                            <td className="py-2.5 px-3 font-mono text-slate-700">
                                                 {payment.provider_ref || 'Cash Counter'}
                                             </td>
-                                            <td className="py-2.5 px-3 text-slate-400 print:text-gray-600">
+                                            <td className="py-2.5 px-3 text-slate-500">
                                                 {payment.notes || '-'}
                                             </td>
-                                            <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-400 print:text-black">
+                                            <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-700">
                                                 {formatTZS(payment.amount_minor)}
                                             </td>
                                         </tr>
@@ -320,24 +333,24 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
                 </div>
             </div>
 
-            {/* Modal: Post Charge */}
+            {/* Modal: Post Charge (White) */}
             {isAddChargeModalOpen && (
-                <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
-                        <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
-                            <h3 className="font-bold text-white text-sm">Post Charge to Folio {folio.folio_number}</h3>
-                            <button onClick={() => setIsAddChargeModalOpen(false)} className="text-slate-400 hover:text-white">
+                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+                    <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                            <h3 className="font-bold text-slate-900 text-sm">Post Charge to Folio {folio.folio_number}</h3>
+                            <button onClick={() => setIsAddChargeModalOpen(false)} className="text-slate-400 hover:text-slate-700">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
 
                         <form onSubmit={submitCharge} className="space-y-4 text-xs">
                             <div>
-                                <label className="text-slate-300 font-semibold block mb-1">Department / Service Type</label>
+                                <label className="text-slate-700 font-semibold block mb-1">Department / Service Type</label>
                                 <select
                                     value={chargeData.line_type}
                                     onChange={(e) => setChargeData('line_type', e.target.value as any)}
-                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 shadow-xs"
                                 >
                                     <option value="restaurant">Restaurant / Dining</option>
                                     <option value="bar">Bar & Beverages</option>
@@ -350,42 +363,47 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
                             </div>
 
                             <div>
-                                <label className="text-slate-300 font-semibold block mb-1">Description *</label>
+                                <label className="text-slate-700 font-semibold block mb-1">Description *</label>
                                 <input
                                     type="text"
                                     required
                                     value={chargeData.description}
                                     onChange={(e) => setChargeData('description', e.target.value)}
-                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 shadow-xs"
                                     placeholder="e.g. Serengeti Lunch Buffet x 2"
                                 />
                             </div>
 
                             <div>
-                                <label className="text-slate-300 font-semibold block mb-1">Amount (TZS) *</label>
-                                <input
-                                    type="number"
-                                    required
-                                    min="100"
-                                    value={chargeData.amount}
-                                    onChange={(e) => setChargeData('amount', e.target.value)}
-                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
-                                    placeholder="50000"
-                                />
+                                <label className="text-slate-700 font-semibold block mb-1">Amount (TZS) *</label>
+                                <div className="flex rounded-xl overflow-hidden border border-slate-200 shadow-xs">
+                                    <span className="bg-slate-100 px-3 py-2 text-slate-600 font-mono font-bold flex items-center border-r border-slate-200">
+                                        TZS
+                                    </span>
+                                    <input
+                                        type="number"
+                                        required
+                                        min="100"
+                                        value={chargeData.amount}
+                                        onChange={(e) => setChargeData('amount', e.target.value)}
+                                        className="w-full bg-white border-0 px-3 py-2 text-slate-900 font-mono font-bold focus:ring-0"
+                                        placeholder="50000"
+                                    />
+                                </div>
                             </div>
 
-                            <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
+                            <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
                                 <button
                                     type="button"
                                     onClick={() => setIsAddChargeModalOpen(false)}
-                                    className="px-4 py-2 rounded-xl text-slate-300 hover:bg-slate-800"
+                                    className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold cursor-pointer"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={postingCharge}
-                                    className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-5 py-2 rounded-xl shadow-lg disabled:opacity-50"
+                                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-2 rounded-xl shadow-md disabled:opacity-50 active-press cursor-pointer"
                                 >
                                     {postingCharge ? 'Posting...' : 'Post Charge'}
                                 </button>
@@ -395,26 +413,26 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
                 </div>
             )}
 
-            {/* Modal: Record Payment */}
+            {/* Modal: Record Payment (White) */}
             {isPaymentModalOpen && (
-                <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
-                        <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
-                            <h3 className="font-bold text-white text-sm">Record Payment for Folio {folio.folio_number}</h3>
-                            <button onClick={() => setIsPaymentModalOpen(false)} className="text-slate-400 hover:text-white">
+                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+                    <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                            <h3 className="font-bold text-slate-900 text-sm">Record Payment for Folio {folio.folio_number}</h3>
+                            <button onClick={() => setIsPaymentModalOpen(false)} className="text-slate-400 hover:text-slate-700">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
 
                         <form onSubmit={submitPayment} className="space-y-4 text-xs">
                             <div>
-                                <label className="text-slate-300 font-semibold block mb-1">Payment Method *</label>
+                                <label className="text-slate-700 font-semibold block mb-1">Payment Method *</label>
                                 <select
                                     value={paymentData.payment_method}
                                     onChange={(e) => setPaymentData('payment_method', e.target.value as any)}
-                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 shadow-xs"
                                 >
-                                    <option value="mpesa">M-Pesa (Vodacom)</option>
+                                    <option value="mpesa">M-Pesa (Vodacom Tanzania)</option>
                                     <option value="tigopesa">Tigo Pesa</option>
                                     <option value="airtelmoney">Airtel Money</option>
                                     <option value="cash">Cash Counter</option>
@@ -425,56 +443,168 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
                             </div>
 
                             <div>
-                                <label className="text-slate-300 font-semibold block mb-1">Amount to Pay (TZS) *</label>
-                                <input
-                                    type="number"
-                                    required
-                                    min="100"
-                                    value={paymentData.amount}
-                                    onChange={(e) => setPaymentData('amount', e.target.value)}
-                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
-                                />
+                                <label className="text-slate-700 font-semibold block mb-1">Amount to Pay (TZS) *</label>
+                                <div className="flex rounded-xl overflow-hidden border border-slate-200 shadow-xs">
+                                    <span className="bg-slate-100 px-3 py-2 text-slate-600 font-mono font-bold flex items-center border-r border-slate-200">
+                                        TZS
+                                    </span>
+                                    <input
+                                        type="number"
+                                        required
+                                        min="100"
+                                        value={paymentData.amount}
+                                        onChange={(e) => setPaymentData('amount', e.target.value)}
+                                        className="w-full bg-white border-0 px-3 py-2 text-slate-900 font-mono font-bold focus:ring-0"
+                                    />
+                                </div>
                             </div>
 
                             <div>
-                                <label className="text-slate-300 font-semibold block mb-1">Reference / Transaction ID</label>
+                                <label className="text-slate-700 font-semibold block mb-1">Reference / Transaction ID</label>
                                 <input
                                     type="text"
                                     value={paymentData.provider_ref}
                                     onChange={(e) => setPaymentData('provider_ref', e.target.value)}
-                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono"
+                                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono focus:border-sky-500 focus:ring-1 focus:ring-sky-500 shadow-xs"
                                     placeholder="e.g. QWE981248TZ"
                                 />
                             </div>
 
                             <div>
-                                <label className="text-slate-300 font-semibold block mb-1">Notes</label>
+                                <label className="text-slate-700 font-semibold block mb-1">Notes</label>
                                 <input
                                     type="text"
                                     value={paymentData.notes}
                                     onChange={(e) => setPaymentData('notes', e.target.value)}
-                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white"
+                                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 shadow-xs"
                                     placeholder="Received at front desk"
                                 />
                             </div>
 
-                            <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
+                            <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
                                 <button
                                     type="button"
                                     onClick={() => setIsPaymentModalOpen(false)}
-                                    className="px-4 py-2 rounded-xl text-slate-300 hover:bg-slate-800"
+                                    className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold cursor-pointer"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={recordingPayment}
-                                    className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 text-slate-950 font-bold px-5 py-2 rounded-xl shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-2 rounded-xl shadow-md shadow-emerald-600/20 disabled:opacity-50 active-press cursor-pointer"
                                 >
                                     {recordingPayment ? 'Recording...' : 'Confirm Payment'}
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal: 80mm ESC/POS Thermal Receipt Live Preview */}
+            {isThermalReceiptOpen && (
+                <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+                    <div className="bg-white border border-slate-200 rounded-3xl max-w-sm w-full p-6 shadow-2xl flex flex-col items-center">
+                        <div className="flex items-center justify-between w-full pb-3 border-b border-slate-100 mb-4">
+                            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center space-x-1.5">
+                                <Receipt className="w-4 h-4 text-sky-600" />
+                                <span>80mm Thermal Receipt</span>
+                            </span>
+                            <button onClick={() => setIsThermalReceiptOpen(false)} className="text-slate-400 hover:text-slate-700">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* 80mm Thermal Paper Simulation Container */}
+                        <div id="thermal-receipt-area" className="w-[280px] bg-white border-2 border-dashed border-slate-300 p-4 font-mono text-[11px] text-slate-900 leading-tight shadow-inner rounded-sm">
+                            <div className="text-center pb-2 border-b border-dashed border-slate-300">
+                                <h4 className="font-extrabold text-xs uppercase tracking-wider">HAULA SERENGETI LODGE</h4>
+                                <p className="text-[10px] text-slate-600">P.O. BOX 1042, SERONERA, TZ</p>
+                                <p className="text-[10px] text-slate-600">TIN: 102-458-999 | VRN: 40-0012</p>
+                                <p className="text-[10px] text-slate-600">TEL: +255 754 000 111</p>
+                            </div>
+
+                            <div className="py-2 border-b border-dashed border-slate-300 text-[10px]">
+                                <div className="flex justify-between">
+                                    <span>RCV NO:</span>
+                                    <span className="font-bold">{folio.folio_number}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>DATE:</span>
+                                    <span>{new Date().toISOString().split('T')[0]}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>ROOM:</span>
+                                    <span className="font-bold">{room ? room.room_number : 'N/A'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>GUEST:</span>
+                                    <span className="font-bold truncate max-w-[140px]">{guest?.first_name} {guest?.last_name}</span>
+                                </div>
+                            </div>
+
+                            <div className="py-2 border-b border-dashed border-slate-300">
+                                <div className="flex justify-between font-bold text-[10px] mb-1">
+                                    <span>DESCRIPTION</span>
+                                    <span>AMT (TZS)</span>
+                                </div>
+                                {folio.lines?.map((line) => (
+                                    <div key={line.id} className="flex justify-between text-[10px] py-0.5">
+                                        <span className="truncate max-w-[170px]">{line.description}</span>
+                                        <span className="font-bold">{(line.amount_minor / 100).toLocaleString()}</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="py-2 border-b border-dashed border-slate-300 text-[10px]">
+                                <div className="flex justify-between">
+                                    <span>SUBTOTAL:</span>
+                                    <span>{formatTZS(folio.total_charges_minor - Math.round(folio.total_charges_minor * 0.18))}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>VAT (18% INCL):</span>
+                                    <span>{formatTZS(Math.round(folio.total_charges_minor * 0.18))}</span>
+                                </div>
+                                <div className="flex justify-between font-extrabold text-xs pt-1 border-t border-slate-200 mt-1">
+                                    <span>TOTAL BILL:</span>
+                                    <span>{formatTZS(folio.total_charges_minor)}</span>
+                                </div>
+                                <div className="flex justify-between font-bold text-emerald-700">
+                                    <span>PAID:</span>
+                                    <span>{formatTZS(folio.total_payments_minor)}</span>
+                                </div>
+                                <div className="flex justify-between font-bold text-sky-800">
+                                    <span>BALANCE:</span>
+                                    <span>{formatTZS(folio.balance_minor)}</span>
+                                </div>
+                            </div>
+
+                            <div className="text-center pt-3 text-[9px] text-slate-500">
+                                <div className="w-16 h-16 border border-slate-300 mx-auto flex items-center justify-center bg-slate-50 text-[8px] font-bold text-slate-400 mb-1">
+                                    [TRA QR]
+                                </div>
+                                <p className="font-bold">VERIFIED FISCAL RECEIPT</p>
+                                <p>Asante kwa kutembelea THE INNS!</p>
+                            </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center space-x-2 w-full mt-4">
+                            <button
+                                onClick={() => setIsThermalReceiptOpen(false)}
+                                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-semibold text-xs hover:bg-slate-50 cursor-pointer"
+                            >
+                                Close
+                            </button>
+                            <button
+                                onClick={handlePrintThermal}
+                                className="flex-1 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-md transition active-press cursor-pointer flex items-center justify-center space-x-1"
+                            >
+                                <Printer className="w-4 h-4" />
+                                <span>Print 80mm</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

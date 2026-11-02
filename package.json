@@ -1,5 +1,6 @@
 {
     "$schema": "https://www.schemastore.org/package.json",
+    "name": "inns",
     "private": true,
     "type": "module",
     "scripts": {
@@ -29,7 +30,9 @@
         "@laravel/multiplex": "^0.4.1"
     },
     "dependencies": {
+        "@popperjs/core": "^2.11.8",
         "axios": "^1.20.0",
+        "bootstrap": "^5.3.8",
         "lucide-react": "^1.61.0"
     }
 }

@@ -1,5 +1,14 @@
 <?php
 
+// Polyfill for PHP < 8.4 environments (e.g. PHP 8.3 in WAMP)
+if (! function_exists('request_parse_body')) {
+    function request_parse_body(): array
+    {
+        return [$_POST, $_FILES];
+    }
+}
+
+use App\Http\Middleware\EnsureTenantIsolation;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -19,7 +28,9 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        //
+        $middleware->alias([
+            'tenant.isolation' => EnsureTenantIsolation::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

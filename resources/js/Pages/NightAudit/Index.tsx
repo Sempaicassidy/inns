@@ -61,69 +61,69 @@ export default function NightAuditIndex({
 
     return (
         <AuthenticatedLayout>
-            <Head title="End-of-Day Night Audit - Haula HMS" />
+            <Head title="End-of-Day Night Audit - THE INNS" />
 
             {/* Header Toolbar */}
-            <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs mb-4 sm:mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4">
                 <div className="flex items-center space-x-3">
-                    <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400">
-                        <Moon className="w-6 h-6 stroke-[2.2]" />
+                    <div className="p-2 sm:p-2.5 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 shrink-0">
+                        <Moon className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-black text-white tracking-tight">End-of-Day Night Audit Wizard</h1>
-                        <p className="text-xs text-slate-400">
-                            Automatic room charge posting, revenue reconciliation and business date rollover
+                        <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">End-of-Day Night Audit Wizard</h1>
+                        <p className="text-[11px] sm:text-xs text-slate-500">
+                            Automatic room charge posting, revenue reconciliation and rollover
                         </p>
                     </div>
                 </div>
 
-                <div className="flex items-center space-x-3">
-                    <div className="px-4 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-right">
-                        <span className="text-slate-400 block text-[10px] uppercase font-semibold">Active Business Date</span>
-                        <span className="font-mono text-amber-400 font-bold text-sm">{businessDate}</span>
+                <div className="flex items-center justify-between sm:justify-end space-x-2 sm:space-x-3 w-full md:w-auto">
+                    <div className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-left sm:text-right">
+                        <span className="text-slate-500 block text-[9px] sm:text-[10px] uppercase font-bold">Business Date</span>
+                        <span className="font-mono text-sky-700 font-bold text-xs sm:text-sm">{businessDate}</span>
                     </div>
 
                     <button
                         onClick={() => setConfirmModalOpen(true)}
                         disabled={processing}
-                        className="inline-flex items-center space-x-2 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-400 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-500/20 text-xs transition disabled:opacity-50"
+                        className="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl shadow-xs text-xs transition active-press disabled:opacity-50 shrink-0"
                     >
-                        <Play className="w-4 h-4 fill-current" />
-                        <span>Execute Night Audit</span>
+                        <Play className="w-3.5 h-3.5 fill-current" />
+                        <span>Execute Audit</span>
                     </button>
                 </div>
             </div>
 
             {/* Pre-Audit Checklist & Status Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
                 {/* 1. In-House Stays to Post */}
-                <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl">
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
                     <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">In-House Stays</span>
-                        <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">In-House Stays</span>
+                        <div className="p-2 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
                             <Bed className="w-4 h-4" />
                         </div>
                     </div>
-                    <span className="text-3xl font-black text-emerald-400 font-mono block">
+                    <span className="text-3xl font-black text-emerald-600 font-mono block">
                         {inHouseStays.length} Rooms
                     </span>
-                    <p className="text-xs text-slate-400 mt-2">
+                    <p className="text-xs text-slate-500 mt-2">
                         Nightly room accommodation charges will be posted to active folios with idempotency locking.
                     </p>
                 </div>
 
                 {/* 2. Pending Departures */}
-                <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl">
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
                     <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Overdue Departures</span>
-                        <div className={`p-2 rounded-lg ${pendingDepartures.length > 0 ? 'bg-amber-500/10 text-amber-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Overdue Departures</span>
+                        <div className={`p-2 rounded-lg border ${pendingDepartures.length > 0 ? 'bg-sky-50 text-sky-700 border-sky-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
                             {pendingDepartures.length > 0 ? <AlertTriangle className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
                         </div>
                     </div>
-                    <span className={`text-3xl font-black font-mono block ${pendingDepartures.length > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                    <span className={`text-3xl font-black font-mono block ${pendingDepartures.length > 0 ? 'text-sky-600' : 'text-emerald-600'}`}>
                         {pendingDepartures.length} Pending
                     </span>
-                    <p className="text-xs text-slate-400 mt-2">
+                    <p className="text-xs text-slate-500 mt-2">
                         {pendingDepartures.length > 0
                             ? 'Warning: Some guests scheduled to depart have not checked out yet. Check them out or extend stay.'
                             : 'All departures for today have settled their folios and checked out.'}
@@ -131,32 +131,32 @@ export default function NightAuditIndex({
                 </div>
 
                 {/* 3. Audit Status */}
-                <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl">
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
                     <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Date Status</span>
-                        <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Date Status</span>
+                        <div className="p-2 rounded-lg bg-sky-50 text-sky-700 border border-sky-200">
                             <Clock className="w-4 h-4" />
                         </div>
                     </div>
-                    <span className="text-xl font-black text-white font-mono block">
+                    <span className="text-xl font-black text-slate-900 font-mono block">
                         {alreadyAuditedToday ? 'Audit Executed' : 'Ready to Close'}
                     </span>
-                    <p className="text-xs text-slate-400 mt-2">
-                        Executing audit advances business date from <strong className="text-amber-300 font-mono">{businessDate}</strong> to next day.
+                    <p className="text-xs text-slate-500 mt-2">
+                        Executing audit advances business date from <strong className="text-sky-700 font-mono">{businessDate}</strong> to next day.
                     </p>
                 </div>
             </div>
 
             {/* In-House Stays Preview Table */}
-            <div className="bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl p-6 mb-8">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400 mb-3 flex items-center space-x-2">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 mb-8">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-sky-700 mb-3 flex items-center space-x-2">
                     <Users className="w-4 h-4" />
                     <span>In-House Stays Queued for Automatic Room Charge Posting</span>
                 </h3>
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
-                        <thead className="bg-slate-950 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800">
+                        <thead className="bg-slate-50 text-slate-600 font-bold uppercase tracking-wider border-b border-slate-200">
                             <tr>
                                 <th className="py-2.5 px-3">Room</th>
                                 <th className="py-2.5 px-3">Guest Name</th>
@@ -165,16 +165,16 @@ export default function NightAuditIndex({
                                 <th className="py-2.5 px-3 text-right">Night Rate (TZS)</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-800/60 text-slate-200">
+                        <tbody className="divide-y divide-slate-100 text-slate-800">
                             {inHouseStays.map((stay) => {
                                 const rate = stay.reservation_room?.rate_price_minor ?? 0;
                                 return (
-                                    <tr key={stay.id} className="hover:bg-slate-850/40">
-                                        <td className="py-2.5 px-3 font-mono font-bold text-amber-400">{stay.room?.room_number}</td>
-                                        <td className="py-2.5 px-3 font-semibold text-white">{stay.guest?.first_name} {stay.guest?.last_name}</td>
-                                        <td className="py-2.5 px-3 text-slate-300">{stay.room?.room_type?.name}</td>
-                                        <td className="py-2.5 px-3 text-slate-400">Full Board Safari (FB)</td>
-                                        <td className="py-2.5 px-3 text-right font-mono font-bold text-white">{formatTZS(rate)}</td>
+                                    <tr key={stay.id} className="hover:bg-slate-50/70 transition">
+                                        <td className="py-2.5 px-3 font-mono font-bold text-sky-700">{stay.room?.room_number}</td>
+                                        <td className="py-2.5 px-3 font-bold text-slate-900">{stay.guest?.first_name} {stay.guest?.last_name}</td>
+                                        <td className="py-2.5 px-3 text-slate-600">{stay.room?.room_type?.name}</td>
+                                        <td className="py-2.5 px-3 text-slate-500">Full Board Safari (FB)</td>
+                                        <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">{formatTZS(rate)}</td>
                                     </tr>
                                 );
                             })}
@@ -184,15 +184,15 @@ export default function NightAuditIndex({
             </div>
 
             {/* Night Audit History Table */}
-            <div className="bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl p-6">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3 flex items-center space-x-2">
-                    <Clock className="w-4 h-4 text-slate-400" />
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 mb-3 flex items-center space-x-2">
+                    <Clock className="w-4 h-4 text-slate-500" />
                     <span>Past Night Audit Records</span>
                 </h3>
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
-                        <thead className="bg-slate-950 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800">
+                        <thead className="bg-slate-50 text-slate-600 font-bold uppercase tracking-wider border-b border-slate-200">
                             <tr>
                                 <th className="py-2.5 px-3">Business Date</th>
                                 <th className="py-2.5 px-3">Rooms Occupied</th>
@@ -202,23 +202,23 @@ export default function NightAuditIndex({
                                 <th className="py-2.5 px-3 text-right">Status</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-800/60 text-slate-200">
+                        <tbody className="divide-y divide-slate-100 text-slate-800">
                             {auditHistory.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="py-6 text-center text-slate-500">
+                                    <td colSpan={6} className="py-6 text-center text-slate-400">
                                         No previous night audits recorded yet.
                                     </td>
                                 </tr>
                             ) : (
                                 auditHistory.map((item) => (
-                                    <tr key={item.id} className="hover:bg-slate-850/40">
-                                        <td className="py-2.5 px-3 font-mono font-bold text-amber-400">{item.business_date}</td>
-                                        <td className="py-2.5 px-3 font-mono">{item.rooms_occupied} / {item.rooms_available}</td>
-                                        <td className="py-2.5 px-3 font-mono text-white">{formatTZS(item.total_room_revenue_minor)}</td>
-                                        <td className="py-2.5 px-3 font-mono text-emerald-400">{formatTZS(item.total_payments_collected_minor)}</td>
-                                        <td className="py-2.5 px-3 text-slate-400">{item.performer?.name || 'System Admin'}</td>
+                                    <tr key={item.id} className="hover:bg-slate-50/70 transition">
+                                        <td className="py-2.5 px-3 font-mono font-bold text-sky-700">{item.business_date}</td>
+                                        <td className="py-2.5 px-3 font-mono font-semibold">{item.rooms_occupied} / {item.rooms_available}</td>
+                                        <td className="py-2.5 px-3 font-mono text-slate-900 font-semibold">{formatTZS(item.total_room_revenue_minor)}</td>
+                                        <td className="py-2.5 px-3 font-mono text-emerald-600 font-semibold">{formatTZS(item.total_payments_collected_minor)}</td>
+                                        <td className="py-2.5 px-3 text-slate-600">{item.performer?.name || 'System Admin'}</td>
                                         <td className="py-2.5 px-3 text-right">
-                                            <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px] font-bold">
+                                            <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded text-[10px] font-bold">
                                                 {item.status.toUpperCase()}
                                             </span>
                                         </td>
@@ -232,31 +232,31 @@ export default function NightAuditIndex({
 
             {/* Run Night Audit Confirmation Modal */}
             {confirmModalOpen && (
-                <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
-                        <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mb-4">
+                <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+                    <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+                        <div className="w-12 h-12 rounded-2xl bg-sky-50 text-sky-700 border border-sky-200 flex items-center justify-center mb-4">
                             <Moon className="w-6 h-6" />
                         </div>
 
-                        <h3 className="text-base font-bold text-white mb-2">
+                        <h3 className="text-base font-bold text-slate-900 mb-2">
                             Execute Night Audit for {businessDate}?
                         </h3>
-                        <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                        <p className="text-xs text-slate-500 leading-relaxed mb-4">
                             This process will automatically post room charges to all {inHouseStays.length} in-house folios, generate daily revenue snapshots, and advance the business date to tomorrow.
                         </p>
 
-                        <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
+                        <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-200">
                             <button
                                 type="button"
                                 onClick={() => setConfirmModalOpen(false)}
-                                className="px-4 py-2 rounded-xl text-slate-300 hover:bg-slate-800 text-xs font-semibold"
+                                className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 text-xs font-semibold transition active-press"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleRunAudit}
                                 disabled={processing}
-                                className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-2 rounded-xl shadow-lg shadow-indigo-600/30 text-xs transition disabled:opacity-50"
+                                className="btn btn-primary bg-sky-600 hover:bg-sky-700 text-white font-semibold px-5 py-2 rounded-xl shadow-xs text-xs transition active-press disabled:opacity-50"
                             >
                                 {processing ? 'Running Audit...' : 'Confirm & Run Night Audit'}
                             </button>

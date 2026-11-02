@@ -122,6 +122,24 @@ class HotelManagementTest extends TestCase
         );
     }
 
+    public function test_receptionist_gets_front_desk_operational_dashboard(): void
+    {
+        $receptionist = User::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'property_id' => $this->property->id,
+            'role' => 'receptionist',
+        ]);
+
+        $response = $this->actingAs($receptionist)->get('/dashboard');
+
+        $response->assertStatus(200);
+        $response->assertInertia(fn ($page) => $page->component('Dashboard')
+            ->where('isReceptionist', true)
+            ->has('allRooms')
+            ->has('pendingFoliosCount')
+        );
+    }
+
     public function test_calendar_renders_with_rooms_and_dates(): void
     {
         $response = $this->actingAs($this->admin)->get('/calendar');
@@ -201,6 +219,38 @@ class HotelManagementTest extends TestCase
         ]);
     }
 
+    public function test_check_in_flow_succeeds_even_when_reservation_room_is_missing(): void
+    {
+        $reservation = Reservation::create([
+            'tenant_id' => $this->tenant->id,
+            'property_id' => $this->property->id,
+            'ref_no' => 'RES-TEST-NO-ROOM',
+            'guest_id' => $this->guest->id,
+            'source' => 'booking_com',
+            'status' => 'confirmed',
+            'check_in' => Carbon::today(),
+            'check_out' => Carbon::tomorrow(),
+            'total_minor' => 30000000,
+        ]);
+
+        $response = $this->actingAs($this->admin)->post("/reservations/{$reservation->id}/check-in", [
+            'room_id' => $this->room->id,
+        ]);
+
+        $response->assertSessionHas('success');
+        $this->assertEquals('occupied', $this->room->fresh()->status_occupancy);
+        $this->assertEquals('checked_in', $reservation->fresh()->status);
+        $this->assertDatabaseHas('stays', [
+            'room_id' => $this->room->id,
+            'guest_id' => $this->guest->id,
+        ]);
+        $this->assertDatabaseHas('reservation_rooms', [
+            'reservation_id' => $reservation->id,
+            'room_id' => $this->room->id,
+            'status' => 'checked_in',
+        ]);
+    }
+
     public function test_folio_charge_and_payment_flow(): void
     {
         $folio = Folio::create([
@@ -235,4 +285,118 @@ class HotelManagementTest extends TestCase
         $this->assertEquals(0, $folio->fresh()->balance_minor);
         $this->assertEquals('settled', $folio->fresh()->status);
     }
+
+    public function test_run_night_audit_flow_succeeds(): void
+    {
+        $response = $this->actingAs($this->admin)->post('/night-audit/run');
+
+        $response->assertRedirect(route('night-audit.index'));
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseHas('night_audits', [
+            'tenant_id' => $this->tenant->id,
+            'property_id' => $this->property->id,
+            'status' => 'completed',
+        ]);
+    }
+
+    public function test_manager_can_view_and_manage_branches(): void
+    {
+        $this->admin->update(['can_manage_branches' => true]);
+
+        $response = $this->actingAs($this->admin)->get('/branches');
+        $response->assertStatus(200);
+
+        // Create new branch
+        $createResponse = $this->actingAs($this->admin)->post('/branches', [
+            'name' => 'Haula City Hotel - Dar',
+            'code' => 'HCHD',
+            'property_type' => 'hotel',
+            'city' => 'Dar es Salaam',
+            'address' => 'Kivukoni Waterfront',
+            'currency' => 'TZS',
+            'phone' => '+255 22 211 0000',
+            'email' => 'dar@haula.co.tz',
+        ]);
+
+        $createResponse->assertRedirect(route('branches.index'));
+        $createResponse->assertSessionHas('success');
+
+        $this->assertDatabaseHas('properties', [
+            'tenant_id' => $this->tenant->id,
+            'code' => 'HCHD',
+            'city' => 'Dar es Salaam',
+        ]);
+
+        $newBranch = Property::where('code', 'HCHD')->first();
+        $this->assertNotNull($newBranch);
+
+        // Switch to new branch
+        $switchResponse = $this->actingAs($this->admin)->post("/branches/{$newBranch->id}/switch");
+        $switchResponse->assertSessionHas('success');
+        $this->assertEquals($newBranch->id, session('current_property_id'));
+    }
+
+    public function test_user_without_branch_permission_cannot_add_branch(): void
+    {
+        $staff = User::create([
+            'tenant_id' => $this->tenant->id,
+            'property_id' => $this->property->id,
+            'name' => 'Staff Without Branch Permission',
+            'email' => 'nobranches@haula.co.tz',
+            'password' => bcrypt('password'),
+            'role' => 'receptionist',
+            'can_manage_branches' => false,
+        ]);
+
+        $response = $this->actingAs($staff)->post('/branches', [
+            'name' => 'Illegal Branch',
+            'code' => 'ILL',
+            'property_type' => 'hotel',
+            'city' => 'Mwanza',
+            'currency' => 'TZS',
+        ]);
+
+        $response->assertSessionHas('error');
+        $this->assertDatabaseMissing('properties', [
+            'code' => 'ILL',
+        ]);
+    }
+
+    public function test_receptionist_can_access_revised_portal_routes(): void
+    {
+        $receptionist = User::create([
+            'tenant_id' => $this->tenant->id,
+            'property_id' => $this->property->id,
+            'name' => 'Front Desk Receptionist',
+            'email' => 'reception@theinns.co.tz',
+            'password' => bcrypt('password'),
+            'role' => 'receptionist',
+        ]);
+
+        // Dashboard
+        $this->actingAs($receptionist)->get('/dashboard')->assertStatus(200);
+
+        // Reservations
+        $this->actingAs($receptionist)->get('/reservations')->assertStatus(200);
+        $this->actingAs($receptionist)->get('/reservations/check-in')->assertStatus(200);
+        $this->actingAs($receptionist)->get('/reservations/check-out')->assertStatus(200);
+
+        // Guests & Services
+        $this->actingAs($receptionist)->get('/guests')->assertStatus(200);
+        $this->actingAs($receptionist)->get('/guest-requests')->assertStatus(200);
+        $this->actingAs($receptionist)->get('/folios')->assertStatus(200);
+
+        // Room Management
+        $this->actingAs($receptionist)->get('/housekeeping')->assertStatus(200);
+        $this->actingAs($receptionist)->get('/housekeeping/status')->assertStatus(200);
+        $this->actingAs($receptionist)->get('/maintenance')->assertStatus(200);
+
+        // Reports & Account
+        $this->actingAs($receptionist)->get('/reports')->assertStatus(200);
+        $this->actingAs($receptionist)->get('/notifications')->assertStatus(200);
+        $this->actingAs($receptionist)->get('/profile')->assertStatus(200);
+    }
 }
+
+

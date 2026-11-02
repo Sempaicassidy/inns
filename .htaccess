@@ -1,0 +1,31 @@
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Serve public static assets directly from public/
+    RewriteRule ^build/(.*)$ public/build/$1 [L]
+    RewriteRule ^storage/(.*)$ public/storage/$1 [L]
+    RewriteRule ^js/(.*)$ public/js/$1 [L]
+    RewriteRule ^css/(.*)$ public/css/$1 [L]
+    RewriteRule ^images/(.*)$ public/images/$1 [L]
+    RewriteRule ^favicon\.(.*)$ public/favicon.$1 [L]
+    RewriteRule ^manifest\.json$ public/manifest.json [L]
+    RewriteRule ^manifest\.webmanifest$ public/manifest.json [L]
+    RewriteRule ^sw\.js$ public/sw.js [L]
+    RewriteRule ^offline\.html$ public/offline.html [L]
+    RewriteRule ^icons/(.*)$ public/icons/$1 [L]
+    RewriteRule ^apple-touch-icon\.png$ public/apple-touch-icon.png [L]
+    RewriteRule ^assets/(.*)$ public/assets/$1 [L]
+
+    # Handle Front Controller...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>

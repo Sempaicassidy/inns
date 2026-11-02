@@ -89,6 +89,9 @@ class CalendarController extends Controller
 
         // Rate plans for modal booking
         $ratePlans = RatePlan::where('is_active', true)->get();
+        if ($property && $ratePlans->isEmpty()) {
+            $ratePlans = RatePlan::ensureDefaultsForProperty($property);
+        }
 
         // Existing guests for auto-complete search
         $guests = Guest::select('id', 'first_name', 'last_name', 'phone', 'email', 'id_type', 'id_number', 'nationality')

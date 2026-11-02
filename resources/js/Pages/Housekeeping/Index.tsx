@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { HousekeepingTask, PageProps, Room, RoomType, User } from '@/types';
+import { HousekeepingTask, PageProps, RatePlan, Room, RoomType, User } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import {
     AlertCircle,
@@ -10,6 +10,7 @@ import {
     ChevronDown,
     Clock,
     DollarSign,
+    Edit,
     Eye,
     Filter,
     Layers,
@@ -21,16 +22,19 @@ import {
     Search,
     Shield,
     Sparkles,
+    Trash2,
     UserCheck,
     Users,
+    Utensils,
     Wrench,
     X,
 } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 interface HousekeepingIndexProps extends PageProps {
     rooms: Room[];
     roomTypes?: RoomType[];
+    ratePlans?: RatePlan[];
     tasks: HousekeepingTask[];
     housekeepers: User[];
     floors: string[];
@@ -58,6 +62,7 @@ interface HousekeepingIndexProps extends PageProps {
 export default function HousekeepingIndex({
     rooms = [],
     roomTypes = [],
+    ratePlans = [],
     tasks = [],
     housekeepers = [],
     floors = [],
@@ -81,6 +86,209 @@ export default function HousekeepingIndex({
     const [isAddRoomModalOpen, setIsAddRoomModalOpen] = useState(false);
     const [isAssignTaskModalOpen, setIsAssignTaskModalOpen] = useState(false);
     const [selectedRoomForTask, setSelectedRoomForTask] = useState<Room | null>(null);
+
+    // Rate Plans Management
+    const [isRatePlansModalOpen, setIsRatePlansModalOpen] = useState(false);
+    const [localRatePlans, setLocalRatePlans] = useState<RatePlan[]>(ratePlans);
+    const [isAddPlanInlineOpen, setIsAddPlanInlineOpen] = useState(false);
+    const [savingPlan, setSavingPlan] = useState(false);
+    const [planError, setPlanError] = useState('');
+    const [newPlanForm, setNewPlanForm] = useState({
+        name: '',
+        meal_plan: 'BB',
+        code: '',
+        is_resident_only: false,
+    });
+
+    useEffect(() => {
+        if (ratePlans && ratePlans.length > 0) {
+            setLocalRatePlans(ratePlans);
+        }
+    }, [ratePlans]);
+
+    const handleCreateRatePlan = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSavingPlan(true);
+        setPlanError('');
+
+        try {
+            const token = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '';
+            const res = await fetch(route('rate-plans.store'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': token,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify(newPlanForm),
+            });
+
+            const json = await res.json();
+            if (json.success && json.ratePlan) {
+                setLocalRatePlans(prev => [...prev, json.ratePlan]);
+                setIsAddPlanInlineOpen(false);
+                setNewPlanForm({ name: '', meal_plan: 'BB', code: '', is_resident_only: false });
+            } else if (json.errors) {
+                const firstErr = Object.values(json.errors)[0];
+                setPlanError(Array.isArray(firstErr) ? (firstErr as any)[0] : String(firstErr));
+            } else {
+                setPlanError(json.message || 'Failed to save rate plan.');
+            }
+        } catch (err: any) {
+            setPlanError(err?.message || 'Network error.');
+        } finally {
+            setSavingPlan(false);
+        }
+    };
+
+    // Room Types Management
+    const [isRoomTypesModalOpen, setIsRoomTypesModalOpen] = useState(false);
+    const [localRoomTypes, setLocalRoomTypes] = useState<RoomType[]>(roomTypes);
+    const [isAddRoomTypeOpen, setIsAddRoomTypeOpen] = useState(false);
+    const [editingRoomTypeId, setEditingRoomTypeId] = useState<string | null>(null);
+    const [savingRoomType, setSavingRoomType] = useState(false);
+    const [roomTypeError, setRoomTypeError] = useState('');
+    const [roomTypeForm, setRoomTypeForm] = useState({
+        name: '',
+        code: '',
+        base_price: '180000',
+        base_occupancy: 2,
+        max_adults: 2,
+        max_children: 1,
+        amenities: ['King Bed', 'Free High-Speed WiFi', 'Air Conditioning', 'En-suite Bathroom'] as string[],
+        description: '',
+    });
+
+    useEffect(() => {
+        if (roomTypes && roomTypes.length > 0) {
+            setLocalRoomTypes(roomTypes);
+        }
+    }, [roomTypes]);
+
+    const availableAmenities = [
+        'King Bed',
+        'Queen Bed',
+        'Twin Beds',
+        'En-suite Bathroom',
+        'Air Conditioning',
+        'Free High-Speed WiFi',
+        'Flat Screen TV',
+        'Private Balcony / Veranda',
+        'Mini Bar / Fridge',
+        'Coffee / Tea Maker',
+        'Room Safe Box',
+        'Scenic Mountain / Garden View',
+        'Swimming Pool View',
+        'Working Desk & Chair',
+        'Solar Hot Water Shower',
+    ];
+
+    const handleToggleAmenity = (amenity: string) => {
+        setRoomTypeForm(prev => {
+            const exists = prev.amenities.includes(amenity);
+            if (exists) {
+                return { ...prev, amenities: prev.amenities.filter(a => a !== amenity) };
+            } else {
+                return { ...prev, amenities: [...prev.amenities, amenity] };
+            }
+        });
+    };
+
+    const handleOpenEditRoomType = (rt: RoomType) => {
+        setEditingRoomTypeId(rt.id);
+        setRoomTypeForm({
+            name: rt.name,
+            code: rt.code,
+            base_price: String((rt.base_price_minor || 0) / 100),
+            base_occupancy: rt.base_occupancy || 2,
+            max_adults: rt.max_adults || 2,
+            max_children: rt.max_children || 1,
+            amenities: Array.isArray(rt.amenities) ? rt.amenities : ['King Bed', 'Free High-Speed WiFi'],
+            description: rt.description || '',
+        });
+        setIsAddRoomTypeOpen(true);
+    };
+
+    const handleSaveRoomType = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSavingRoomType(true);
+        setRoomTypeError('');
+
+        try {
+            const token = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '';
+            const url = editingRoomTypeId
+                ? route('room-types.update', editingRoomTypeId)
+                : route('room-types.store');
+            const method = editingRoomTypeId ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': token,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify(roomTypeForm),
+            });
+
+            const json = await res.json();
+            if (json.success && json.roomType) {
+                if (editingRoomTypeId) {
+                    setLocalRoomTypes(prev => prev.map(rt => rt.id === editingRoomTypeId ? json.roomType : rt));
+                } else {
+                    setLocalRoomTypes(prev => [...prev, json.roomType]);
+                }
+                setIsAddRoomTypeOpen(false);
+                setEditingRoomTypeId(null);
+                setRoomTypeForm({
+                    name: '',
+                    code: '',
+                    base_price: '180000',
+                    base_occupancy: 2,
+                    max_adults: 2,
+                    max_children: 1,
+                    amenities: ['King Bed', 'Free High-Speed WiFi', 'Air Conditioning', 'En-suite Bathroom'],
+                    description: '',
+                });
+            } else if (json.errors) {
+                const firstErr = Object.values(json.errors)[0];
+                setRoomTypeError(Array.isArray(firstErr) ? (firstErr as any)[0] : String(firstErr));
+            } else {
+                setRoomTypeError(json.message || 'Failed to save room type.');
+            }
+        } catch (err: any) {
+            setRoomTypeError(err?.message || 'Network error.');
+        } finally {
+            setSavingRoomType(false);
+        }
+    };
+
+    const handleDeleteRoomType = async (rt: RoomType) => {
+        if (!confirm(`Are you sure you want to delete or deactivate room type "${rt.name}"?`)) return;
+
+        try {
+            const token = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '';
+            const res = await fetch(route('room-types.destroy', rt.id), {
+                method: 'DELETE',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': token,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+
+            const json = await res.json();
+            if (json.success) {
+                setLocalRoomTypes(prev => prev.filter(item => item.id !== rt.id));
+            } else {
+                alert(json.message || 'Failed to remove room type.');
+            }
+        } catch (err: any) {
+            alert(err?.message || 'Network error deleting room type.');
+        }
+    };
 
     // Form for Add Room
     const {
@@ -287,6 +495,30 @@ export default function HousekeepingIndex({
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setIsRoomTypesModalOpen(true)}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 rounded-xl text-xs font-bold shadow-2xs transition active:scale-95 cursor-pointer"
+                        >
+                            <BedDouble className="w-4 h-4 text-blue-600" />
+                            <span>Room Types</span>
+                            <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 font-bold rounded-full text-[10px] border border-blue-200/60">
+                                {localRoomTypes.length}
+                            </span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setIsRatePlansModalOpen(true)}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 rounded-xl text-xs font-bold shadow-2xs transition active:scale-95 cursor-pointer"
+                        >
+                            <Utensils className="w-4 h-4 text-emerald-600" />
+                            <span>Rate Plans & Meal Basis</span>
+                            <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 font-bold rounded-full text-[10px] border border-emerald-200/60">
+                                {localRatePlans.length}
+                            </span>
+                        </button>
+
                         <button
                             onClick={() => openTaskModal()}
                             className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 rounded-xl text-xs font-bold shadow-2xs transition active:scale-95"
@@ -1176,17 +1408,34 @@ export default function HousekeepingIndex({
 
                             {/* Room Type */}
                             <div>
-                                <label className="block font-bold text-slate-700 mb-1">Room Type</label>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="block font-bold text-slate-700">Room Type *</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsAddRoomModalOpen(false);
+                                            setIsRoomTypesModalOpen(true);
+                                            setIsAddRoomTypeOpen(true);
+                                        }}
+                                        className="text-[11px] font-bold text-sky-600 hover:text-sky-700 cursor-pointer"
+                                    >
+                                        + Add New Type
+                                    </button>
+                                </div>
                                 <select
                                     value={roomFormData.room_type_id}
                                     onChange={(e) => setRoomFormData('room_type_id', e.target.value)}
                                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-medium focus:bg-white focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
                                 >
-                                    {roomTypes.map((rt) => (
-                                        <option key={rt.id} value={rt.id}>
-                                            {rt.name} - ({formatTsh(rt.base_price_minor)})
-                                        </option>
-                                    ))}
+                                    {localRoomTypes.length === 0 ? (
+                                        <option value="">No room types found - Click '+ Add New Type'</option>
+                                    ) : (
+                                        localRoomTypes.map((rt) => (
+                                            <option key={rt.id} value={rt.id}>
+                                                {rt.name} - ({formatTsh(rt.base_price_minor)})
+                                            </option>
+                                        ))
+                                    )}
                                 </select>
                             </div>
 
@@ -1249,6 +1498,511 @@ export default function HousekeepingIndex({
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+            {/* Rate Plans & Meal Basis Management Modal */}
+            {isRatePlansModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
+                    <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 shrink-0">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                                    <Utensils className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-bold text-slate-900">Hotel Rate Plans & Meal Basis</h3>
+                                    <p className="text-xs text-slate-500">Manage accommodation pricing models and food service packages</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsRatePlansModalOpen(false);
+                                    setIsAddPlanInlineOpen(false);
+                                }}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-5 overflow-y-auto space-y-4 text-xs flex-1">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h4 className="font-bold text-slate-800 text-sm">Active Pricing Plans ({localRatePlans.length})</h4>
+                                    <p className="text-[11px] text-slate-400">These plans appear in the reservation form and booking channels</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAddPlanInlineOpen(!isAddPlanInlineOpen)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-xs transition cursor-pointer"
+                                >
+                                    <Plus className="w-3.5 h-3.5" />
+                                    <span>{isAddPlanInlineOpen ? 'Cancel' : 'Add New Rate Plan'}</span>
+                                </button>
+                            </div>
+
+                            {/* Inline Add Rate Plan Form */}
+                            {isAddPlanInlineOpen && (
+                                <form onSubmit={handleCreateRatePlan} className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-200 space-y-3 animate-in fade-in duration-150">
+                                    <h5 className="font-bold text-emerald-900 text-xs">Create New Rate Plan</h5>
+                                    <div>
+                                        <label className="block font-semibold text-slate-700 mb-1">Rate Plan Name *</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={newPlanForm.name}
+                                            onChange={e => setNewPlanForm(prev => ({ ...prev, name: e.target.value }))}
+                                            placeholder="e.g. Bed & Breakfast Standard, Full Board Safari..."
+                                            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block font-semibold text-slate-700 mb-1">Meal Basis *</label>
+                                            <select
+                                                value={newPlanForm.meal_plan}
+                                                onChange={e => setNewPlanForm(prev => ({ ...prev, meal_plan: e.target.value }))}
+                                                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-medium"
+                                            >
+                                                <option value="BB">BB - Bed & Breakfast</option>
+                                                <option value="HB">HB - Half Board (Breakfast & Dinner)</option>
+                                                <option value="FB">FB - Full Board (All 3 Meals)</option>
+                                                <option value="RO">RO - Room Only (European Plan)</option>
+                                                <option value="AI">AI - All Inclusive Package</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block font-semibold text-slate-700 mb-1">Code (Optional)</label>
+                                            <input
+                                                type="text"
+                                                value={newPlanForm.code}
+                                                onChange={e => setNewPlanForm(prev => ({ ...prev, code: e.target.value }))}
+                                                placeholder="e.g. BB-STD"
+                                                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 uppercase"
+                                            />
+                                        </div>
+                                    </div>
+                                    <label className="flex items-center gap-2 cursor-pointer pt-1">
+                                        <input
+                                            type="checkbox"
+                                            checked={newPlanForm.is_resident_only}
+                                            onChange={e => setNewPlanForm(prev => ({ ...prev, is_resident_only: e.target.checked }))}
+                                            className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                                        />
+                                        <span className="font-semibold text-slate-700">East African / Tanzania Resident Only</span>
+                                    </label>
+                                    {planError && (
+                                        <div className="p-2 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-[11px]">
+                                            {planError}
+                                        </div>
+                                    )}
+                                    <div className="flex justify-end gap-2 pt-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsAddPlanInlineOpen(false)}
+                                            className="px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 font-semibold"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={savingPlan}
+                                            className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-xs disabled:opacity-50"
+                                        >
+                                            {savingPlan ? 'Saving...' : 'Save Rate Plan'}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+
+                            {/* Rate Plans List */}
+                            <div className="divide-y divide-slate-100 border border-slate-200 rounded-2xl overflow-hidden bg-white">
+                                {localRatePlans.length === 0 ? (
+                                    <div className="p-6 text-center text-slate-400">
+                                        No rate plans found. Click 'Add New Rate Plan' above to configure one.
+                                    </div>
+                                ) : (
+                                    localRatePlans.map(rp => (
+                                        <div key={rp.id} className="p-3.5 flex items-center justify-between hover:bg-slate-50 transition">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-xl bg-slate-100 font-bold font-mono text-xs flex items-center justify-center text-slate-700 shrink-0">
+                                                    {rp.meal_plan}
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-slate-900 text-xs flex items-center gap-2">
+                                                        <span>{rp.name}</span>
+                                                        <span className="font-mono text-[10px] text-slate-400">({rp.code})</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500">
+                                                        <span>
+                                                            {rp.meal_plan === 'RO' && 'Accommodation Only (No meals)'}
+                                                            {rp.meal_plan === 'BB' && 'Bed & Breakfast (Daily breakfast included)'}
+                                                            {rp.meal_plan === 'HB' && 'Half Board (Breakfast & Dinner included)'}
+                                                            {rp.meal_plan === 'FB' && 'Full Board (Breakfast, Lunch & Dinner)'}
+                                                            {rp.meal_plan === 'AI' && 'All Inclusive (All Meals & Beverages)'}
+                                                        </span>
+                                                        {rp.is_resident_only && (
+                                                            <span className="px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 font-semibold border border-amber-200/60 text-[10px]">
+                                                                Resident Special
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold text-[10px] border border-emerald-100">
+                                                    Active
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/70 flex justify-end shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setIsRatePlansModalOpen(false)}
+                                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-bold transition cursor-pointer"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Room Types Management Modal */}
+            {isRoomTypesModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
+                    <div className="bg-white rounded-3xl max-w-3xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                                    <BedDouble className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-bold text-slate-900">Hotel Room Types & Pricing</h3>
+                                    <p className="text-xs text-slate-500">Configure room categories, standard night rates, max occupants & room amenities</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsRoomTypesModalOpen(false);
+                                    setIsAddRoomTypeOpen(false);
+                                    setEditingRoomTypeId(null);
+                                }}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 overflow-y-auto space-y-4 text-xs flex-1">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h4 className="font-bold text-slate-800 text-sm">Active Room Types ({localRoomTypes.length})</h4>
+                                    <p className="text-[11px] text-slate-400">Categories used for inventory assignments, rates, and guest bookings</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setEditingRoomTypeId(null);
+                                        setRoomTypeForm({
+                                            name: '',
+                                            code: '',
+                                            base_price: '180000',
+                                            base_occupancy: 2,
+                                            max_adults: 2,
+                                            max_children: 1,
+                                            amenities: ['King Bed', 'Free High-Speed WiFi', 'Air Conditioning', 'En-suite Bathroom'],
+                                            description: '',
+                                        });
+                                        setIsAddRoomTypeOpen(!isAddRoomTypeOpen);
+                                    }}
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-xs transition cursor-pointer"
+                                >
+                                    <Plus className="w-3.5 h-3.5" />
+                                    <span>{isAddRoomTypeOpen ? 'Close Form' : 'Add New Room Type'}</span>
+                                </button>
+                            </div>
+
+                            {/* Inline Add/Edit Room Type Form */}
+                            {isAddRoomTypeOpen && (
+                                <form onSubmit={handleSaveRoomType} className="p-5 rounded-2xl bg-blue-50/50 border border-blue-200 space-y-4 animate-in fade-in duration-150">
+                                    <div className="flex items-center justify-between">
+                                        <h5 className="font-bold text-blue-900 text-xs sm:text-sm">
+                                            {editingRoomTypeId ? 'Edit Room Type' : 'Create New Room Type'}
+                                        </h5>
+                                        <span className="text-[10px] text-blue-600 font-semibold uppercase tracking-wider">
+                                            Pricing & Inventory Setup
+                                        </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                        <div>
+                                            <label className="block font-semibold text-slate-700 mb-1">
+                                                Room Type Name *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={roomTypeForm.name}
+                                                onChange={e => setRoomTypeForm(prev => ({ ...prev, name: e.target.value }))}
+                                                placeholder="e.g. Deluxe Ocean Suite, Executive Cottage..."
+                                                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-medium focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block font-semibold text-slate-700 mb-1">
+                                                Type Code (Optional)
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={roomTypeForm.code}
+                                                onChange={e => setRoomTypeForm(prev => ({ ...prev, code: e.target.value }))}
+                                                placeholder="e.g. DLX, EXEC, VILLA"
+                                                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 uppercase font-medium focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block font-semibold text-slate-700 mb-1">
+                                                Standard Base Rate per Night (TZS) *
+                                            </label>
+                                            <input
+                                                type="number"
+                                                required
+                                                min="0"
+                                                step="1000"
+                                                value={roomTypeForm.base_price}
+                                                onChange={e => setRoomTypeForm(prev => ({ ...prev, base_price: e.target.value }))}
+                                                placeholder="180000"
+                                                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-bold focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <div>
+                                                <label className="block font-semibold text-slate-700 mb-1 text-[11px]">
+                                                    Base Occ.
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    value={roomTypeForm.base_occupancy}
+                                                    onChange={e => setRoomTypeForm(prev => ({ ...prev, base_occupancy: Number(e.target.value) }))}
+                                                    className="w-full bg-white border border-slate-200 rounded-xl px-2 py-2 text-xs text-center font-bold text-slate-900"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block font-semibold text-slate-700 mb-1 text-[11px]">
+                                                    Max Adults
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    value={roomTypeForm.max_adults}
+                                                    onChange={e => setRoomTypeForm(prev => ({ ...prev, max_adults: Number(e.target.value) }))}
+                                                    className="w-full bg-white border border-slate-200 rounded-xl px-2 py-2 text-xs text-center font-bold text-slate-900"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block font-semibold text-slate-700 mb-1 text-[11px]">
+                                                    Max Kids
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    value={roomTypeForm.max_children}
+                                                    onChange={e => setRoomTypeForm(prev => ({ ...prev, max_children: Number(e.target.value) }))}
+                                                    className="w-full bg-white border border-slate-200 rounded-xl px-2 py-2 text-xs text-center font-bold text-slate-900"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Selectable Amenities */}
+                                    <div>
+                                        <label className="block font-semibold text-slate-700 mb-1.5">
+                                            Room Amenities & Features
+                                        </label>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {availableAmenities.map(amenity => {
+                                                const selected = roomTypeForm.amenities.includes(amenity);
+                                                return (
+                                                    <button
+                                                        key={amenity}
+                                                        type="button"
+                                                        onClick={() => handleToggleAmenity(amenity)}
+                                                        className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition cursor-pointer flex items-center gap-1 ${
+                                                            selected
+                                                                ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                                                                : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                                                        }`}
+                                                    >
+                                                        <span>{selected ? '✓' : '+'}</span>
+                                                        <span>{amenity}</span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block font-semibold text-slate-700 mb-1">
+                                            Description / Guest Overview
+                                        </label>
+                                        <textarea
+                                            rows={2}
+                                            value={roomTypeForm.description}
+                                            onChange={e => setRoomTypeForm(prev => ({ ...prev, description: e.target.value }))}
+                                            placeholder="Overview of room aesthetics, balcony views, and special features..."
+                                            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                        />
+                                    </div>
+
+                                    {roomTypeError && (
+                                        <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-[11px]">
+                                            {roomTypeError}
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-end gap-2 pt-1 border-t border-blue-200/60">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setIsAddRoomTypeOpen(false);
+                                                setEditingRoomTypeId(null);
+                                            }}
+                                            className="px-3.5 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold cursor-pointer"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={savingRoomType}
+                                            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-xs transition disabled:opacity-50 cursor-pointer"
+                                        >
+                                            {savingRoomType ? 'Saving...' : (editingRoomTypeId ? 'Update Room Type' : 'Save Room Type')}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+
+                            {/* Room Types Cards List */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                                {localRoomTypes.length === 0 ? (
+                                    <div className="col-span-2 p-8 text-center text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                                        No room types configured. Click 'Add New Room Type' above to get started.
+                                    </div>
+                                ) : (
+                                    localRoomTypes.map(rt => {
+                                        const count = (rt as any).rooms_count !== undefined
+                                            ? (rt as any).rooms_count
+                                            : rooms.filter(r => String(r.room_type_id) === String(rt.id)).length;
+                                        return (
+                                            <div
+                                                key={rt.id}
+                                                className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs hover:border-slate-300 transition flex flex-col justify-between gap-3"
+                                            >
+                                                <div>
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <div>
+                                                            <div className="flex items-center gap-2">
+                                                                <h5 className="font-bold text-slate-900 text-sm">
+                                                                    {rt.name}
+                                                                </h5>
+                                                                <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                                                                    {rt.code}
+                                                                </span>
+                                                            </div>
+                                                            <div className="text-emerald-700 font-extrabold text-sm mt-1">
+                                                                {formatTsh(rt.base_price_minor)}
+                                                                <span className="text-[11px] font-normal text-slate-400 ml-1">/ night</span>
+                                                            </div>
+                                                        </div>
+
+                                                        <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-bold text-[10px] border border-blue-100 shrink-0">
+                                                            {count} Room{count !== 1 ? 's' : ''}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3 mt-2 text-[11px] text-slate-500">
+                                                        <span className="flex items-center gap-1">
+                                                            <Users className="w-3.5 h-3.5 text-slate-400" />
+                                                            <span>Base: {rt.base_occupancy || 2} | Max: {rt.max_adults || 2} Adults, {rt.max_children || 1} Kids</span>
+                                                        </span>
+                                                    </div>
+
+                                                    {rt.description && (
+                                                        <p className="text-[11px] text-slate-500 mt-2 line-clamp-2">
+                                                            {rt.description}
+                                                        </p>
+                                                    )}
+
+                                                    {Array.isArray(rt.amenities) && rt.amenities.length > 0 && (
+                                                        <div className="flex flex-wrap gap-1 mt-2.5">
+                                                            {rt.amenities.slice(0, 4).map((a, i) => (
+                                                                <span
+                                                                    key={i}
+                                                                    className="px-2 py-0.5 rounded bg-slate-50 text-slate-600 text-[10px] border border-slate-100"
+                                                                >
+                                                                    {a}
+                                                                </span>
+                                                            ))}
+                                                            {rt.amenities.length > 4 && (
+                                                                <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 text-[10px]">
+                                                                    +{rt.amenities.length - 4} more
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-1.5">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleOpenEditRoomType(rt)}
+                                                        className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-[11px] transition cursor-pointer flex items-center gap-1"
+                                                    >
+                                                        <Edit className="w-3 h-3" />
+                                                        <span>Edit</span>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteRoomType(rt)}
+                                                        className="px-2.5 py-1.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 font-bold text-[11px] transition cursor-pointer flex items-center gap-1"
+                                                    >
+                                                        <Trash2 className="w-3 h-3" />
+                                                        <span>Delete</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="px-6 py-3 border-t border-slate-100 bg-slate-50/70 flex justify-end shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsRoomTypesModalOpen(false);
+                                    setIsAddRoomTypeOpen(false);
+                                    setEditingRoomTypeId(null);
+                                }}
+                                className="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-bold transition cursor-pointer"
+                            >
+                                Close
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

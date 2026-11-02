@@ -293,25 +293,31 @@ export default function GroceryIndex({
 
             <div className="space-y-6 max-w-7xl mx-auto pb-12">
                 {/* 1. Header Banner */}
-                <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
-                    <div className="space-y-2 relative z-10">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-black uppercase tracking-wider border border-indigo-400/30">
-                            <ShoppingBag className="w-3.5 h-3.5" />
-                            <span>Executive Retail Management</span>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/90 shadow-2xs">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2.5">
+                            <div className="p-2.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl">
+                                <ShoppingBag className="w-5 h-5 text-blue-600" />
+                            </div>
+                            <div>
+                                <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
+                                    Grocery Overview Report
+                                </h1>
+                                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-100 text-[10px] font-bold uppercase tracking-wider">
+                                    Executive Retail Management
+                                </span>
+                            </div>
                         </div>
-                        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-                            Grocery Overview Report
-                        </h1>
-                        <p className="text-slate-300 text-xs sm:text-sm max-w-2xl leading-relaxed">
+                        <p className="text-slate-500 text-xs sm:text-sm max-w-2xl leading-relaxed mt-1">
                             Manager portal for retail pricing, shelf replenishment, gross profit margins, stock auditing, and cashier reconciliation.
                         </p>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2.5 relative z-10">
+                    <div className="flex flex-wrap items-center gap-2.5">
                         <button
                             type="button"
                             onClick={() => setIsAddModalOpen(true)}
-                            className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md transition active:scale-95 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
                         >
                             <Plus className="w-4 h-4 stroke-[3]" />
                             <span>Add Product</span>
@@ -321,7 +327,7 @@ export default function GroceryIndex({
                             onClick={() => {
                                 if (items.length > 0) openRestockModal(items[0]);
                             }}
-                            className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md transition active:scale-95 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
                         >
                             <Truck className="w-4 h-4" />
                             <span>Restock Inbound</span>
@@ -332,16 +338,13 @@ export default function GroceryIndex({
                                 saleForm.reset();
                                 setIsSaleModalOpen(true);
                             }}
-                            className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 font-bold text-xs sm:text-sm rounded-xl transition active:scale-95 cursor-pointer shadow-xs"
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 font-bold text-xs sm:text-sm rounded-xl transition active:scale-95 cursor-pointer"
                             title="Ring up walk-in counter retail sale"
                         >
-                            <ShoppingCart className="w-4 h-4 text-emerald-400" />
+                            <ShoppingCart className="w-4 h-4 text-emerald-600" />
                             <span>New Retail Sale</span>
                         </button>
                     </div>
-
-                    {/* Background Glow */}
-                    <div className="absolute right-0 top-0 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
                 </div>
 
                 {/* 2. Executive KPI Summary Cards */}

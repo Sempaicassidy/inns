@@ -23,11 +23,20 @@ class Reservation extends Model
         'source',
         'status',
         'check_in',
+        'check_in_time',
         'check_out',
+        'check_out_time',
         'adults',
         'children',
+        'origin',
+        'destination',
+        'vehicle_reg_no',
         'total_minor',
         'deposit_minor',
+        'receipt_no',
+        'payment_method',
+        'guest_signature',
+        'receptionist_name',
         'notes',
         'created_by',
     ];
@@ -41,6 +50,7 @@ class Reservation extends Model
             'children' => 'integer',
             'total_minor' => 'integer',
             'deposit_minor' => 'integer',
+            'guest_signature' => 'boolean',
         ];
     }
 

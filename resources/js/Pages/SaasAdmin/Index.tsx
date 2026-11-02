@@ -839,68 +839,64 @@ export default function SaasAdminDashboard({
 
             <div className="space-y-6 pb-20">
                 {/* 1. TOP HEADER & SYSTEM BANNER */}
-                <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-indigo-900/40 relative overflow-hidden">
-                    <div className="absolute right-0 top-0 translate-x-12 -translate-y-8 w-96 h-96 bg-blue-500/10 blur-[90px] rounded-full pointer-events-none" />
-
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-                        <div>
-                            <div className="flex items-center gap-3 mb-2 flex-wrap">
-                                <span className="bg-blue-500/20 text-blue-300 font-bold px-3 py-1 rounded-full text-xs uppercase tracking-wider border border-blue-400/30 flex items-center gap-1.5">
-                                    <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
-                                    Platform Master Authority
-                                </span>
-                                <span className="flex items-center gap-1.5 text-emerald-400 text-xs font-semibold bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-                                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                                    All Nodes Operational (99.98% SLA)
-                                </span>
-                            </div>
-                            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-2.5">
-                                <span>THE INNS Centralized SaaS Ecosystem</span>
-                            </h1>
-                            <p className="text-slate-300 text-sm mt-1 max-w-2xl">
-                                Usimamizi kamili: Mahoteli, Mikataba ya Kisheria (E-Signatures), Bili & Risiti, SwalaSMS Tanzania, WhatsApp Cloud API, na Miundombinu.
-                            </p>
+                <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-2xs border border-slate-200/90 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                    <div>
+                        <div className="flex items-center gap-2.5 mb-2 flex-wrap">
+                            <span className="bg-blue-50 text-blue-700 font-bold px-2.5 py-0.5 rounded-full text-xs uppercase tracking-wider border border-blue-200 flex items-center gap-1.5">
+                                <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                                Platform Master Authority
+                            </span>
+                            <span className="flex items-center gap-1.5 text-emerald-700 text-xs font-semibold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                All Nodes Operational (99.98% SLA)
+                            </span>
                         </div>
+                        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2.5">
+                            <span>THE INNS Centralized SaaS Ecosystem</span>
+                        </h1>
+                        <p className="text-slate-500 text-xs sm:text-sm mt-1 max-w-2xl">
+                            Usimamizi kamili: Mahoteli, Mikataba ya Kisheria (E-Signatures), Bili & Risiti, SwalaSMS Tanzania, WhatsApp Cloud API, na Miundombinu.
+                        </p>
+                    </div>
 
-                        {/* Top Action Buttons */}
-                        <div className="flex items-center gap-2.5 flex-wrap">
-                            <button
-                                type="button"
-                                onClick={() => setShowOnboardModal(true)}
-                                className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm rounded-xl shadow-lg shadow-blue-600/30 transition transform hover:-translate-y-0.5 cursor-pointer"
-                            >
-                                <Plus className="w-4 h-4" />
-                                <span>Onboard Hotel</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setSelectedTenantForSms(tenants[0]?.id || '');
-                                    smsForm.setData('tenant_id', tenants[0]?.id || '');
-                                    setShowIssueSmsModal(true);
-                                }}
-                                className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm rounded-xl border border-white/20 transition cursor-pointer"
-                            >
-                                <Coins className="w-4 h-4 text-amber-400" />
-                                <span>Issue SMS</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setShowCreateInvoiceModal(true)}
-                                className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm rounded-xl border border-white/20 transition cursor-pointer"
-                            >
-                                <Receipt className="w-4 h-4 text-emerald-300" />
-                                <span>New Invoice</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setShowNoticeModal(true)}
-                                className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm rounded-xl border border-white/20 transition cursor-pointer"
-                            >
-                                <Bell className="w-4 h-4 text-indigo-300" />
-                                <span>Broadcast</span>
-                            </button>
-                        </div>
+                    {/* Top Action Buttons */}
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                        <button
+                            type="button"
+                            onClick={() => setShowOnboardModal(true)}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition cursor-pointer"
+                        >
+                            <Plus className="w-4 h-4" />
+                            <span>Onboard Hotel</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setSelectedTenantForSms(tenants[0]?.id || '');
+                                smsForm.setData('tenant_id', tenants[0]?.id || '');
+                                setShowIssueSmsModal(true);
+                            }}
+                            className="inline-flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm rounded-xl border border-slate-200 transition cursor-pointer"
+                        >
+                            <Coins className="w-4 h-4 text-amber-600" />
+                            <span>Issue SMS</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setShowCreateInvoiceModal(true)}
+                            className="inline-flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm rounded-xl border border-slate-200 transition cursor-pointer"
+                        >
+                            <Receipt className="w-4 h-4 text-emerald-600" />
+                            <span>New Invoice</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setShowNoticeModal(true)}
+                            className="inline-flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm rounded-xl border border-slate-200 transition cursor-pointer"
+                        >
+                            <Bell className="w-4 h-4 text-indigo-600" />
+                            <span>Broadcast</span>
+                        </button>
                     </div>
                 </div>
 

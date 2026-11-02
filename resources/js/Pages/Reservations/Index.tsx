@@ -249,8 +249,20 @@ export default function ReservationsIndex({
                                             ) : (
                                                 'No phone'
                                             )}{' '}
-                                            &bull; {res.guest?.nationality || 'Guest'}
+                                            &bull; {res.guest?.nationality || 'Tanzanian'}
+                                            {(res.guest as any)?.tribe && <span> ({(res.guest as any).tribe})</span>}
                                         </div>
+                                        {(res.guest as any)?.id_number && (
+                                            <div className="text-[10px] text-slate-500 font-mono mt-0.5">
+                                                <span className="font-bold uppercase">{(res.guest as any).id_type || 'ID'}:</span> {(res.guest as any).id_number}
+                                            </div>
+                                        )}
+                                        {(res.origin || (res.guest as any)?.origin) && (
+                                            <div className="text-[10px] text-blue-600 font-semibold mt-0.5">
+                                                📍 {res.origin || (res.guest as any)?.origin} &rarr; {res.destination || (res.guest as any)?.destination || 'Transit'}
+                                                {(res.vehicle_reg_no || (res.guest as any)?.vehicle_reg_no) && ` • 🚗 ${res.vehicle_reg_no || (res.guest as any)?.vehicle_reg_no}`}
+                                            </div>
+                                        )}
                                     </div>
                                     <div>{getStatusBadge(res.status)}</div>
                                 </div>
@@ -382,8 +394,14 @@ export default function ReservationsIndex({
                                                     {res.guest?.first_name} {res.guest?.last_name}
                                                 </div>
                                                 <div className="text-[11px] text-slate-500 mt-0.5">
-                                                    {res.guest?.phone} &bull; {res.guest?.nationality}
+                                                    {res.guest?.phone || 'No phone'} &bull; {res.guest?.nationality || 'Tanzanian'}
+                                                    {(res.guest as any)?.tribe && <span className="text-slate-400"> ({(res.guest as any).tribe})</span>}
                                                 </div>
+                                                {(res.guest as any)?.id_number && (
+                                                    <div className="text-[10px] text-slate-500 font-mono mt-0.5">
+                                                        <span className="font-bold uppercase">{(res.guest as any).id_type || 'ID'}:</span> {(res.guest as any).id_number}
+                                                    </div>
+                                                )}
                                             </td>
                                             <td className="py-4 px-4">
                                                 <div className="font-semibold text-slate-900">
@@ -394,17 +412,36 @@ export default function ReservationsIndex({
                                                 <div className="text-[11px] text-slate-500">
                                                     {resRoom?.room_type?.name}
                                                 </div>
+                                                {(res.vehicle_reg_no || (res.guest as any)?.vehicle_reg_no) && (
+                                                    <span className="inline-block px-1.5 py-0.2 rounded bg-slate-100 text-[10px] font-mono text-slate-600 mt-0.5">
+                                                        🚗 {res.vehicle_reg_no || (res.guest as any)?.vehicle_reg_no}
+                                                    </span>
+                                                )}
                                             </td>
                                             <td className="py-4 px-4 font-mono">
-                                                <div className="text-slate-800 font-semibold">{res.check_in} &rarr; {res.check_out}</div>
+                                                <div className="text-slate-800 font-semibold">
+                                                    {res.check_in} {res.check_in_time ? `(${res.check_in_time})` : ''} &rarr; {res.check_out} {res.check_out_time ? `(${res.check_out_time})` : ''}
+                                                </div>
                                                 <div className="text-[10px] text-slate-500 font-sans">
                                                     {res.adults} Adults{res.children > 0 && `, ${res.children} Kids`}
+                                                    {(res.origin || (res.guest as any)?.origin) && (
+                                                        <div className="text-blue-600 font-medium truncate max-w-xs mt-0.5">
+                                                            {res.origin || (res.guest as any)?.origin} &rarr; {res.destination || (res.guest as any)?.destination || 'Transit'}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </td>
                                             <td className="py-4 px-4 font-mono">
                                                 <div className="font-bold text-slate-900">{formatTZS(res.total_minor)}</div>
                                                 {res.deposit_minor > 0 && (
-                                                    <div className="text-[10px] text-emerald-600 font-semibold">Dep: {formatTZS(res.deposit_minor)}</div>
+                                                    <div className="text-[10px] text-emerald-600 font-semibold">
+                                                        Paid: {formatTZS(res.deposit_minor)} ({res.payment_method || 'Cash'})
+                                                    </div>
+                                                )}
+                                                {res.receipt_no && (
+                                                    <div className="text-[9px] text-slate-400 font-mono">
+                                                        Rec: {res.receipt_no}
+                                                    </div>
                                                 )}
                                             </td>
                                             <td className="py-4 px-4">

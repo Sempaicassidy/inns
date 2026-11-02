@@ -1,19 +1,38 @@
 import { Guest, RatePlan, Room, RoomType } from '@/types';
-import { router, useForm } from '@inertiajs/react';
+import { router, useForm, usePage } from '@inertiajs/react';
 import {
+    AlertCircle,
     Building2,
     Calendar,
+    Car,
     Check,
+    CheckCircle2,
     ChevronDown,
     ChevronUp,
+    Clock,
     CreditCard,
     DollarSign,
+    FileCheck2,
+    FileSpreadsheet,
+    FileText,
+    Fingerprint,
+    Globe,
+    HelpCircle,
+    IdCard,
+    KeyRound,
     Lock,
+    MapPin,
+    Phone,
+    Plus,
+    Receipt,
     Search,
     Shield,
+    Sparkles,
     Tag,
     User,
+    UserCheck,
     Users,
+    Utensils,
     Wifi,
     X,
 } from 'lucide-react';
@@ -50,6 +69,9 @@ export default function NewReservationModal({
 }: NewReservationModalProps) {
     if (!isOpen) return null;
 
+    const pageProps = usePage().props as any;
+    const currentUser = pageProps?.auth?.user;
+
     const effectiveRoomId = initialRoomId || preselectedRoomId;
     const defaultCheckIn = initialCheckIn || preselectedDate || new Date().toISOString().split('T')[0];
     const defaultCheckOut = initialCheckOut || (() => {
@@ -58,9 +80,9 @@ export default function NewReservationModal({
         return d.toISOString().split('T')[0];
     })();
 
+    const [activeSection, setActiveSection] = useState<'all' | 'stay' | 'guest' | 'id' | 'billing' | 'legal'>('all');
     const [guestSearch, setGuestSearch] = useState('');
     const [showGuestDropdown, setShowGuestDropdown] = useState(false);
-    const [kycOpen, setKycOpen] = useState(true);
     const [roomSearch, setRoomSearch] = useState('');
     const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>(
         effectiveRoomId ? [effectiveRoomId] : []
@@ -69,37 +91,77 @@ export default function NewReservationModal({
     const [submitErrors, setSubmitErrors] = useState<Record<string, string>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Dynamic Rate Plans & Meal Basis Management
+    const [localRatePlans, setLocalRatePlans] = useState<RatePlan[]>(ratePlans);
+    const [showAddRatePlanModal, setShowAddRatePlanModal] = useState(false);
+    const [savingPlan, setSavingPlan] = useState(false);
+    const [planError, setPlanError] = useState('');
+    const [newPlanForm, setNewPlanForm] = useState({
+        name: '',
+        meal_plan: 'BB',
+        code: '',
+        is_resident_only: false,
+    });
+
+    useEffect(() => {
+        if (ratePlans && ratePlans.length > 0) {
+            setLocalRatePlans(ratePlans);
+        }
+    }, [ratePlans]);
+
     const initialRoomObj = rooms.find(r => String(r.id) === String(effectiveRoomId));
     const initialRtId = initialRoomObj?.room_type_id || initialRoomObj?.roomType?.id || roomTypes[0]?.id || '';
-    const initialRpId = ratePlans[0]?.id || '';
+    const initialRpId = (localRatePlans[0]?.id || ratePlans[0]?.id) || '';
     const initialPriceMinor = initialRoomObj?.roomType?.base_price_minor || initialRoomObj?.room_type?.base_price_minor || 35000000;
 
     const { data, setData, post, processing, reset, errors } = useForm({
-        title: 'Mr',
-        guest_id: '',
-        first_name: '',
-        last_name: '',
-        phone: '',
-        email: '',
-        company_name: '',
-        tax_number: '',
-        id_type: 'national_id',
-        id_number: '',
-        address: '',
-        nationality: 'Tanzanian',
+        // Section 1: Stay & Room Details
+        check_in: defaultCheckIn,
+        check_in_time: '14:00',
+        check_out: defaultCheckOut,
+        check_out_time: '10:00',
         room_ids: effectiveRoomId ? [effectiveRoomId] : ([] as string[]),
         room_id: effectiveRoomId || (rooms[0]?.id ?? ''),
         room_type_id: initialRtId,
         rate_plan_id: initialRpId,
         rate_price: initialPriceMinor / 100,
-        check_in: defaultCheckIn,
-        check_out: defaultCheckOut,
         adults: 2,
         children: 0,
         source: 'walk_in',
+        check_in_now: true,
+
+        // Section 2: Guest Personal Information
+        title: 'Mr',
+        guest_id: '',
+        first_name: '',
+        last_name: '',
+        gender: 'male',
+        age: '' as number | string,
+        phone: '',
+        email: '',
+        nationality: 'Tanzanian',
+        tribe: '',
+
+        // Section 3: Statutory Identification & Travel Itinerary
+        id_type: 'national_id',
+        id_number: '',
+        origin: '',
+        destination: '',
+        vehicle_reg_no: '',
+        company_name: '',
+        tax_number: '',
+        address: '',
+
+        // Section 4: Billing, Payments & Receipt
         discount_minor: 0,
+        deposit: (initialPriceMinor / 100),
+        payment_method: 'cash',
+        receipt_no: '',
+
+        // Section 5: Legal Compliance & Signatures
         notes: '',
-        check_in_now: false,
+        guest_signature: true,
+        receptionist_name: currentUser?.name || 'Front Desk Attendant',
     });
 
     // Synchronize form when modal opens or initial props change
@@ -141,10 +203,18 @@ export default function NewReservationModal({
                 guest_id: targetGuest ? targetGuest.id : prev.guest_id,
                 first_name: targetGuest ? targetGuest.first_name : prev.first_name,
                 last_name: targetGuest ? targetGuest.last_name : prev.last_name,
+                gender: targetGuest && (targetGuest as any).gender ? (targetGuest as any).gender : prev.gender,
+                age: targetGuest && (targetGuest as any).age ? (targetGuest as any).age : prev.age,
                 phone: targetGuest ? (targetGuest.phone ?? '') : prev.phone,
                 email: targetGuest ? (targetGuest.email ?? '') : prev.email,
                 nationality: targetGuest ? (targetGuest.nationality ?? 'Tanzanian') : prev.nationality,
+                tribe: targetGuest && (targetGuest as any).tribe ? (targetGuest as any).tribe : prev.tribe,
+                id_type: targetGuest ? ((targetGuest as any).id_type || 'national_id') : prev.id_type,
                 id_number: targetGuest ? (targetGuest.id_number ?? '') : prev.id_number,
+                origin: targetGuest && (targetGuest as any).origin ? (targetGuest as any).origin : prev.origin,
+                destination: targetGuest && (targetGuest as any).destination ? (targetGuest as any).destination : prev.destination,
+                vehicle_reg_no: targetGuest && (targetGuest as any).vehicle_reg_no ? (targetGuest as any).vehicle_reg_no : prev.vehicle_reg_no,
+                receptionist_name: currentUser?.name || prev.receptionist_name,
             }));
         }
     }, [isOpen, initialRoomId, initialCheckIn, initialCheckOut, initialGuestId, preselectedRoomId, preselectedDate, rooms, roomTypes, ratePlans]);
@@ -167,6 +237,50 @@ export default function NewReservationModal({
         }
     }, [selectedRoomIds, rooms, roomTypes]);
 
+    // Auto-select first rate plan if none selected
+    useEffect(() => {
+        if (!data.rate_plan_id && localRatePlans.length > 0) {
+            setData('rate_plan_id', localRatePlans[0].id);
+        }
+    }, [localRatePlans, data.rate_plan_id]);
+
+    const handleCreateRatePlan = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSavingPlan(true);
+        setPlanError('');
+
+        try {
+            const token = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '';
+            const res = await fetch(route('rate-plans.store'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': token,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify(newPlanForm),
+            });
+
+            const json = await res.json();
+            if (json.success && json.ratePlan) {
+                setLocalRatePlans(prev => [...prev, json.ratePlan]);
+                setData('rate_plan_id', json.ratePlan.id);
+                setShowAddRatePlanModal(false);
+                setNewPlanForm({ name: '', meal_plan: 'BB', code: '', is_resident_only: false });
+            } else if (json.errors) {
+                const firstErr = Object.values(json.errors)[0];
+                setPlanError(Array.isArray(firstErr) ? (firstErr as any)[0] : String(firstErr));
+            } else {
+                setPlanError(json.message || 'Failed to save rate plan.');
+            }
+        } catch (err: any) {
+            setPlanError(err?.message || 'Network error creating rate plan.');
+        } finally {
+            setSavingPlan(false);
+        }
+    };
+
     // Filter existing guests by search query
     const filteredGuests = useMemo(() => {
         if (!guestSearch.trim()) return [];
@@ -175,7 +289,8 @@ export default function NewReservationModal({
             g.first_name?.toLowerCase().includes(q) ||
             g.last_name?.toLowerCase().includes(q) ||
             g.phone?.includes(q) ||
-            g.email?.toLowerCase().includes(q)
+            g.email?.toLowerCase().includes(q) ||
+            (g as any).id_number?.toLowerCase().includes(q)
         ).slice(0, 5);
     }, [guests, guestSearch]);
 
@@ -186,11 +301,17 @@ export default function NewReservationModal({
             guest_id: g.id,
             first_name: g.first_name || '',
             last_name: g.last_name || '',
+            gender: (g as any).gender || prev.gender,
+            age: (g as any).age || '',
             phone: g.phone || '',
             email: g.email || '',
             id_type: (g as any).id_type || 'national_id',
             id_number: (g as any).id_number || '',
+            origin: (g as any).origin || '',
+            destination: (g as any).destination || '',
+            vehicle_reg_no: (g as any).vehicle_reg_no || '',
             nationality: g.nationality || 'Tanzanian',
+            tribe: (g as any).tribe || '',
         }));
         setGuestSearch(`${g.first_name} ${g.last_name}`);
         setShowGuestDropdown(false);
@@ -207,6 +328,17 @@ export default function NewReservationModal({
             return 1;
         }
     }, [data.check_in, data.check_out]);
+
+    // Helper to format Date with Day name in English
+    const formatDayName = (dateStr: string) => {
+        if (!dateStr) return '';
+        try {
+            const d = new Date(dateStr + 'T00:00:00');
+            return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
+        } catch {
+            return dateStr;
+        }
+    };
 
     // Group rooms by floor and apply roomSearch
     const floorGroups = useMemo(() => {
@@ -293,12 +425,15 @@ export default function NewReservationModal({
 
         const payload: Record<string, any> = {
             ...data,
+            age: data.age ? Number(data.age) : null,
+            deposit: data.deposit ? Number(data.deposit) : 0,
             guest_id: data.guest_id ? data.guest_id : null,
             room_id: primaryRoomId || null,
             room_ids: selectedRoomIds,
             room_type_id: rtId || null,
             rate_plan_id: rpId || null,
             rate_price: data.rate_price && Number(data.rate_price) > 0 ? Number(data.rate_price) : rtPrice,
+            receptionist_name: data.receptionist_name || currentUser?.name || 'Front Desk Attendant',
         };
 
         setIsSubmitting(true);
@@ -322,37 +457,123 @@ export default function NewReservationModal({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full my-8 max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-5xl w-full my-6 max-h-[94vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
                 {/* Modal Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-white sticky top-0 z-20">
-                    <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                            +
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white sticky top-0 z-20">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 flex items-center justify-center font-bold">
+                            <FileSpreadsheet className="w-5 h-5 text-blue-600" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-gray-900">New Reservation / Walk-In</h2>
-                            <p className="text-xs text-gray-500">Create booking or check in guest directly</p>
+                            <div className="flex items-center gap-2">
+                                <h2 className="text-lg sm:text-xl font-black text-slate-900">
+                                    Guest Registration & Reservation Form
+                                </h2>
+                                <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                    <Shield className="w-3 h-3 text-emerald-600" />
+                                    Statutory Guest House Ledger
+                                </span>
+                            </div>
+                            <p className="text-xs text-slate-500">
+                                Statutory guest ledger registration, identity verification, room assignment & billing receipt
+                            </p>
                         </div>
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition cursor-pointer"
+                        className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
                         title="Close"
                     >
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
+                {/* Section Quick Jump Bar */}
+                <div className="px-6 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-2 overflow-x-auto text-xs no-scrollbar">
+                    <div className="flex items-center gap-1.5 font-semibold text-slate-600 shrink-0">
+                        <span className="text-[11px] uppercase tracking-wider font-extrabold text-slate-400">Sections:</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => setActiveSection('all')}
+                            className={`px-3 py-1 rounded-lg font-bold transition text-xs ${
+                                activeSection === 'all'
+                                    ? 'bg-blue-600 text-white shadow-2xs'
+                                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                            }`}
+                        >
+                            All Sections
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveSection('stay')}
+                            className={`px-3 py-1 rounded-lg font-bold transition text-xs ${
+                                activeSection === 'stay'
+                                    ? 'bg-blue-600 text-white shadow-2xs'
+                                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                            }`}
+                        >
+                            1. Stay & Room
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveSection('guest')}
+                            className={`px-3 py-1 rounded-lg font-bold transition text-xs ${
+                                activeSection === 'guest'
+                                    ? 'bg-blue-600 text-white shadow-2xs'
+                                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                            }`}
+                        >
+                            2. Guest Details
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveSection('id')}
+                            className={`px-3 py-1 rounded-lg font-bold transition text-xs ${
+                                activeSection === 'id'
+                                    ? 'bg-blue-600 text-white shadow-2xs'
+                                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                            }`}
+                        >
+                            3. ID & Itinerary
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveSection('billing')}
+                            className={`px-3 py-1 rounded-lg font-bold transition text-xs ${
+                                activeSection === 'billing'
+                                    ? 'bg-blue-600 text-white shadow-2xs'
+                                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                            }`}
+                        >
+                            4. Billing & Receipt
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveSection('legal')}
+                            className={`px-3 py-1 rounded-lg font-bold transition text-xs ${
+                                activeSection === 'legal'
+                                    ? 'bg-blue-600 text-white shadow-2xs'
+                                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                            }`}
+                        >
+                            5. Signatures & Remarks
+                        </button>
+                    </div>
+                </div>
+
                 {/* Modal Body */}
-                <form onSubmit={handleSubmit} className="overflow-y-auto p-6 space-y-6 flex-1">
+                <form onSubmit={handleSubmit} className="overflow-y-auto p-5 sm:p-6 space-y-6 flex-1">
                     {/* Error Notice Banner */}
                     {(Object.keys(errors).length > 0 || Object.keys(submitErrors).length > 0) && (
-                        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs space-y-1 animate-in fade-in">
-                            <div className="font-bold flex items-center gap-1.5 text-sm text-red-900">
-                                <span>Reservation Validation Errors:</span>
+                        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs space-y-1 animate-in fade-in">
+                            <div className="font-bold flex items-center gap-1.5 text-sm text-rose-900">
+                                <AlertCircle className="w-4 h-4 text-rose-600" />
+                                <span>Please resolve the following errors:</span>
                             </div>
-                            <ul className="list-disc list-inside space-y-0.5 mt-1 text-red-700">
+                            <ul className="list-disc list-inside space-y-0.5 mt-1 text-rose-700">
                                 {Object.entries({ ...errors, ...submitErrors }).map(([key, err]) => (
                                     <li key={key}>
                                         <strong className="capitalize">{key.replace('_', ' ')}:</strong> {err}
@@ -361,34 +582,341 @@ export default function NewReservationModal({
                             </ul>
                         </div>
                     )}
-                    {/* SECTION 1: GUEST INFORMATION */}
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            {/* Title */}
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                                    Title
-                                </label>
-                                <select
-                                    value={data.title}
-                                    onChange={e => setData('title', e.target.value)}
-                                    className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
-                                >
-                                    <option value="Mr">Mr.</option>
-                                    <option value="Mrs">Mrs.</option>
-                                    <option value="Ms">Ms.</option>
-                                    <option value="Dr">Dr.</option>
-                                    <option value="Prof">Prof.</option>
-                                </select>
+
+                    {/* =========================================================================
+                        SECTION 1: STAY & ROOM DETAILS
+                    ========================================================================= */}
+                    {(activeSection === 'all' || activeSection === 'stay') && (
+                        <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 space-y-4 shadow-2xs">
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-3 flex-wrap gap-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-7 h-7 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 font-extrabold text-xs flex items-center justify-center">
+                                        1
+                                    </span>
+                                    <div>
+                                        <h3 className="text-sm font-bold text-slate-900">Stay & Room Details</h3>
+                                        <p className="text-[11px] text-slate-500">Stay dates, check-in/departure times, occupancy and room assignment</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">
+                                        {nights} {nights === 1 ? 'Night' : 'Nights'}
+                                    </span>
+                                </div>
                             </div>
 
-                            {/* Search Existing Guest */}
-                            <div className="md:col-span-3 relative">
-                                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                                    Search Existing Guest
+                            {/* Check-in, Check-out, Time and Guests */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                {/* Check-In Date */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                                        <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                                        Check-In Date <span className="text-rose-500">*</span>
+                                    </label>
+                                    <input
+                                        type="date"
+                                        required
+                                        value={data.check_in}
+                                        onChange={e => setData('check_in', e.target.value)}
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                                    />
+                                    <span className="text-[10px] text-slate-500 mt-1 block">
+                                        {formatDayName(data.check_in)}
+                                    </span>
+                                </div>
+
+                                {/* Check-In Time */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                                        <Clock className="w-3.5 h-3.5 text-blue-600" />
+                                        Check-In Time
+                                    </label>
+                                    <input
+                                        type="time"
+                                        value={data.check_in_time}
+                                        onChange={e => setData('check_in_time', e.target.value)}
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                                    />
+                                    <span className="text-[10px] text-slate-400 mt-1 block">Standard check-in 14:00</span>
+                                </div>
+
+                                {/* Check-Out Date */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                                        <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                                        Expected Departure Date <span className="text-rose-500">*</span>
+                                    </label>
+                                    <input
+                                        type="date"
+                                        required
+                                        value={data.check_out}
+                                        onChange={e => setData('check_out', e.target.value)}
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                                    />
+                                    <span className="text-[10px] text-slate-500 mt-1 block">
+                                        {formatDayName(data.check_out)}
+                                    </span>
+                                </div>
+
+                                {/* Check-Out Time */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                                        <Clock className="w-3.5 h-3.5 text-blue-600" />
+                                        Expected Departure Time
+                                    </label>
+                                    <input
+                                        type="time"
+                                        value={data.check_out_time}
+                                        onChange={e => setData('check_out_time', e.target.value)}
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                                    />
+                                    <span className="text-[10px] text-slate-400 mt-1 block">Standard check-out 10:00</span>
+                                </div>
+                            </div>
+
+                            {/* Booking Source & Number of Occupants */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                        Booking Source
+                                    </label>
+                                    <select
+                                        value={data.source}
+                                        onChange={e => setData('source', e.target.value)}
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                                    >
+                                        <option value="walk_in">Walk-In Guest</option>
+                                        <option value="phone">Phone Reservation</option>
+                                        <option value="website">Direct Website</option>
+                                        <option value="booking_com">Booking.com / Online Portal</option>
+                                        <option value="agent">Travel Agent / Tour Operator</option>
+                                        <option value="corporate">Corporate Account</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="block text-xs font-semibold text-slate-700">
+                                            Rate Plan & Meal Basis
+                                        </label>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowAddRatePlanModal(true)}
+                                            className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200/70 px-2 py-0.5 rounded-lg transition cursor-pointer"
+                                            title="Add new rate plan and dining formula"
+                                        >
+                                            <Plus className="w-3 h-3 stroke-[2.5]" />
+                                            <span>Add Plan</span>
+                                        </button>
+                                    </div>
+                                    <select
+                                        value={data.rate_plan_id}
+                                        onChange={e => setData('rate_plan_id', e.target.value)}
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 cursor-pointer"
+                                    >
+                                        {localRatePlans.length === 0 ? (
+                                            <option value="">No rate plans configured &bull; Click '+ Add Plan'</option>
+                                        ) : (
+                                            localRatePlans.map(rp => (
+                                                <option key={rp.id} value={rp.id}>
+                                                    {rp.name} ({rp.meal_plan})
+                                                </option>
+                                            ))
+                                        )}
+                                    </select>
+                                    {localRatePlans.length === 0 && (
+                                        <p className="text-[10px] text-amber-600 mt-1">
+                                            No rate plan found. Click <strong>Add Plan</strong> above to create one.
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                                        <Users className="w-3.5 h-3.5 text-blue-600" />
+                                        Occupants (Adults / Children)
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <select
+                                            value={data.adults}
+                                            onChange={e => setData('adults', Number(e.target.value))}
+                                            className="w-1/2 bg-white border border-slate-200 rounded-xl px-2 py-2 text-xs text-slate-900 font-medium"
+                                        >
+                                            {[1, 2, 3, 4, 5, 6].map(n => (
+                                                <option key={n} value={n}>{n} Adults</option>
+                                            ))}
+                                        </select>
+                                        <select
+                                            value={data.children}
+                                            onChange={e => setData('children', Number(e.target.value))}
+                                            className="w-1/2 bg-white border border-slate-200 rounded-xl px-2 py-2 text-xs text-slate-900 font-medium"
+                                        >
+                                            {[0, 1, 2, 3, 4].map(n => (
+                                                <option key={n} value={n}>{n} Children</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Room Selector (Floor by Floor) */}
+                            <div className="pt-2 space-y-3">
+                                <div className="flex items-center justify-between flex-wrap gap-2">
+                                    <div>
+                                        <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                                            <KeyRound className="w-3.5 h-3.5 text-blue-600" />
+                                            Room Assignment <span className="text-rose-500">*</span>
+                                        </h4>
+                                        <p className="text-[11px] text-slate-500">Select one or more available rooms for this booking</p>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-xs">
+                                        <button
+                                            type="button"
+                                            onClick={expandAllFloors}
+                                            className="text-blue-600 hover:underline font-semibold"
+                                        >
+                                            Expand All
+                                        </button>
+                                        <span className="text-slate-300">|</span>
+                                        <button
+                                            type="button"
+                                            onClick={collapseAllFloors}
+                                            className="text-blue-600 hover:underline font-semibold"
+                                        >
+                                            Collapse All
+                                        </button>
+                                        <span className="text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg font-bold border border-slate-200">
+                                            {selectedRoomIds.length} Room(s) Selected
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="relative">
+                                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                                    <input
+                                        type="text"
+                                        value={roomSearch}
+                                        onChange={e => setRoomSearch(e.target.value)}
+                                        placeholder="Search room number, type, floor..."
+                                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
+                                    />
+                                </div>
+
+                                {/* Accordion Floor Groups */}
+                                <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+                                    {Object.keys(floorGroups).length > 0 ? (
+                                        Object.entries(floorGroups).map(([floor, floorRooms]) => {
+                                            const isExpanded = expandedFloors[floor] !== false;
+                                            const availableCount = floorRooms.filter(r => r.status_occupancy === 'vacant').length;
+
+                                            return (
+                                                <div key={floor} className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleFloor(floor)}
+                                                        className="w-full px-3.5 py-2 bg-slate-50 hover:bg-slate-100/80 transition flex items-center justify-between text-left"
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="w-5 h-5 rounded-md bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center">
+                                                                {floor.charAt(0).toUpperCase()}
+                                                            </span>
+                                                            <span className="font-bold text-xs text-slate-900">
+                                                                {floor.toLowerCase().includes('floor') ? floor : `Floor ${floor}`}
+                                                            </span>
+                                                            <span className="text-[11px] text-slate-500">
+                                                                ({availableCount} available / {floorRooms.length} total)
+                                                            </span>
+                                                        </div>
+                                                        {isExpanded ? (
+                                                            <ChevronUp className="w-3.5 h-3.5 text-slate-500" />
+                                                        ) : (
+                                                            <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                                                        )}
+                                                    </button>
+
+                                                    {isExpanded && (
+                                                        <div className="p-2.5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                                                            {floorRooms.map(room => {
+                                                                const isSelected = selectedRoomIds.includes(room.id);
+                                                                const isOccupied = room.status_occupancy === 'occupied';
+                                                                const rt = room.room_type || room.roomType;
+                                                                const price = rt?.base_price_minor || 35000000;
+
+                                                                return (
+                                                                    <div
+                                                                        key={room.id}
+                                                                        onClick={() => !isOccupied && toggleRoomSelection(room.id)}
+                                                                        className={`border rounded-xl p-2.5 cursor-pointer transition flex items-center justify-between ${
+                                                                            isOccupied
+                                                                                ? 'bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed'
+                                                                                : isSelected
+                                                                                ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500'
+                                                                                : 'bg-white border-slate-200 hover:border-blue-300'
+                                                                        }`}
+                                                                    >
+                                                                        <div className="flex items-center gap-2 min-w-0">
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={isSelected}
+                                                                                disabled={isOccupied}
+                                                                                onChange={() => {}}
+                                                                                className="rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 shrink-0"
+                                                                            />
+                                                                            <div className="truncate">
+                                                                                <div className="font-bold text-xs text-slate-900">
+                                                                                    Room {room.room_number}
+                                                                                </div>
+                                                                                <div className="text-[10px] text-slate-500 truncate">
+                                                                                    {rt?.name || 'Standard'}
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                        <span className="text-[11px] font-bold text-emerald-700 shrink-0">
+                                                                            {formatTZS(price)}
+                                                                        </span>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <div className="text-center py-6 text-slate-400 text-xs">
+                                            No rooms found matching your search.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* =========================================================================
+                        SECTION 2: GUEST PERSONAL INFORMATION
+                    ========================================================================= */}
+                    {(activeSection === 'all' || activeSection === 'guest') && (
+                        <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 space-y-4 shadow-2xs">
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-3 flex-wrap gap-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-7 h-7 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 font-extrabold text-xs flex items-center justify-center">
+                                        2
+                                    </span>
+                                    <div>
+                                        <h3 className="text-sm font-bold text-slate-900">Guest Personal Information</h3>
+                                        <p className="text-[11px] text-slate-500">Full legal name as shown on official ID, age, gender, phone & ethnicity</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Autocomplete / Search Returning Guest */}
+                            <div className="relative">
+                                <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                                    <Search className="w-3.5 h-3.5 text-blue-600" />
+                                    Search Returning Guest
                                 </label>
                                 <div className="relative">
-                                    <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                                     <input
                                         type="text"
                                         value={guestSearch}
@@ -397,8 +925,8 @@ export default function NewReservationModal({
                                             setShowGuestDropdown(true);
                                         }}
                                         onFocus={() => setShowGuestDropdown(true)}
-                                        placeholder="Search by name, phone, or email..."
-                                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                                        placeholder="Search by full name, phone number, or national ID..."
+                                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
                                     />
                                     {guestSearch && (
                                         <button
@@ -412,18 +940,20 @@ export default function NewReservationModal({
                                                     last_name: '',
                                                     phone: '',
                                                     email: '',
+                                                    age: '',
+                                                    tribe: '',
+                                                    id_number: '',
                                                 }));
                                             }}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                                         >
-                                            <X className="w-4 h-4" />
+                                            <X className="w-3.5 h-3.5" />
                                         </button>
                                     )}
                                 </div>
 
-                                {/* Autocomplete Dropdown */}
                                 {showGuestDropdown && filteredGuests.length > 0 && (
-                                    <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-30 overflow-hidden divide-y divide-gray-100">
+                                    <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-30 overflow-hidden divide-y divide-slate-100">
                                         {filteredGuests.map(g => (
                                             <button
                                                 key={g.id}
@@ -432,14 +962,14 @@ export default function NewReservationModal({
                                                 className="w-full px-4 py-2.5 text-left hover:bg-blue-50 transition flex items-center justify-between group"
                                             >
                                                 <div>
-                                                    <div className="font-semibold text-sm text-gray-900 group-hover:text-blue-600">
+                                                    <div className="font-bold text-xs text-slate-900 group-hover:text-blue-600">
                                                         {g.first_name} {g.last_name}
                                                     </div>
-                                                    <div className="text-xs text-gray-500">
-                                                        {g.phone} {g.email ? `• ${g.email}` : ''}
+                                                    <div className="text-[11px] text-slate-500">
+                                                        {g.phone} &bull; {g.nationality} {(g as any).id_number ? `&bull; ID: ${(g as any).id_number}` : ''}
                                                     </div>
                                                 </div>
-                                                <span className="text-xs text-blue-600 font-medium opacity-0 group-hover:opacity-100 transition">
+                                                <span className="text-xs text-blue-600 font-bold opacity-0 group-hover:opacity-100 transition">
                                                     Select
                                                 </span>
                                             </button>
@@ -447,483 +977,593 @@ export default function NewReservationModal({
                                     </div>
                                 )}
                             </div>
-                        </div>
 
-                        {/* Name, Phone, Email */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                                    First Name <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={data.first_name}
-                                    onChange={e => setData('first_name', e.target.value)}
-                                    placeholder="e.g. Baraka"
-                                    className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
-                                />
-                                {errors.first_name && (
-                                    <span className="text-xs text-red-500 mt-1">{errors.first_name}</span>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                                    Last Name <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={data.last_name}
-                                    onChange={e => setData('last_name', e.target.value)}
-                                    placeholder="e.g. Mlowe"
-                                    className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                                    Phone <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="tel"
-                                    required
-                                    value={data.phone}
-                                    onChange={e => setData('phone', e.target.value)}
-                                    placeholder="e.g. +255 712 345 678"
-                                    className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
-                                />
-                                {errors.phone && (
-                                    <span className="text-xs text-red-500 mt-1">{errors.phone}</span>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Email, Company Name, TIN */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                                    Email Address
-                                </label>
-                                <input
-                                    type="email"
-                                    value={data.email}
-                                    onChange={e => setData('email', e.target.value)}
-                                    placeholder="guest@example.com"
-                                    className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                                    Company Name (Optional)
-                                </label>
-                                <input
-                                    type="text"
-                                    value={data.company_name}
-                                    onChange={e => setData('company_name', e.target.value)}
-                                    placeholder="Enter company name"
-                                    className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                                    TIN / GSTIN Number (Optional)
-                                </label>
-                                <input
-                                    type="text"
-                                    value={data.tax_number}
-                                    onChange={e => setData('tax_number', e.target.value)}
-                                    placeholder="Enter TIN number"
-                                    className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Collapsible KYC Information */}
-                        <div className="border border-gray-200 rounded-xl overflow-hidden bg-gray-50/50">
-                            <button
-                                type="button"
-                                onClick={() => setKycOpen(!kycOpen)}
-                                className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-100/60 transition"
-                            >
-                                <span className="font-semibold text-sm text-gray-800 flex items-center gap-2">
-                                    <Shield className="w-4 h-4 text-blue-600" />
-                                    KYC Information
-                                </span>
-                                {kycOpen ? (
-                                    <ChevronUp className="w-4 h-4 text-gray-500" />
-                                ) : (
-                                    <ChevronDown className="w-4 h-4 text-gray-500" />
-                                )}
-                            </button>
-
-                            {kycOpen && (
-                                <div className="p-4 pt-1 border-t border-gray-200/60 grid grid-cols-1 md:grid-cols-4 gap-4 bg-white">
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                                            ID Type
-                                        </label>
-                                        <select
-                                            value={data.id_type}
-                                            onChange={e => setData('id_type', e.target.value)}
-                                            className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-blue-500/20"
-                                        >
-                                            <option value="national_id">National ID (NIDA)</option>
-                                            <option value="passport">Passport</option>
-                                            <option value="driving_license">Driving License</option>
-                                            <option value="voter_id">Voter ID</option>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                                            ID Number
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={data.id_number}
-                                            onChange={e => setData('id_number', e.target.value)}
-                                            placeholder="Enter ID number"
-                                            className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-blue-500/20"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                                            Address
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={data.address}
-                                            onChange={e => setData('address', e.target.value)}
-                                            placeholder="Enter address"
-                                            className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-blue-500/20"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                                            Nationality
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={data.nationality}
-                                            onChange={e => setData('nationality', e.target.value)}
-                                            placeholder="Tanzanian"
-                                            className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-blue-500/20"
-                                        />
-                                    </div>
+                            {/* Full Name, Title, Gender & Age */}
+                            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3.5">
+                                {/* Title */}
+                                <div className="sm:col-span-2">
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                        Title
+                                    </label>
+                                    <select
+                                        value={data.title}
+                                        onChange={e => setData('title', e.target.value)}
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-medium"
+                                    >
+                                        <option value="Mr">Mr.</option>
+                                        <option value="Mrs">Mrs.</option>
+                                        <option value="Ms">Ms.</option>
+                                        <option value="Dr">Dr.</option>
+                                        <option value="Prof">Prof.</option>
+                                        <option value="Hon">Hon.</option>
+                                    </select>
                                 </div>
-                            )}
-                        </div>
-                    </div>
 
-                    {/* SECTION 2: DATES & STAY SETTINGS */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-xl bg-blue-50/40 border border-blue-100">
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
-                                <Calendar className="w-3.5 h-3.5 text-blue-600" />
-                                Check-in Date
-                            </label>
-                            <input
-                                type="date"
-                                required
-                                value={data.check_in}
-                                onChange={e => setData('check_in', e.target.value)}
-                                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800"
-                            />
-                        </div>
+                                {/* First Name */}
+                                <div className="sm:col-span-4">
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                        First Name <span className="text-rose-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={data.first_name}
+                                        onChange={e => setData('first_name', e.target.value)}
+                                        placeholder="e.g. Emmanuel"
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-semibold focus:ring-2 focus:ring-blue-500/20"
+                                    />
+                                </div>
 
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
-                                <Calendar className="w-3.5 h-3.5 text-blue-600" />
-                                Check-out Date
-                            </label>
-                            <input
-                                type="date"
-                                required
-                                value={data.check_out}
-                                onChange={e => setData('check_out', e.target.value)}
-                                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800"
-                            />
-                        </div>
+                                {/* Last Name */}
+                                <div className="sm:col-span-4">
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                        Last Name / Surname <span className="text-rose-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={data.last_name}
+                                        onChange={e => setData('last_name', e.target.value)}
+                                        placeholder="e.g. Massawe"
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-semibold focus:ring-2 focus:ring-blue-500/20"
+                                    />
+                                </div>
 
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                Rate Plan
-                            </label>
-                            <select
-                                value={data.rate_plan_id}
-                                onChange={e => setData('rate_plan_id', e.target.value)}
-                                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800"
-                            >
-                                {ratePlans.map(rp => (
-                                    <option key={rp.id} value={rp.id}>
-                                        {rp.name} ({rp.meal_plan})
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                                {/* Gender */}
+                                <div className="sm:col-span-2">
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                        Gender <span className="text-rose-500">*</span>
+                                    </label>
+                                    <select
+                                        value={data.gender}
+                                        onChange={e => setData('gender', e.target.value)}
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-medium"
+                                    >
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                    </select>
+                                </div>
+                            </div>
 
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
-                                <Users className="w-3.5 h-3.5 text-blue-600" />
-                                Guests
-                            </label>
-                            <div className="flex gap-2">
-                                <select
-                                    value={data.adults}
-                                    onChange={e => setData('adults', Number(e.target.value))}
-                                    className="w-1/2 bg-white border border-gray-200 rounded-xl px-2 py-2 text-sm text-gray-800"
-                                >
-                                    {[1, 2, 3, 4, 5].map(n => (
-                                        <option key={n} value={n}>{n} Ad</option>
-                                    ))}
-                                </select>
-                                <select
-                                    value={data.children}
-                                    onChange={e => setData('children', Number(e.target.value))}
-                                    className="w-1/2 bg-white border border-gray-200 rounded-xl px-2 py-2 text-sm text-gray-800"
-                                >
-                                    {[0, 1, 2, 3].map(n => (
-                                        <option key={n} value={n}>{n} Ch</option>
-                                    ))}
-                                </select>
+                            {/* Age, Phone, Email, Nationality, Tribe */}
+                            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3.5">
+                                {/* Age */}
+                                <div className="sm:col-span-2">
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                        Age
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="125"
+                                        value={data.age}
+                                        onChange={e => setData('age', e.target.value)}
+                                        placeholder="e.g. 34"
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-medium"
+                                    />
+                                </div>
+
+                                {/* Phone */}
+                                <div className="sm:col-span-3">
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                                        <Phone className="w-3.5 h-3.5 text-blue-600" />
+                                        Phone Number <span className="text-rose-500">*</span>
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        required
+                                        value={data.phone}
+                                        onChange={e => setData('phone', e.target.value)}
+                                        placeholder="+255 7XX XXX XXX"
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-medium"
+                                    />
+                                </div>
+
+                                {/* Email */}
+                                <div className="sm:col-span-3">
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                        Email Address
+                                    </label>
+                                    <input
+                                        type="email"
+                                        value={data.email}
+                                        onChange={e => setData('email', e.target.value)}
+                                        placeholder="guest@example.com"
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-medium"
+                                    />
+                                </div>
+
+                                {/* Nationality */}
+                                <div className="sm:col-span-2">
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                        Nationality
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={data.nationality}
+                                        onChange={e => setData('nationality', e.target.value)}
+                                        placeholder="Tanzanian"
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-medium"
+                                    />
+                                </div>
+
+                                {/* Tribe / Ethnicity */}
+                                <div className="sm:col-span-2">
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                        Tribe / Ethnicity
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={data.tribe}
+                                        onChange={e => setData('tribe', e.target.value)}
+                                        placeholder="e.g. Sukuma, Chagga..."
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-medium"
+                                    />
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    )}
 
-                    {/* SECTION 3: FLOOR-BY-FLOOR ROOM SELECTOR */}
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between flex-wrap gap-2">
-                            <div>
-                                <h3 className="text-sm font-bold text-gray-900">
-                                    Select Rooms <span className="text-red-500">*</span>
-                                    <span className="text-xs font-normal text-gray-500 ml-1">
-                                        (You can select multiple)
+                    {/* =========================================================================
+                        SECTION 3: STATUTORY IDENTIFICATION & TRAVEL ITINERARY
+                    ========================================================================= */}
+                    {(activeSection === 'all' || activeSection === 'id') && (
+                        <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 space-y-4 shadow-2xs">
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-3 flex-wrap gap-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-7 h-7 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 font-extrabold text-xs flex items-center justify-center">
+                                        3
                                     </span>
-                                </h3>
-                            </div>
-                            <div className="flex items-center gap-3 text-xs">
-                                <button
-                                    type="button"
-                                    onClick={expandAllFloors}
-                                    className="text-blue-600 hover:underline font-medium"
-                                >
-                                    Expand All
-                                </button>
-                                <span className="text-gray-300">|</span>
-                                <button
-                                    type="button"
-                                    onClick={collapseAllFloors}
-                                    className="text-blue-600 hover:underline font-medium"
-                                >
-                                    Collapse All
-                                </button>
-                                <span className="text-gray-500 bg-gray-100 px-2 py-1 rounded-md font-medium">
-                                    {selectedRoomIds.length} of {totalMatchingRooms} rooms selected
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Room Search Filter */}
-                        <div className="relative">
-                            <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                            <input
-                                type="text"
-                                value={roomSearch}
-                                onChange={e => setRoomSearch(e.target.value)}
-                                placeholder="Search rooms by number, type, floor..."
-                                className="w-full pl-10 pr-4 py-2 bg-gray-50/70 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder-gray-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
-                            />
-                        </div>
-
-                        {/* Floor Accordions */}
-                        <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
-                            {Object.keys(floorGroups).length > 0 ? (
-                                Object.entries(floorGroups).map(([floor, floorRooms]) => {
-                                    const isExpanded = expandedFloors[floor] !== false;
-                                    const availableCount = floorRooms.filter(r => r.status_occupancy === 'vacant').length;
-
-                                    return (
-                                        <div key={floor} className="border border-gray-200 rounded-xl overflow-hidden bg-white">
-                                            {/* Floor Bar */}
-                                            <button
-                                                type="button"
-                                                onClick={() => toggleFloor(floor)}
-                                                className="w-full px-4 py-2.5 bg-gray-50 hover:bg-gray-100/70 transition flex items-center justify-between"
-                                            >
-                                                <div className="flex items-center gap-2.5">
-                                                    <span className="w-6 h-6 rounded-md bg-blue-600 text-white text-xs font-bold flex items-center justify-center">
-                                                        {floor.charAt(0).toUpperCase()}
-                                                    </span>
-                                                    <span className="font-semibold text-sm text-gray-900">
-                                                        {floor.toLowerCase().includes('floor') ? floor : `Floor ${floor}`}
-                                                    </span>
-                                                    <span className="text-xs text-gray-500">
-                                                        {availableCount} rooms available
-                                                    </span>
-                                                </div>
-                                                {isExpanded ? (
-                                                    <ChevronUp className="w-4 h-4 text-gray-500" />
-                                                ) : (
-                                                    <ChevronDown className="w-4 h-4 text-gray-500" />
-                                                )}
-                                            </button>
-
-                                            {/* Rooms Grid inside Floor */}
-                                            {isExpanded && (
-                                                <div className="p-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                                                    {floorRooms.map(room => {
-                                                        const isSelected = selectedRoomIds.includes(room.id);
-                                                        const isOccupied = room.status_occupancy === 'occupied';
-                                                        const rt = room.room_type || room.roomType;
-                                                        const price = rt?.base_price_minor || 35000000;
-
-                                                        return (
-                                                            <div
-                                                                key={room.id}
-                                                                onClick={() => !isOccupied && toggleRoomSelection(room.id)}
-                                                                className={`border rounded-xl p-3 cursor-pointer transition-all duration-150 relative ${
-                                                                    isOccupied
-                                                                        ? 'bg-gray-50/70 border-gray-200 opacity-60 cursor-not-allowed'
-                                                                        : isSelected
-                                                                        ? 'bg-blue-50/70 border-blue-500 ring-2 ring-blue-500/20'
-                                                                        : 'bg-white border-gray-200 hover:border-blue-400'
-                                                                }`}
-                                                            >
-                                                                <div className="flex items-start justify-between gap-2">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            checked={isSelected}
-                                                                            disabled={isOccupied}
-                                                                            onChange={() => {}}
-                                                                            className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4"
-                                                                        />
-                                                                        <span className="font-bold text-sm text-gray-900">
-                                                                            Room {room.room_number}
-                                                                        </span>
-                                                                    </div>
-                                                                    <span className="text-xs font-bold text-emerald-600">
-                                                                        {formatTZS(price)}
-                                                                        <span className="text-[10px] text-gray-400 font-normal"> /night</span>
-                                                                    </span>
-                                                                </div>
-
-                                                                <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-                                                                    <span className="text-[11px] font-medium bg-purple-50 text-purple-700 px-2 py-0.5 rounded-md">
-                                                                        {rt?.name || 'Standard'}
-                                                                    </span>
-                                                                    <span className="text-[11px] text-gray-500">
-                                                                        Capacity: {rt?.max_adults || 2} guests
-                                                                    </span>
-                                                                </div>
-
-                                                                <div className="mt-2 flex items-center gap-1.5 text-[10px] text-gray-400">
-                                                                    <span className="bg-gray-100 px-1.5 py-0.5 rounded">WiFi</span>
-                                                                    <span className="bg-gray-100 px-1.5 py-0.5 rounded">TV</span>
-                                                                    <span className="bg-gray-100 px-1.5 py-0.5 rounded">AC</span>
-                                                                    <span className="bg-gray-100 px-1.5 py-0.5 rounded">+2</span>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })
-                            ) : (
-                                <div className="text-center py-8 text-gray-500 text-sm">
-                                    No rooms match your search query.
+                                    <div>
+                                        <h3 className="text-sm font-bold text-slate-900">
+                                            Statutory Identification & Travel Itinerary
+                                        </h3>
+                                        <p className="text-[11px] text-slate-500">
+                                            Official government ID, origin address, destination, and vehicle registration
+                                        </p>
+                                    </div>
                                 </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* SECTION 4: PRICING & STATUS */}
-                    <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 space-y-4">
-                        <h4 className="text-xs font-bold text-gray-600 uppercase tracking-wide">
-                            Pricing & Status
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                    Total Amount ({nights} {nights === 1 ? 'night' : 'nights'})
-                                </label>
-                                <div className="text-2xl font-bold text-gray-900">
-                                    {formatTZS(totalAmountMinor)}
-                                </div>
-                                <span className="text-xs text-gray-500">
-                                    Includes taxes for {selectedRoomIds.length} room(s)
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                    <Shield className="w-3 h-3 text-amber-600" />
+                                    Statutory Police Inspection
                                 </span>
                             </div>
 
+                            {/* ID Type & ID Number */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                                        <IdCard className="w-3.5 h-3.5 text-blue-600" />
+                                        Official ID Type <span className="text-rose-500">*</span>
+                                    </label>
+                                    <select
+                                        value={data.id_type}
+                                        onChange={e => setData('id_type', e.target.value)}
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-semibold"
+                                    >
+                                        <option value="national_id">National ID (NIDA)</option>
+                                        <option value="driving_license">Driving License</option>
+                                        <option value="passport">Passport</option>
+                                        <option value="voter_id">Voter ID</option>
+                                        <option value="zanzibar_id">Zanzibar Resident ID (ZAN ID)</option>
+                                        <option value="other">Other Official Government ID</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                                        <Fingerprint className="w-3.5 h-3.5 text-blue-600" />
+                                        ID / Document Number <span className="text-rose-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={data.id_number}
+                                        onChange={e => setData('id_number', e.target.value)}
+                                        placeholder="e.g. 19900101-12345-00001-22"
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono font-bold"
+                                    />
+                                    <span className="text-[10px] text-slate-400 mt-1 block">Physical original ID must be presented upon check-in</span>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                                        <Car className="w-3.5 h-3.5 text-blue-600" />
+                                        Vehicle Plate Number
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={data.vehicle_reg_no}
+                                        onChange={e => setData('vehicle_reg_no', e.target.value)}
+                                        placeholder="e.g. T 842 DYZ (if traveling by vehicle)"
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono font-semibold"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Origin and Destination */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                                        <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                                        Origin Address (Coming From) <span className="text-rose-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={data.origin}
+                                        onChange={e => setData('origin', e.target.value)}
+                                        placeholder="City, town, or district originating from (e.g. Dar es Salaam)"
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-medium"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                                        <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                                        Destination (Going To) <span className="text-rose-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={data.destination}
+                                        onChange={e => setData('destination', e.target.value)}
+                                        placeholder="City, town, or country proceeding to (e.g. Arusha, Nairobi)"
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-medium"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* =========================================================================
+                        SECTION 4: BILLING, PAYMENTS & RECEIPT
+                    ========================================================================= */}
+                    {(activeSection === 'all' || activeSection === 'billing') && (
+                        <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 space-y-4 shadow-2xs">
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-3 flex-wrap gap-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-7 h-7 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 font-extrabold text-xs flex items-center justify-center">
+                                        4
+                                    </span>
+                                    <div>
+                                        <h3 className="text-sm font-bold text-slate-900">Billing, Payments & Receipt</h3>
+                                        <p className="text-[11px] text-slate-500">Rate breakdown, advance amount paid, payment method and receipt reference</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-xs text-slate-500">Total Stay Amount:</span>
+                                    <div className="text-lg font-black text-slate-900">{formatTZS(totalAmountMinor)}</div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                {/* Nightly Rate */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                        Rate per Night (TZS)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={data.rate_price}
+                                        onChange={e => setData('rate_price', Number(e.target.value))}
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-bold"
+                                    />
+                                </div>
+
+                                {/* Advance Deposit / Amount Paid */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                                        <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
+                                        Advance Amount Paid (TZS)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={data.deposit}
+                                        onChange={e => setData('deposit', Number(e.target.value))}
+                                        placeholder="0"
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-bold text-emerald-700"
+                                    />
+                                    <span className="text-[10px] text-slate-400 mt-1 block">Enter 0 if paying upon check-out</span>
+                                </div>
+
+                                {/* Payment Method */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                                        <CreditCard className="w-3.5 h-3.5 text-blue-600" />
+                                        Payment Method
+                                    </label>
+                                    <select
+                                        value={data.payment_method}
+                                        onChange={e => setData('payment_method', e.target.value)}
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-semibold"
+                                    >
+                                        <option value="cash">Cash</option>
+                                        <option value="mpesa">M-Pesa (Vodacom)</option>
+                                        <option value="tigopesa">Mix by Yas / Tigo Pesa</option>
+                                        <option value="airtelmoney">Airtel Money</option>
+                                        <option value="bank_transfer">Bank Transfer (NMB / CRDB)</option>
+                                        <option value="card">Visa / MasterCard</option>
+                                    </select>
+                                </div>
+
+                                {/* Receipt Number */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                                        <Receipt className="w-3.5 h-3.5 text-blue-600" />
+                                        Receipt Reference #
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={data.receipt_no}
+                                        onChange={e => setData('receipt_no', e.target.value)}
+                                        placeholder="Auto-generated if blank"
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono font-semibold"
+                                    />
+                                    <span className="text-[10px] text-slate-400 mt-1 block">Generated automatically if left empty</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* =========================================================================
+                        SECTION 5: LEGAL COMPLIANCE, SIGNATURES & REMARKS
+                    ========================================================================= */}
+                    {(activeSection === 'all' || activeSection === 'legal') && (
+                        <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 space-y-4 shadow-2xs">
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-3 flex-wrap gap-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-7 h-7 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 font-extrabold text-xs flex items-center justify-center">
+                                        5
+                                    </span>
+                                    <div>
+                                        <h3 className="text-sm font-bold text-slate-900">
+                                            Legal Compliance, Signatures & Special Remarks
+                                        </h3>
+                                        <p className="text-[11px] text-slate-500">
+                                            Guest declaration, attendant verification, and special operational remarks
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Remarks / Accompanied with */}
                             <div>
-                                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                    Discount Amount (TZS)
+                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                    Special Remarks & Accompanied Persons (e.g. traveling with driver, special requests, luggage instructions)
                                 </label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    value={data.discount_minor ? data.discount_minor / 100 : ''}
-                                    onChange={e => setData('discount_minor', Number(e.target.value) * 100)}
-                                    placeholder="0"
-                                    className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800"
+                                <textarea
+                                    rows={2}
+                                    value={data.notes}
+                                    onChange={e => setData('notes', e.target.value)}
+                                    placeholder="Enter any special remarks, accompanying guests, or vehicle parking details..."
+                                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-blue-500/20"
                                 />
                             </div>
 
-                            <div className="flex flex-col justify-center">
-                                <label className="flex items-center gap-2 cursor-pointer">
+                            {/* Signatures & Declarations */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                                {/* Receptionist Confirmation */}
+                                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                                    <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                        <UserCheck className="w-4 h-4 text-blue-600" />
+                                        Attendant Verification (Receptionist Name)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={data.receptionist_name}
+                                        onChange={e => setData('receptionist_name', e.target.value)}
+                                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-900"
+                                    />
+                                    <p className="text-[10px] text-slate-500">
+                                        Receptionist confirms that the original government-issued ID was physically verified prior to key delivery.
+                                    </p>
+                                </div>
+
+                                {/* Guest Declaration & Signature Check */}
+                                <div className="p-3.5 rounded-xl bg-blue-50/60 border border-blue-200 space-y-2">
+                                    <label className="flex items-start gap-2.5 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={data.guest_signature}
+                                            onChange={e => setData('guest_signature', e.target.checked)}
+                                            className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4 mt-0.5"
+                                        />
+                                        <div>
+                                            <span className="text-xs font-bold text-slate-900 block">
+                                                Guest Signature & Statutory Declaration
+                                            </span>
+                                            <span className="text-[10px] text-slate-600 leading-relaxed block mt-0.5">
+                                                Guest confirms that all registered personal details and travel destinations are true and accurate in compliance with statutory Tanzanian accommodation regulations.
+                                            </span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {/* Instant Check-In Toggle */}
+                            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
+                                <label className="flex items-center gap-2.5 cursor-pointer">
                                     <input
                                         type="checkbox"
                                         checked={data.check_in_now}
                                         onChange={e => setData('check_in_now', e.target.checked)}
                                         className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4"
                                     />
-                                    <span className="text-sm font-semibold text-gray-800">
-                                        Check In Immediately
-                                    </span>
+                                    <div>
+                                        <span className="text-xs font-bold text-slate-900 block">
+                                            Check In Immediately
+                                        </span>
+                                        <span className="text-[10px] text-slate-500 block">
+                                            Room status will immediately be updated to Occupied upon registration.
+                                        </span>
+                                    </div>
                                 </label>
-                                <span className="text-xs text-gray-500 ml-6">
-                                    Assigns room key and creates active stay
-                                </span>
                             </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Footer Actions */}
-                    <div className="flex items-center justify-between gap-3 pt-3 border-t border-gray-100 flex-wrap">
-                        <div className="text-xs text-gray-500 font-medium">
+                    <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-200 flex-wrap">
+                        <div className="text-xs text-slate-600 font-medium">
                             {selectedRoomIds.length === 0 ? (
                                 <span className="text-amber-600 font-bold">Select at least 1 room</span>
                             ) : (
-                                <span className="text-emerald-700 font-bold">✓ {selectedRoomIds.length} room(s) selected</span>
+                                <span className="text-emerald-700 font-bold">
+                                    ✓ {selectedRoomIds.length} room(s) assigned &bull; Total: {formatTZS(totalAmountMinor)}
+                                </span>
                             )}
                         </div>
                         <div className="flex items-center gap-2">
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition cursor-pointer"
+                                className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
                             >
                                 Cancel
                             </button>
                             <button
                                 type="submit"
                                 disabled={processing || isSubmitting || selectedRoomIds.length === 0}
-                                className="px-6 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-md shadow-blue-500/20 cursor-pointer"
+                                className="px-6 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-md shadow-blue-500/20 cursor-pointer flex items-center gap-1.5"
                             >
-                                {processing || isSubmitting ? 'Saving...' : 'Confirm Reservation'}
+                                <CheckCircle2 className="w-4 h-4" />
+                                <span>{processing || isSubmitting ? 'Recording Ledger...' : 'Confirm & Register Guest'}</span>
                             </button>
                         </div>
                     </div>
                 </form>
             </div>
+
+            {/* Quick Add Rate Plan & Meal Basis Modal */}
+            {showAddRatePlanModal && (
+                <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+                    <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden">
+                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                                    <Utensils className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-900">Add Rate Plan & Meal Basis</h3>
+                                    <p className="text-[11px] text-slate-500">Configure dining formulas and accommodation plans</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowAddRatePlanModal(false)}
+                                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleCreateRatePlan} className="p-5 space-y-3.5 text-xs">
+                            <div>
+                                <label className="block font-semibold text-slate-700 mb-1">
+                                    Rate Plan Name *
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={newPlanForm.name}
+                                    onChange={e => setNewPlanForm(prev => ({ ...prev, name: e.target.value }))}
+                                    placeholder="e.g. Bed & Breakfast Standard, Full Board Safari..."
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block font-semibold text-slate-700 mb-1">
+                                        Meal Basis *
+                                    </label>
+                                    <select
+                                        value={newPlanForm.meal_plan}
+                                        onChange={e => setNewPlanForm(prev => ({ ...prev, meal_plan: e.target.value }))}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-medium focus:bg-white focus:border-blue-500"
+                                    >
+                                        <option value="BB">BB - Bed & Breakfast</option>
+                                        <option value="HB">HB - Half Board (Breakfast & Dinner)</option>
+                                        <option value="FB">FB - Full Board (All 3 Meals)</option>
+                                        <option value="RO">RO - Room Only (European Plan)</option>
+                                        <option value="AI">AI - All Inclusive Package</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block font-semibold text-slate-700 mb-1">
+                                        Code (Optional)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={newPlanForm.code}
+                                        onChange={e => setNewPlanForm(prev => ({ ...prev, code: e.target.value }))}
+                                        placeholder="e.g. BB-STD"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 uppercase focus:bg-white focus:border-blue-500"
+                                    />
+                                </div>
+                            </div>
+
+                            <label className="flex items-center gap-2 cursor-pointer pt-1">
+                                <input
+                                    type="checkbox"
+                                    checked={newPlanForm.is_resident_only}
+                                    onChange={e => setNewPlanForm(prev => ({ ...prev, is_resident_only: e.target.checked }))}
+                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                                />
+                                <span className="font-semibold text-slate-700">East African / Tanzania Resident Only</span>
+                            </label>
+
+                            {planError && (
+                                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-[11px]">
+                                    {planError}
+                                </div>
+                            )}
+
+                            <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddRatePlanModal(false)}
+                                    className="px-3.5 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold text-xs cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={savingPlan}
+                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-xs transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                                >
+                                    {savingPlan ? 'Saving...' : 'Save & Select Rate Plan'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

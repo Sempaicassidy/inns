@@ -15,9 +15,11 @@ use App\Http\Controllers\NightAuditController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RatePlanController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\RestaurantController;
+use App\Http\Controllers\RoomTypeController;
 use App\Http\Controllers\SaasAdminController;
 use App\Http\Controllers\WhatsAppController;
 use Illuminate\Support\Facades\Route;
@@ -50,6 +52,18 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     Route::post('/reservations/{reservation}/check-out', [ReservationController::class, 'checkOut'])->name('reservations.check-out');
     Route::post('/reservations/{reservation}/cancel', [ReservationController::class, 'cancel'])->name('reservations.cancel');
     Route::match(['put', 'patch'], '/reservations/{reservation}', [ReservationController::class, 'update'])->name('reservations.update');
+
+    // 3.01 Rate Plans & Meal Basis Management
+    Route::get('/rate-plans', [RatePlanController::class, 'index'])->name('rate-plans.index');
+    Route::post('/rate-plans', [RatePlanController::class, 'store'])->name('rate-plans.store');
+    Route::match(['put', 'patch'], '/rate-plans/{ratePlan}', [RatePlanController::class, 'update'])->name('rate-plans.update');
+    Route::delete('/rate-plans/{ratePlan}', [RatePlanController::class, 'destroy'])->name('rate-plans.destroy');
+
+    // 3.02 Room Types Management
+    Route::get('/room-types', [RoomTypeController::class, 'index'])->name('room-types.index');
+    Route::post('/room-types', [RoomTypeController::class, 'store'])->name('room-types.store');
+    Route::match(['put', 'patch'], '/room-types/{roomType}', [RoomTypeController::class, 'update'])->name('room-types.update');
+    Route::delete('/room-types/{roomType}', [RoomTypeController::class, 'destroy'])->name('room-types.destroy');
 
     // 3.1 Guest Portal & CRM
     Route::get('/guests', [GuestController::class, 'index'])->name('guests.index');

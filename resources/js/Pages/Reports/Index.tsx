@@ -972,17 +972,10 @@ export default function ReportsIndex({
                             </div>
                             <div className="flex items-center gap-2">
                                 <Link
-                                    href={route('guests.index')}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-800 hover:bg-indigo-100 border border-indigo-200 rounded-xl text-xs font-bold transition"
-                                >
-                                    <span>Guest Portal</span>
-                                    <ExternalLink className="w-3.5 h-3.5" />
-                                </Link>
-                                <Link
                                     href={route('reservations.index')}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold transition shadow-2xs"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-800 hover:bg-blue-100 border border-blue-200 rounded-xl text-xs font-bold transition shadow-2xs"
                                 >
-                                    <span>Reservations</span>
+                                    <span>Reservations & Front Desk</span>
                                     <ExternalLink className="w-3.5 h-3.5" />
                                 </Link>
                             </div>
@@ -1027,10 +1020,10 @@ export default function ReportsIndex({
                                     Active In-House Stays & Room Accounts
                                 </h3>
                                 <Link
-                                    href={route('guests.index')}
-                                    className="text-xs text-indigo-700 font-bold hover:underline"
+                                    href={route('reservations.index', { status: 'checked_in' })}
+                                    className="text-xs text-blue-700 font-bold hover:underline"
                                 >
-                                    Guest Portal &rarr;
+                                    In-House Bookings &rarr;
                                 </Link>
                             </div>
                             <div className="overflow-x-auto">

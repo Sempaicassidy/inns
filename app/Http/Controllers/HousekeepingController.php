@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BusinessDate;
 use App\Models\HousekeepingTask;
 use App\Models\Property;
+use App\Models\RatePlan;
 use App\Models\Room;
 use App\Models\RoomType;
 use App\Models\SystemNotification;
@@ -27,7 +28,11 @@ class HousekeepingController extends Controller
         $search = $request->input('search');
 
         $user = $request->user();
-        $property = $user->property ?? Property::first();
+        $property = $user->property ?? Property::find(session('current_property_id')) ?? Property::first();
+        if ($property) {
+            RoomType::ensureDefaultsForProperty($property);
+            RatePlan::ensureDefaultsForProperty($property);
+        }
         $bDateRecord = $property ? BusinessDate::where('property_id', $property->id)->first() : null;
         $todayStr = $bDateRecord ? Carbon::parse($bDateRecord->current_business_date)->toDateString() : Carbon::today()->toDateString();
 
@@ -176,6 +181,7 @@ class HousekeepingController extends Controller
         return Inertia::render('Housekeeping/Index', [
             'rooms' => $rooms,
             'roomTypes' => $roomTypes,
+            'ratePlans' => $property ? RatePlan::where('property_id', $property->id)->where('is_active', true)->get() : RatePlan::where('is_active', true)->get(),
             'tasks' => $tasks,
             'housekeepers' => $housekeepers,
             'floors' => $floors,

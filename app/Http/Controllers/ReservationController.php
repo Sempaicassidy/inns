@@ -51,9 +51,24 @@ class ReservationController extends Controller
             ->paginate(15)
             ->withQueryString();
 
+        $user = $request->user();
+        $property = $user?->property ?? Property::find(session('current_property_id')) ?? Property::first();
+
         $rooms = Room::with('roomType')->where('is_active', true)->get();
         $roomTypes = RoomType::where('is_active', true)->get();
         $ratePlans = RatePlan::where('is_active', true)->get();
+
+        if ($property) {
+            if ($ratePlans->isEmpty()) {
+                $ratePlans = RatePlan::ensureDefaultsForProperty($property);
+            }
+            if ($rooms->isEmpty()) {
+                RoomType::ensureDefaultsForProperty($property);
+                $rooms = Room::with('roomType')->where('is_active', true)->get();
+                $roomTypes = RoomType::where('is_active', true)->get();
+            }
+        }
+
         $guests = Guest::latest()->take(50)->get();
 
         return Inertia::render('Reservations/Index', [
@@ -106,10 +121,19 @@ class ReservationController extends Controller
             'guest_id' => 'nullable|string|uuid',
             'first_name' => 'required_without:guest_id|nullable|string|max:100',
             'last_name' => 'required_without:guest_id|nullable|string|max:100',
+            'gender' => 'nullable|string|max:20',
+            'age' => 'nullable|integer|min:1|max:130',
             'phone' => 'nullable|string|max:30',
             'email' => 'nullable|email|max:100',
             'nationality' => 'nullable|string|max:50',
+            'tribe' => 'nullable|string|max:100',
+            'id_type' => 'nullable|string|max:50',
             'id_number' => 'nullable|string|max:50',
+            'origin' => 'nullable|string|max:150',
+            'destination' => 'nullable|string|max:150',
+            'vehicle_reg_no' => 'nullable|string|max:50',
+            'check_in_time' => 'nullable|string|max:20',
+            'check_out_time' => 'nullable|string|max:20',
             'room_type_id' => 'nullable|string',
             'room_id' => 'nullable|string',
             'room_ids' => 'nullable|array',
@@ -121,6 +145,10 @@ class ReservationController extends Controller
             'source' => 'required|string',
             'rate_price' => 'nullable|numeric|min:0',
             'deposit' => 'nullable|numeric|min:0',
+            'payment_method' => 'nullable|string|max:50',
+            'receipt_no' => 'nullable|string|max:100',
+            'guest_signature' => 'nullable|boolean',
+            'receptionist_name' => 'nullable|string|max:100',
             'notes' => 'nullable|string',
             'check_in_now' => 'nullable|boolean',
         ]);
@@ -149,6 +177,22 @@ class ReservationController extends Controller
             // Find or create guest
             if (! empty($validated['guest_id'])) {
                 $guest = Guest::findOrFail($validated['guest_id']);
+                $guestUpdates = array_filter([
+                    'phone' => $validated['phone'] ?? null,
+                    'email' => $validated['email'] ?? null,
+                    'gender' => $validated['gender'] ?? null,
+                    'age' => $validated['age'] ?? null,
+                    'nationality' => $validated['nationality'] ?? null,
+                    'tribe' => $validated['tribe'] ?? null,
+                    'id_type' => $validated['id_type'] ?? null,
+                    'id_number' => $validated['id_number'] ?? null,
+                    'origin' => $validated['origin'] ?? null,
+                    'destination' => $validated['destination'] ?? null,
+                    'vehicle_reg_no' => $validated['vehicle_reg_no'] ?? null,
+                ]);
+                if (! empty($guestUpdates)) {
+                    $guest->update($guestUpdates);
+                }
             } else {
                 $firstName = ! empty($validated['first_name']) ? $validated['first_name'] : 'Walk-In';
                 $lastName = ! empty($validated['last_name']) ? $validated['last_name'] : 'Guest';
@@ -156,10 +200,17 @@ class ReservationController extends Controller
                     'tenant_id' => $tenantId,
                     'first_name' => $firstName,
                     'last_name' => $lastName,
+                    'gender' => $validated['gender'] ?? null,
+                    'age' => $validated['age'] ?? null,
                     'phone' => $validated['phone'] ?? null,
                     'email' => $validated['email'] ?? null,
                     'nationality' => $validated['nationality'] ?? 'Tanzanian',
+                    'tribe' => $validated['tribe'] ?? null,
+                    'id_type' => $validated['id_type'] ?? 'national_id',
                     'id_number' => $validated['id_number'] ?? null,
+                    'origin' => $validated['origin'] ?? null,
+                    'destination' => $validated['destination'] ?? null,
+                    'vehicle_reg_no' => $validated['vehicle_reg_no'] ?? null,
                 ]);
             }
 
@@ -180,6 +231,12 @@ class ReservationController extends Controller
 
             $status = ! empty($validated['check_in_now']) ? 'checked_in' : 'confirmed';
 
+            // Generate receipt number if advance paid
+            $receiptNo = $validated['receipt_no'] ?? null;
+            if (empty($receiptNo) && $depositMinor > 0) {
+                $receiptNo = sprintf('RCT-%s-%04d', now()->format('ym'), rand(1000, 9999));
+            }
+
             $reservation = Reservation::create([
                 'tenant_id' => $tenantId,
                 'property_id' => $property->id,
@@ -188,11 +245,20 @@ class ReservationController extends Controller
                 'source' => $validated['source'],
                 'status' => $status,
                 'check_in' => $validated['check_in'],
+                'check_in_time' => $validated['check_in_time'] ?? now()->format('H:i'),
                 'check_out' => $validated['check_out'],
+                'check_out_time' => $validated['check_out_time'] ?? '10:00',
                 'adults' => $validated['adults'],
                 'children' => $validated['children'] ?? 0,
+                'origin' => $validated['origin'] ?? null,
+                'destination' => $validated['destination'] ?? null,
+                'vehicle_reg_no' => $validated['vehicle_reg_no'] ?? null,
                 'total_minor' => $totalMinor,
                 'deposit_minor' => $depositMinor,
+                'receipt_no' => $receiptNo,
+                'payment_method' => $validated['payment_method'] ?? 'cash',
+                'guest_signature' => ! empty($validated['guest_signature']),
+                'receptionist_name' => $validated['receptionist_name'] ?? $user->name,
                 'notes' => $validated['notes'] ?? null,
                 'created_by' => $user->id,
             ]);
@@ -249,11 +315,13 @@ class ReservationController extends Controller
                     'tenant_id' => $tenantId,
                     'folio_id' => $folio->id,
                     'business_date' => $checkIn->toDateString(),
-                    'payment_method' => 'cash',
+                    'payment_method' => $validated['payment_method'] ?? 'cash',
+                    'provider_ref' => $receiptNo,
                     'amount_minor' => $depositMinor,
+                    'currency' => $property->currency ?? 'TZS',
                     'status' => 'confirmed',
                     'received_by' => $user->id,
-                    'notes' => 'Booking advance deposit',
+                    'notes' => 'Booking advance deposit' . ($receiptNo ? ' (Receipt: ' . $receiptNo . ')' : ''),
                 ]);
             }
 

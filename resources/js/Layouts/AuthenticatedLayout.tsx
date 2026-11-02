@@ -818,7 +818,6 @@ export default function AuthenticatedLayout({
         { name: 'Dashboard', href: route('dashboard'), icon: Home, active: route().current('dashboard') },
         { name: 'Calendar View', href: route('calendar.index'), icon: Calendar, active: route().current('calendar.*') },
         { name: 'Reservations', href: route('reservations.index'), icon: Calendar, active: route().current('reservations.*') },
-        { name: 'Guest Portal', href: route('guests.index'), icon: Users, active: route().current('guests.*') },
         { name: 'Room Overview', href: route('housekeeping.index'), icon: Bed, active: route().current('housekeeping.*') },
         { name: 'Hotel Report', href: route('reports.index'), icon: BarChart3, active: route().current('reports.*') },
         { name: 'POS Restaurant Report', href: route('restaurant.index'), icon: Utensils, active: route().current('restaurant.*') },

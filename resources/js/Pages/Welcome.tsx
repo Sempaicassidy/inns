@@ -48,7 +48,7 @@ import {
 } from 'lucide-react';
 import React, { useState } from 'react';
 
-interface WelcomeProps extends PageProps {
+interface WelcomeProps {
     canLogin?: boolean;
     canRegister?: boolean;
     user?: {
@@ -56,13 +56,20 @@ interface WelcomeProps extends PageProps {
         email: string;
         role: string;
     } | null;
+    auth?: {
+        user?: {
+            name: string;
+            email: string;
+            role: string;
+        };
+    };
 }
 
 export default function Welcome({ auth, canLogin = true, canRegister = true, user: propUser }: WelcomeProps) {
     const user = propUser || auth?.user;
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-    const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('annually');
+    const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('monthly');
     const [currency, setCurrency] = useState<'TZS' | 'USD'>('TZS');
     const [previewTab, setPreviewTab] = useState<'manager' | 'frontdesk' | 'restaurant' | 'grocery' | 'accounting' | 'housekeeping'>('manager');
     const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -71,20 +78,22 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
         setOpenFaq(openFaq === index ? null : index);
     };
 
-    // Currency Formatting Helper
-    const formatPrice = (tzsAmount: number, usdAmount: number) => {
-        const discountMultiplier = billingCycle === 'annually' ? 0.8 : 1.0;
-        if (currency === 'TZS') {
-            const finalVal = Math.round((tzsAmount * discountMultiplier) / 1000) * 1000;
-            return `TZS ${new Intl.NumberFormat('en-TZ').format(finalVal)}`;
+    const formatPrice = (monthlyTzs: number, monthlyUsd: number, annualTzs: number, annualUsd: number) => {
+        if (billingCycle === 'annually') {
+            if (currency === 'TZS') {
+                return `TZS ${new Intl.NumberFormat('en-TZ').format(annualTzs)}`;
+            }
+            return `$${new Intl.NumberFormat('en-US').format(annualUsd)}`;
         }
-        const finalUsd = Math.round(usdAmount * discountMultiplier);
-        return `$${finalUsd}`;
+        if (currency === 'TZS') {
+            return `TZS ${new Intl.NumberFormat('en-TZ').format(monthlyTzs)}`;
+        }
+        return `$${new Intl.NumberFormat('en-US').format(monthlyUsd)}`;
     };
 
     return (
         <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-blue-600 selection:text-white">
-            <Head title="THE INNS - Cloud Hotel Management System & SaaS PMS" />
+            <Head title="THE INNS" />
 
             {/* TOP FLOATING PILL NAVBAR WRAPPER ON SOFT SKY GRADIENT */}
             <div className="relative bg-gradient-to-b from-[#edf4ff] via-[#f6f9fe] to-white pb-6 pt-4 sm:pt-6">
@@ -359,17 +368,12 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                     {/* Badge */}
-                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-xs font-black tracking-wide uppercase shadow-2xs mb-6">
-                        <Sparkles className="w-3.5 h-3.5 text-blue-600 animate-spin" style={{ animationDuration: '6s' }} />
-                        <span>The Modern All-In-One Cloud Hospitality OS</span>
-                    </div>
+
 
                     {/* Headline */}
                     <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight max-w-5xl mx-auto leading-[1.12]">
-                        Run Your Hotel, Lodges, POS & Accounting from{' '}
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
-                            One Seamless Cloud.
-                        </span>
+                        Run Your Hotel, Lodges, Airbnb & Guest House from{' '}
+                        <span className="text-blue-600">One Seamless Cloud.</span>
                     </h1>
 
                     {/* Subheadline */}
@@ -381,7 +385,7 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                     <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
                         <Link
                             href={user ? route('dashboard') : route('register')}
-                            className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-sm rounded-2xl shadow-xl shadow-blue-600/30 transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                            className="w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm rounded-2xl shadow-xl shadow-blue-600/30 transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
                         >
                             <span>{user ? 'Open Hotel Dashboard' : 'Start 14-Day Free Trial'}</span>
                             <ArrowRight className="w-4 h-4 stroke-[2.5]" />
@@ -389,19 +393,19 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
 
                         <a
                             href="#preview"
-                            className="w-full sm:w-auto px-7 py-4 bg-white hover:bg-slate-100 text-slate-800 font-bold text-sm rounded-2xl border border-slate-300/80 shadow-xs transition flex items-center justify-center gap-2"
+                            className="w-full sm:w-auto px-7 py-4 bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-sm rounded-2xl border border-slate-300 shadow-xs transition flex items-center justify-center gap-2"
                         >
-                            <Activity className="w-4 h-4 text-blue-600" />
+                            <Activity className="w-4 h-4 text-white-600" />
                             <span>Explore Live Modules</span>
                         </a>
 
-                        <Link
+                        {/* <Link
                             href={route('login')}
                             className="w-full sm:w-auto text-xs font-bold text-slate-500 hover:text-blue-600 py-2 sm:py-0 px-2 transition flex items-center justify-center gap-1"
                         >
                             <span>Staff Login Portal</span>
                             <ChevronRight className="w-3.5 h-3.5" />
-                        </Link>
+                        </Link> */}
                     </div>
 
                     {/* Value highlights checklist */}
@@ -425,342 +429,411 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                     </div>
                 </div>
 
-                {/* 4. INTERACTIVE LIVE PRODUCT PREVIEW SHOWCASE */}
-                <div id="preview" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-16">
-                    <div className="bg-slate-900 rounded-3xl p-2 sm:p-4 shadow-2xl border border-slate-800 ring-1 ring-white/10">
-                        {/* Browser Bar */}
-                        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 text-xs">
-                            <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 rounded-full bg-rose-500/80"></div>
-                                <div className="w-3 h-3 rounded-full bg-amber-500/80"></div>
-                                <div className="w-3 h-3 rounded-full bg-emerald-500/80"></div>
-                                <span className="ml-2 font-mono text-slate-400 text-[11px] hidden sm:inline">
-                                    https://app.theinns.com/dashboard/portal
-                                </span>
+                {/* 4. INTERACTIVE LIVE OPERATIONS SHOWCASE (Clean Light Aesthetic) */}
+                <div id="preview" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-14">
+                    <div className="bg-white rounded-3xl p-4 sm:p-7 shadow-xl border border-slate-200">
+                        {/* Top Bar with Live Pulse & Category Switcher */}
+                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-bold border border-emerald-200">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                        Live Operations Demo
+                                    </span>
+                                    <span className="text-xs font-semibold text-slate-500 hidden sm:inline">
+                                        Multi-Property Cloud Workflow
+                                    </span>
+                                </div>
+                                <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-1.5 tracking-tight">
+                                    Interactive Hotel Command Center
+                                </h3>
                             </div>
-                            <span className="text-[11px] font-bold text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-md">
-                                Multi-Tenant SaaS Demo
-                            </span>
-                        </div>
 
-                        {/* Module Tab Selector */}
-                        <div className="flex items-center gap-1.5 overflow-x-auto p-2 bg-slate-950/60 rounded-xl mt-2 text-xs font-bold scrollbar-none">
-                            <button
-                                type="button"
-                                onClick={() => setPreviewTab('manager')}
-                                className={`px-3.5 py-2 rounded-lg flex items-center gap-2 whitespace-nowrap transition ${
-                                    previewTab === 'manager'
-                                        ? 'bg-blue-600 text-white shadow-xs'
-                                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                                }`}
-                            >
-                                <BarChart3 className="w-3.5 h-3.5" />
-                                <span>General Manager Analytics</span>
-                            </button>
+                            {/* Solid Module Switchers */}
+                            <div className="flex items-center gap-1.5 overflow-x-auto p-1.5 bg-slate-100 rounded-2xl text-xs font-bold w-full md:w-auto scrollbar-none">
+                                <button
+                                    type="button"
+                                    onClick={() => setPreviewTab('frontdesk')}
+                                    className={`px-3.5 py-2 rounded-xl flex items-center gap-2 whitespace-nowrap transition ${
+                                        previewTab === 'frontdesk'
+                                            ? 'bg-blue-600 text-white shadow-xs'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                                    }`}
+                                >
+                                    <Calendar className="w-3.5 h-3.5" />
+                                    <span>Front Desk</span>
+                                </button>
 
-                            <button
-                                type="button"
-                                onClick={() => setPreviewTab('frontdesk')}
-                                className={`px-3.5 py-2 rounded-lg flex items-center gap-2 whitespace-nowrap transition ${
-                                    previewTab === 'frontdesk'
-                                        ? 'bg-blue-600 text-white shadow-xs'
-                                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                                }`}
-                            >
-                                <Calendar className="w-3.5 h-3.5" />
-                                <span>Front Desk & Gantt Matrix</span>
-                            </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setPreviewTab('restaurant')}
+                                    className={`px-3.5 py-2 rounded-xl flex items-center gap-2 whitespace-nowrap transition ${
+                                        previewTab === 'restaurant'
+                                            ? 'bg-blue-600 text-white shadow-xs'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                                    }`}
+                                >
+                                    <Utensils className="w-3.5 h-3.5" />
+                                    <span>Restaurant POS</span>
+                                </button>
 
-                            <button
-                                type="button"
-                                onClick={() => setPreviewTab('restaurant')}
-                                className={`px-3.5 py-2 rounded-lg flex items-center gap-2 whitespace-nowrap transition ${
-                                    previewTab === 'restaurant'
-                                        ? 'bg-blue-600 text-white shadow-xs'
-                                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                                }`}
-                            >
-                                <Utensils className="w-3.5 h-3.5" />
-                                <span>Restaurant & Bar POS</span>
-                            </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setPreviewTab('grocery')}
+                                    className={`px-3.5 py-2 rounded-xl flex items-center gap-2 whitespace-nowrap transition ${
+                                        previewTab === 'grocery'
+                                            ? 'bg-blue-600 text-white shadow-xs'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                                    }`}
+                                >
+                                    <ShoppingBag className="w-3.5 h-3.5" />
+                                    <span>Minimart POS</span>
+                                </button>
 
-                            <button
-                                type="button"
-                                onClick={() => setPreviewTab('grocery')}
-                                className={`px-3.5 py-2 rounded-lg flex items-center gap-2 whitespace-nowrap transition ${
-                                    previewTab === 'grocery'
-                                        ? 'bg-blue-600 text-white shadow-xs'
-                                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                                }`}
-                            >
-                                <ShoppingBag className="w-3.5 h-3.5" />
-                                <span>Grocery Retail Minimart</span>
-                            </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setPreviewTab('housekeeping')}
+                                    className={`px-3.5 py-2 rounded-xl flex items-center gap-2 whitespace-nowrap transition ${
+                                        previewTab === 'housekeeping'
+                                            ? 'bg-blue-600 text-white shadow-xs'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                                    }`}
+                                >
+                                    <Bed className="w-3.5 h-3.5" />
+                                    <span>Housekeeping</span>
+                                </button>
 
-                            <button
-                                type="button"
-                                onClick={() => setPreviewTab('accounting')}
-                                className={`px-3.5 py-2 rounded-lg flex items-center gap-2 whitespace-nowrap transition ${
-                                    previewTab === 'accounting'
-                                        ? 'bg-blue-600 text-white shadow-xs'
-                                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                                }`}
-                            >
-                                <DollarSign className="w-3.5 h-3.5" />
-                                <span>Accountant GL & Reports</span>
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={() => setPreviewTab('housekeeping')}
-                                className={`px-3.5 py-2 rounded-lg flex items-center gap-2 whitespace-nowrap transition ${
-                                    previewTab === 'housekeeping'
-                                        ? 'bg-blue-600 text-white shadow-xs'
-                                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                                }`}
-                            >
-                                <Bed className="w-3.5 h-3.5" />
-                                <span>Housekeeping Hub</span>
-                            </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setPreviewTab('manager')}
+                                    className={`px-3.5 py-2 rounded-xl flex items-center gap-2 whitespace-nowrap transition ${
+                                        previewTab === 'manager'
+                                            ? 'bg-blue-600 text-white shadow-xs'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                                    }`}
+                                >
+                                    <BarChart3 className="w-3.5 h-3.5" />
+                                    <span>Executive Reports</span>
+                                </button>
+                            </div>
                         </div>
 
                         {/* Interactive Tab Body */}
-                        <div className="p-4 sm:p-6 bg-slate-900 rounded-2xl mt-2 text-slate-100 min-h-[380px] flex flex-col justify-between">
-                            {previewTab === 'manager' && (
-                                <div className="space-y-4 animate-in fade-in duration-300">
-                                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
-                                        <div>
-                                            <h3 className="text-lg font-black text-white">General Manager Executive Cockpit</h3>
-                                            <p className="text-xs text-slate-400">Paradise Safari Lodge & Resort • Real-Time Occupancy & RevPAR</p>
-                                        </div>
-                                        <span className="px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold border border-emerald-500/30">
-                                            Occupancy 88.4%
-                                        </span>
-                                    </div>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                        <div className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60">
-                                            <span className="text-[10px] text-slate-400 font-bold uppercase">Total Revenue (MTD)</span>
-                                            <div className="text-xl font-black text-white mt-1">TZS 184,250,000</div>
-                                            <span className="text-[10px] text-emerald-400 font-semibold">+18.2% vs last month</span>
-                                        </div>
-                                        <div className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60">
-                                            <span className="text-[10px] text-slate-400 font-bold uppercase">Average Daily Rate (ADR)</span>
-                                            <div className="text-xl font-black text-white mt-1">TZS 285,000</div>
-                                            <span className="text-[10px] text-blue-400 font-semibold">Premium Deluxe Surge</span>
-                                        </div>
-                                        <div className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60">
-                                            <span className="text-[10px] text-slate-400 font-bold uppercase">RevPAR</span>
-                                            <div className="text-xl font-black text-white mt-1">TZS 251,940</div>
-                                            <span className="text-[10px] text-emerald-400 font-semibold">High Season Performance</span>
-                                        </div>
-                                        <div className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60">
-                                            <span className="text-[10px] text-slate-400 font-bold uppercase">In-House Guests</span>
-                                            <div className="text-xl font-black text-white mt-1">42 Guests / 24 Rooms</div>
-                                            <span className="text-[10px] text-amber-400 font-semibold">9 Arrivals Expected Today</span>
-                                        </div>
-                                    </div>
-                                    <div className="bg-slate-800/40 p-3 rounded-xl border border-slate-800 text-xs text-slate-300 flex items-center justify-between">
-                                        <span>Consolidated Daily Flash Report ready for instant PDF export & WhatsApp dispatch to property directors.</span>
-                                        <span className="text-blue-400 font-bold">Auto-Sync 100%</span>
-                                    </div>
-                                </div>
-                            )}
-
+                        <div className="mt-5 min-h-[360px] flex flex-col justify-between">
                             {previewTab === 'frontdesk' && (
-                                <div className="space-y-4 animate-in fade-in duration-300">
-                                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                                <div className="space-y-4 animate-in fade-in duration-200">
+                                    <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
                                         <div>
-                                            <h3 className="text-lg font-black text-white">Front Desk Gantt Room Matrix & Folios</h3>
-                                            <p className="text-xs text-slate-400">Interactive visual timeline with drag-and-drop bookings & express checkout</p>
+                                            <div className="text-sm font-black text-slate-900">Live Visual Room Matrix & Folio Manager</div>
+                                            <div className="text-xs text-slate-500">Real-time room allocation, check-ins, guest ledger & instant billing</div>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 text-xs font-bold">32 Rooms</span>
-                                            <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold">14 Clean</span>
+                                        <div className="flex items-center gap-2 text-xs">
+                                            <span className="px-2.5 py-1 rounded-lg bg-blue-100 text-blue-700 font-bold">24 Occupied</span>
+                                            <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-700 font-bold">14 Clean & Inspected</span>
+                                            <span className="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-700 font-bold">4 Expected Today</span>
                                         </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <div className="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60 flex items-center justify-between text-xs">
-                                            <div className="flex items-center gap-3">
-                                                <span className="px-2 py-1 rounded bg-blue-600 text-white font-mono font-bold">Room 101</span>
-                                                <div>
-                                                    <span className="font-bold text-white">David Kimaro (Corporate - Serengeti Safari)</span>
-                                                    <span className="text-slate-400 block text-[11px]">Check-out: Tomorrow 11:00 AM • Deluxe Double</span>
-                                                </div>
+
+                                    {/* Room Cards Grid */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                        <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs hover:border-blue-400 transition">
+                                            <div className="flex items-center justify-between">
+                                                <span className="px-2.5 py-1 bg-slate-900 text-white font-mono font-bold text-xs rounded-lg">Room 101</span>
+                                                <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[11px] font-bold">Checked In</span>
                                             </div>
-                                            <div className="text-right">
-                                                <span className="text-emerald-400 font-bold block">Folio: TZS 0 (Paid)</span>
-                                                <span className="text-[10px] text-slate-400">Express Check-in Ready</span>
+                                            <div className="mt-3">
+                                                <div className="font-bold text-slate-900 text-sm">Dr. David Mhando</div>
+                                                <div className="text-xs text-slate-500">Deluxe Safari Suite • 3 Nights (B&B)</div>
+                                            </div>
+                                            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                                                <span className="text-slate-500 font-semibold">Folio Balance</span>
+                                                <span className="font-black text-slate-900">TZS 360,000</span>
                                             </div>
                                         </div>
 
-                                        <div className="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60 flex items-center justify-between text-xs">
-                                            <div className="flex items-center gap-3">
-                                                <span className="px-2 py-1 rounded bg-amber-600 text-white font-mono font-bold">Room 204</span>
-                                                <div>
-                                                    <span className="font-bold text-white">Sarah & Mark Jenkins</span>
-                                                    <span className="text-slate-400 block text-[11px]">Arrival: 2:00 PM • Executive Suite • Airport Pickup Assigned</span>
-                                                </div>
+                                        <div className="p-4 rounded-2xl border border-blue-200 bg-blue-50/40 shadow-2xs">
+                                            <div className="flex items-center justify-between">
+                                                <span className="px-2.5 py-1 bg-blue-600 text-white font-mono font-bold text-xs rounded-lg">Room 102</span>
+                                                <span className="px-2 py-0.5 rounded-md bg-blue-600 text-white text-[11px] font-bold">Arriving 14:00</span>
                                             </div>
-                                            <div className="text-right">
-                                                <span className="text-amber-400 font-bold block">Deposit: TZS 450,000</span>
-                                                <span className="text-[10px] text-slate-400">WhatsApp Notification Sent</span>
+                                            <div className="mt-3">
+                                                <div className="font-bold text-slate-900 text-sm">Sarah Jenkins (UK)</div>
+                                                <div className="text-xs text-slate-500">Executive Ocean View • 2 Nights (HB)</div>
+                                            </div>
+                                            <div className="mt-3 pt-3 border-t border-blue-100 flex items-center justify-between text-xs">
+                                                <span className="text-blue-700 font-semibold">Advance Deposit</span>
+                                                <span className="font-black text-emerald-700">Paid TZS 250,000</span>
                                             </div>
                                         </div>
+
+                                        <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs">
+                                            <div className="flex items-center justify-between">
+                                                <span className="px-2.5 py-1 bg-slate-900 text-white font-mono font-bold text-xs rounded-lg">Room 201</span>
+                                                <span className="px-2 py-0.5 rounded-md bg-amber-600 text-white text-[11px] font-bold">Reserved</span>
+                                            </div>
+                                            <div className="mt-3">
+                                                <div className="font-bold text-slate-900 text-sm">Serengeti Tour Group</div>
+                                                <div className="text-xs text-slate-500">Family Garden Villa • 4 Nights (FB)</div>
+                                            </div>
+                                            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                                                <span className="text-slate-500 font-semibold">Total Package</span>
+                                                <span className="font-black text-slate-900">TZS 1,840,000</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-3.5 bg-blue-50/60 rounded-xl border border-blue-200 text-xs text-slate-700 flex flex-wrap items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2">
+                                            <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
+                                            <span>Statutory Tanzania Police Guest Ledger (Kitabu cha Wageni) automatically filled and exportable upon check-in.</span>
+                                        </div>
+                                        <span className="font-bold text-blue-700">100% EFD Compliant</span>
                                     </div>
                                 </div>
                             )}
 
                             {previewTab === 'restaurant' && (
-                                <div className="space-y-4 animate-in fade-in duration-300">
-                                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                                <div className="space-y-4 animate-in fade-in duration-200">
+                                    <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
                                         <div>
-                                            <h3 className="text-lg font-black text-white">Independent Restaurant & Lounge POS</h3>
-                                            <p className="text-xs text-slate-400">Table orders, Kitchen Order Tickets (KOT), room charge posting & cashier shifts</p>
+                                            <div className="text-sm font-black text-slate-900">Restaurant & Bar Touch POS</div>
+                                            <div className="text-xs text-slate-500">Table orders, Kitchen Order Tickets (KOT) & direct charge to room folios</div>
                                         </div>
-                                        <span className="px-2.5 py-1 rounded bg-amber-500/20 text-amber-400 text-xs font-bold border border-amber-500/30">
-                                            F&B Outlet Active
-                                        </span>
+                                        <div className="flex items-center gap-2 text-xs">
+                                            <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-700 font-bold">8 Active Tables</span>
+                                            <span className="px-2.5 py-1 rounded-lg bg-blue-100 text-blue-700 font-bold">3 KOT in Kitchen</span>
+                                        </div>
                                     </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                        <div className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60">
-                                            <span className="text-[10px] text-slate-400 font-bold uppercase">Table 4 (Garden Terrace)</span>
-                                            <p className="text-sm font-bold text-white mt-1">Order #ORD-1092</p>
-                                            <p className="text-xs text-slate-300 mt-1">2x Grilled Tilapia, 1x Serengeti Lager, 1x Sparkling Water</p>
-                                            <span className="text-xs text-emerald-400 font-bold mt-2 block">Total: TZS 68,000</span>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="p-4 rounded-2xl border border-slate-200 bg-white">
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-bold text-slate-900 text-sm">Table 04 — Poolside Terrace</span>
+                                                <span className="px-2 py-0.5 rounded-md bg-amber-600 text-white text-[10px] font-bold">KOT #108 Active</span>
+                                            </div>
+                                            <div className="mt-3 space-y-1.5 text-xs text-slate-600">
+                                                <div className="flex justify-between">
+                                                    <span>2x Grilled Serengeti Tilapia</span>
+                                                    <span className="font-bold text-slate-900">TZS 44,000</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span>2x Fresh Passion Juice</span>
+                                                    <span className="font-bold text-slate-900">TZS 16,000</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span>1x Espresso Double</span>
+                                                    <span className="font-bold text-slate-900">TZS 6,000</span>
+                                                </div>
+                                            </div>
+                                            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                                                <span className="text-xs font-bold text-slate-500">Bill Total</span>
+                                                <span className="text-base font-black text-slate-900">TZS 66,000</span>
+                                            </div>
+                                            <div className="mt-3 flex gap-2">
+                                                <button type="button" className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition">
+                                                    Post to Room 101 Folio
+                                                </button>
+                                                <button type="button" className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
+                                                    Print KOT
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60">
-                                            <span className="text-[10px] text-slate-400 font-bold uppercase">Room Charge Link</span>
-                                            <p className="text-sm font-bold text-white mt-1">Charge directly to Room 104</p>
-                                            <p className="text-xs text-slate-300 mt-1">Guest digital signature captured & posted to active folio in 1 second.</p>
-                                            <span className="text-xs text-blue-400 font-bold mt-2 block">Seamless PMS Post</span>
-                                        </div>
-                                        <div className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60">
-                                            <span className="text-[10px] text-slate-400 font-bold uppercase">Cashier Shift Control</span>
-                                            <p className="text-sm font-bold text-white mt-1">Shift #CS-84 (Amina)</p>
-                                            <p className="text-xs text-slate-300 mt-1">Opening float tracked, split M-Pesa, Cash & Credit Card settlements.</p>
-                                            <span className="text-xs text-emerald-400 font-bold mt-2 block">Variance: TZS 0</span>
+
+                                        <div className="p-4 rounded-2xl border border-slate-200 bg-white">
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-bold text-slate-900 text-sm">Table 07 — VIP Lounge & Bar</span>
+                                                <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-bold">Paid & Settled</span>
+                                            </div>
+                                            <div className="mt-3 space-y-1.5 text-xs text-slate-600">
+                                                <div className="flex justify-between">
+                                                    <span>4x Kilimanjaro Lager (Cold)</span>
+                                                    <span className="font-bold text-slate-900">TZS 24,000</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span>1x Mixed BBQ Platter (Platter for 3)</span>
+                                                    <span className="font-bold text-slate-900">TZS 45,000</span>
+                                                </div>
+                                            </div>
+                                            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                                                <span className="text-xs font-bold text-slate-500">Settled via M-Pesa</span>
+                                                <span className="text-base font-black text-emerald-700">TZS 69,000</span>
+                                            </div>
+                                            <div className="mt-3">
+                                                <div className="py-2 text-center text-xs font-bold text-slate-500 bg-slate-50 rounded-xl border border-slate-200">
+                                                    TRA Fiscalized Receipt #8932 Printed
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             )}
 
                             {previewTab === 'grocery' && (
-                                <div className="space-y-4 animate-in fade-in duration-300">
-                                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                                <div className="space-y-4 animate-in fade-in duration-200">
+                                    <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
                                         <div>
-                                            <h3 className="text-lg font-black text-white">Standalone Retail Grocery & Minimart POS</h3>
-                                            <p className="text-xs text-slate-400">High-speed barcode checkout, independent retail stock, zero mix-up with hotel</p>
+                                            <div className="text-sm font-black text-slate-900">Hotel Minimart & Gift Shop POS</div>
+                                            <div className="text-xs text-slate-500">Instant barcode scanning, walk-in sales, stock depletion & room charging</div>
                                         </div>
-                                        <span className="px-2.5 py-1 rounded bg-indigo-500/20 text-indigo-400 text-xs font-bold border border-indigo-500/30">
-                                            Retail Counter Ready
-                                        </span>
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                                        <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700/60 space-y-2">
-                                            <div className="flex items-center justify-between font-bold text-white">
-                                                <span>Active Cart Checkout</span>
-                                                <span className="font-mono text-emerald-400">3 Items</span>
-                                            </div>
-                                            <div className="space-y-1 text-slate-300">
-                                                <div className="flex justify-between"><span>Kilimanjaro Water 1.5L (x2)</span><span>TZS 3,000</span></div>
-                                                <div className="flex justify-between"><span>Safari Sunscreen SPF 50</span><span>TZS 22,000</span></div>
-                                                <div className="flex justify-between"><span>Dark Chocolate Bar</span><span>TZS 6,500</span></div>
-                                            </div>
-                                            <div className="pt-2 border-t border-slate-700 flex justify-between font-bold text-white text-sm">
-                                                <span>Total Payable</span>
-                                                <span className="text-emerald-400">TZS 31,500</span>
-                                            </div>
-                                        </div>
-                                        <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700/60 space-y-2">
-                                            <span className="font-bold text-white block">Independent Inventory Ledger</span>
-                                            <p className="text-slate-300">
-                                                Retail items are tracked completely separate from hotel room supplies and kitchen ingredients. Restock notifications trigger automatically when stock dips below safety thresholds.
-                                            </p>
-                                            <span className="text-indigo-400 font-bold block pt-2">Barcode Scanner & Thermal Printer Ready</span>
+                                        <div className="flex items-center gap-2 text-xs">
+                                            <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-700 font-bold">Barcode Active</span>
+                                            <span className="px-2.5 py-1 rounded-lg bg-blue-100 text-blue-700 font-bold">148 Products in Stock</span>
                                         </div>
                                     </div>
-                                </div>
-                            )}
 
-                            {previewTab === 'accounting' && (
-                                <div className="space-y-4 animate-in fade-in duration-300">
-                                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
-                                        <div>
-                                            <h3 className="text-lg font-black text-white">Accountant Financial Analytics & General Ledger</h3>
-                                            <p className="text-xs text-slate-400">Double-entry perpetual journals, AR aging schedule, P&L, and expense vouchers</p>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                        <div className="p-4 rounded-2xl border border-slate-200 bg-white md:col-span-2">
+                                            <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Current Retail Cart</div>
+                                            <div className="space-y-2 text-xs">
+                                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50">
+                                                    <div>
+                                                        <span className="font-bold text-slate-900 block">Kilimanjaro Mineral Water 1.5L</span>
+                                                        <span className="text-slate-500 text-[11px]">Barcode: 61640012001 • Qty: 2</span>
+                                                    </div>
+                                                    <span className="font-black text-slate-900">TZS 5,000</span>
+                                                </div>
+                                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50">
+                                                    <div>
+                                                        <span className="font-bold text-slate-900 block">Safari Sunscreen SPF 50 (100ml)</span>
+                                                        <span className="text-slate-500 text-[11px]">Barcode: 61640049012 • Qty: 1</span>
+                                                    </div>
+                                                    <span className="font-black text-slate-900">TZS 28,000</span>
+                                                </div>
+                                                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50">
+                                                    <div>
+                                                        <span className="font-bold text-slate-900 block">Handmade Maasai Souvenir Shuka</span>
+                                                        <span className="text-slate-500 text-[11px]">Barcode: 61640098114 • Qty: 1</span>
+                                                    </div>
+                                                    <span className="font-black text-slate-900">TZS 35,000</span>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <span className="px-2.5 py-1 rounded bg-blue-500/20 text-blue-400 text-xs font-bold border border-blue-500/30">
-                                            Accrual Basis
-                                        </span>
-                                    </div>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                                        <div className="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60">
-                                            <span className="text-[10px] text-slate-400 font-bold uppercase">Net Operating Profit</span>
-                                            <div className="text-lg font-black text-emerald-400 mt-1">TZS 74,800,000</div>
-                                            <span className="text-[10px] text-slate-400">Net Margin: 40.6%</span>
+
+                                        <div className="p-4 rounded-2xl border border-slate-200 bg-white flex flex-col justify-between">
+                                            <div>
+                                                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Checkout Summary</div>
+                                                <div className="mt-3">
+                                                    <span className="text-2xl font-black text-slate-900">TZS 68,000</span>
+                                                    <span className="text-[11px] text-slate-500 block">3 Items (VAT 18% included)</span>
+                                                </div>
+                                            </div>
+                                            <div className="mt-4 space-y-2">
+                                                <button type="button" className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition">
+                                                    Pay with Cash / Mobile Money
+                                                </button>
+                                                <button type="button" className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition">
+                                                    Post to Room Folio
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60">
-                                            <span className="text-[10px] text-slate-400 font-bold uppercase">Bank & Cash Liquidity</span>
-                                            <div className="text-lg font-black text-white mt-1">TZS 28,020,000</div>
-                                            <span className="text-[10px] text-emerald-400">CRDB & NMB Reconciled</span>
-                                        </div>
-                                        <div className="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60">
-                                            <span className="text-[10px] text-slate-400 font-bold uppercase">Accounts Receivable</span>
-                                            <div className="text-lg font-black text-amber-400 mt-1">TZS 12,400,000</div>
-                                            <span className="text-[10px] text-slate-400">Aging Schedule Verified</span>
-                                        </div>
-                                        <div className="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60">
-                                            <span className="text-[10px] text-slate-400 font-bold uppercase">Pending Approvals</span>
-                                            <div className="text-lg font-black text-rose-400 mt-1">3 Vouchers</div>
-                                            <span className="text-[10px] text-slate-400">Awaiting Senior Approval</span>
-                                        </div>
-                                    </div>
-                                    <div className="bg-slate-800/40 p-3 rounded-xl border border-slate-800 text-xs text-slate-300">
-                                        Integrated Trial Balance, Balance Sheet, and Tax Reports are updated automatically upon every confirmed guest payment.
                                     </div>
                                 </div>
                             )}
 
                             {previewTab === 'housekeeping' && (
-                                <div className="space-y-4 animate-in fade-in duration-300">
-                                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                                <div className="space-y-4 animate-in fade-in duration-200">
+                                    <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
                                         <div>
-                                            <h3 className="text-lg font-black text-white">Housekeeping & Maintenance Mobile Hub</h3>
-                                            <p className="text-xs text-slate-400">Live room cleanliness updates, maintenance tickets, and supervisor inspection</p>
+                                            <div className="text-sm font-black text-slate-900">Housekeeping & Room Readiness Hub</div>
+                                            <div className="text-xs text-slate-500">Live maid assignments, cleaning stages & instant supervisor inspection</div>
                                         </div>
-                                        <span className="px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold border border-emerald-500/30">
-                                            Mobile Optimized
-                                        </span>
+                                        <div className="flex items-center gap-2 text-xs">
+                                            <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-700 font-bold">18 Inspected Clean</span>
+                                            <span className="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-700 font-bold">4 In Progress</span>
+                                            <span className="px-2.5 py-1 rounded-lg bg-rose-100 text-rose-700 font-bold">1 Maintenance</span>
+                                        </div>
                                     </div>
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                                        <div className="bg-emerald-950/40 border border-emerald-700/50 p-3 rounded-xl">
-                                            <span className="text-emerald-400 font-bold block text-[11px]">18 Clean & Inspected</span>
-                                            <span className="text-slate-400 text-[10px]">Ready for check-in</span>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                                        <div className="p-4 rounded-2xl border border-emerald-200 bg-emerald-50/30">
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-bold text-slate-900">Room 101 — Suite</span>
+                                                <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white font-bold text-[10px]">Ready</span>
+                                            </div>
+                                            <div className="mt-2 text-slate-600">Cleaned & Inspected by Supervisor Grace. Fresh linen & amenities placed.</div>
+                                            <div className="mt-3 text-[11px] text-emerald-700 font-bold">Ready for Instant Check-In</div>
                                         </div>
-                                        <div className="bg-amber-950/40 border border-amber-700/50 p-3 rounded-xl">
-                                            <span className="text-amber-400 font-bold block text-[11px]">5 Vacant Dirty</span>
-                                            <span className="text-slate-400 text-[10px]">Assigned to Team B</span>
+
+                                        <div className="p-4 rounded-2xl border border-amber-200 bg-amber-50/30">
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-bold text-slate-900">Room 103 — Deluxe</span>
+                                                <span className="px-2 py-0.5 rounded-md bg-amber-600 text-white font-bold text-[10px]">Cleaning</span>
+                                            </div>
+                                            <div className="mt-2 text-slate-600">Assigned to Housekeeper Amina M. Target turnaround: 13:30 for incoming guest.</div>
+                                            <div className="mt-3 text-[11px] text-amber-700 font-bold">Priority Turnover (Check-in 14:00)</div>
                                         </div>
-                                        <div className="bg-blue-950/40 border border-blue-700/50 p-3 rounded-xl">
-                                            <span className="text-blue-400 font-bold block text-[11px]">8 Occupied Dirty</span>
-                                            <span className="text-slate-400 text-[10px]">Stayover cleaning</span>
-                                        </div>
-                                        <div className="bg-rose-950/40 border border-rose-700/50 p-3 rounded-xl">
-                                            <span className="text-rose-400 font-bold block text-[11px]">1 Maintenance</span>
-                                            <span className="text-slate-400 text-[10px]">AC repair in progress</span>
+
+                                        <div className="p-4 rounded-2xl border border-slate-200 bg-white">
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-bold text-slate-900">Room 204 — Twin Villa</span>
+                                                <span className="px-2 py-0.5 rounded-md bg-rose-600 text-white font-bold text-[10px]">Maintenance</span>
+                                            </div>
+                                            <div className="mt-2 text-slate-600">AC filter maintenance and master shower pressure check reported by guest.</div>
+                                            <div className="mt-3 text-[11px] text-rose-700 font-bold">Technician Assigned</div>
                                         </div>
                                     </div>
                                 </div>
                             )}
 
-                            {/* Preview Footer CTA */}
-                            <div className="pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-                                <span className="text-slate-400">
+                            {previewTab === 'manager' && (
+                                <div className="space-y-4 animate-in fade-in duration-200">
+                                    <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                        <div>
+                                            <div className="text-sm font-black text-slate-900">General Manager Flash Cockpit</div>
+                                            <div className="text-xs text-slate-500">Paradise Safari Lodge & Resort • Real-time occupancy, ADR & RevPAR</div>
+                                        </div>
+                                        <span className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-xs font-bold">
+                                            Occupancy 88.4%
+                                        </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs">
+                                            <span className="text-[10px] text-slate-500 font-bold uppercase">Total Revenue (MTD)</span>
+                                            <div className="text-xl font-black text-slate-900 mt-1">TZS 184,250,000</div>
+                                            <span className="text-[10px] text-emerald-600 font-semibold">+18.2% vs last month</span>
+                                        </div>
+                                        <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs">
+                                            <span className="text-[10px] text-slate-500 font-bold uppercase">Average Daily Rate (ADR)</span>
+                                            <div className="text-xl font-black text-slate-900 mt-1">TZS 285,000</div>
+                                            <span className="text-[10px] text-blue-600 font-semibold">Premium Surge</span>
+                                        </div>
+                                        <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs">
+                                            <span className="text-[10px] text-slate-500 font-bold uppercase">RevPAR</span>
+                                            <div className="text-xl font-black text-slate-900 mt-1">TZS 251,940</div>
+                                            <span className="text-[10px] text-emerald-600 font-semibold">High Season</span>
+                                        </div>
+                                        <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs">
+                                            <span className="text-[10px] text-slate-500 font-bold uppercase">In-House Guests</span>
+                                            <div className="text-xl font-black text-slate-900 mt-1">42 Guests / 24 Rooms</div>
+                                            <span className="text-[10px] text-amber-600 font-semibold">9 Expected Today</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                                        <span className="text-slate-600">
+                                            Daily Flash Report ready for instant PDF export or automated WhatsApp dispatch to hotel owners.
+                                        </span>
+                                        <div className="flex gap-2">
+                                            <button type="button" className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition">
+                                                WhatsApp Summary
+                                            </button>
+                                            <button type="button" className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition">
+                                                Export Flash PDF
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Showcase Footer Bar */}
+                            <div className="mt-6 pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                                <span className="text-slate-500 font-medium">
                                     Want to see how this works for your specific lodge or hotel?
                                 </span>
                                 <Link
                                     href={user ? route('dashboard') : route('register')}
-                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition"
+                                    className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition shadow-sm"
                                 >
                                     Launch Live Portal →
                                 </Link>
@@ -774,7 +847,7 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
             <section id="why-inns" className="py-20 bg-white border-y border-slate-200">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center max-w-3xl mx-auto">
-                        <span className="text-blue-600 font-black text-xs uppercase tracking-wider">Engineered for Hospitality Growth</span>
+                        {/* <span className="text-blue-600 font-black text-xs uppercase tracking-wider">Engineered for Hospitality Growth</span> */}
                         <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mt-2">
                             Why Modern Hoteliers Are Switching to THE INNS
                         </h2>
@@ -835,9 +908,9 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
             <section id="modules" className="py-20 bg-slate-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center max-w-3xl mx-auto">
-                        <span className="text-blue-600 font-black text-xs uppercase tracking-wider">Hospitality Architecture</span>
+                        {/* <span className="text-blue-600 font-black text-xs uppercase tracking-wider">Hospitality Architecture</span> */}
                         <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mt-2">
-                            Six Dedicated Modules. One Connected Cloud.
+                            Six Dedicated Modules on One Connected Cloud.
                         </h2>
                         <p className="text-slate-600 mt-3 text-sm sm:text-base">
                             Everything you need to manage guests, staff, food, inventory, and finances without paying for multiple third-party software subscriptions.
@@ -1014,8 +1087,8 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
             <section id="pricing" className="py-20 bg-white border-t border-slate-200">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center max-w-3xl mx-auto">
-                        <span className="text-blue-600 font-black text-xs uppercase tracking-wider">Predictable Pricing</span>
-                        <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mt-2">
+                        {/* <span className="text-blue-600 font-black text-xs uppercase tracking-wider">Predictable Pricing</span>*/}
+                        <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mt-2"> 
                             Simple, Value-Packed Pricing for Every Property Size
                         </h2>
                         <p className="text-slate-600 mt-3 text-sm sm:text-base">
@@ -1073,22 +1146,19 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                         </div>
                     </div>
 
-                    {/* Pricing Cards */}
+                    {/* Pricing Plans */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-14 max-w-6xl mx-auto">
-                        {/* Tier 1: Starter Lodge */}
-                        <div className="bg-slate-50 rounded-3xl p-8 border border-slate-200 flex flex-col justify-between">
+                        {/* Starter Lodge */}
+                        <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xl flex flex-col">
                             <div>
                                 <span className="text-xs font-black text-slate-500 uppercase tracking-wider">Starter Lodge</span>
-                                <h3 className="text-2xl font-black text-slate-900 mt-1">Boutique & B&B</h3>
-                                <p className="text-xs text-slate-600 mt-2">
-                                    Perfect for boutique lodges, safari camps, and guesthouses managing up to 25 rooms.
-                                </p>
+                                <h3 className="text-2xl font-black text-slate-900 mt-1">Boutique lodges, B&Bs, guesthouses and smaller properties</h3>
                                 <div className="mt-6">
                                     <span className="text-3xl sm:text-4xl font-black text-slate-900">
-                                        {formatPrice(120000, 49)}
+                                        {formatPrice(120000, 50, 1152000, 480)}
                                     </span>
                                     <span className="text-xs text-slate-500 font-semibold block mt-1">
-                                        per property / month {billingCycle === 'annually' ? '(billed yearly)' : ''}
+                                        per property / month {billingCycle === 'annually' ? '(billed yearly - Save 20%)' : ''}
                                     </span>
                                 </div>
 
@@ -1109,13 +1179,9 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                                         <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                                         <span>Guest Folios & Basic Cashbook</span>
                                     </li>
-                                    <li className="flex items-center gap-2 text-slate-400">
-                                        <X className="w-4 h-4 shrink-0" />
-                                        <span>Restaurant & Grocery POS</span>
-                                    </li>
-                                    <li className="flex items-center gap-2 text-slate-400">
-                                        <X className="w-4 h-4 shrink-0" />
-                                        <span>Full General Ledger & P&L</span>
+                                    <li className="flex items-center gap-2">
+                                        <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                                        <span>Profit and Loss Report</span>
                                     </li>
                                 </ul>
                             </div>
@@ -1123,31 +1189,28 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                             <div className="mt-8">
                                 <Link
                                     href={route('register')}
-                                    className="w-full py-3 px-4 bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs rounded-xl border border-slate-300 block text-center transition"
+                                    className="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl block text-center transition shadow-sm"
                                 >
                                     Get Started with Starter
                                 </Link>
                             </div>
                         </div>
 
-                        {/* Tier 2: Hotel Pro (Featured) */}
-                        <div className="bg-gradient-to-b from-blue-900 to-indigo-950 rounded-3xl p-8 text-white shadow-xl ring-2 ring-blue-500 relative flex flex-col justify-between">
-                            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-black text-[10px] uppercase tracking-wider px-3.5 py-1 rounded-full shadow-md">
+                        {/* Hotel Pro (Featured) */}
+                        <div className="bg-slate-900 rounded-3xl p-8 text-white shadow-xl ring-2 ring-blue-600 relative flex flex-col">
+                            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-blue-600 text-white font-black text-[10px] uppercase tracking-wider px-3.5 py-1 rounded-full shadow-md">
                                 Most Popular Choice
                             </div>
 
                             <div>
                                 <span className="text-xs font-black text-blue-300 uppercase tracking-wider">Hotel Pro</span>
-                                <h3 className="text-2xl font-black text-white mt-1">Full Hotel & Resort</h3>
-                                <p className="text-xs text-slate-300 mt-2">
-                                    Complete operations for hotels, safari lodges, and beach resorts with dining and retail.
-                                </p>
+                                <h3 className="text-2xl font-black text-white mt-1">Hotels, resorts and larger single-property operations</h3>
                                 <div className="mt-6">
                                     <span className="text-3xl sm:text-4xl font-black text-white">
-                                        {formatPrice(280000, 119)}
+                                        {formatPrice(219000, 90, 2102400, 860)}
                                     </span>
                                     <span className="text-xs text-blue-200 font-semibold block mt-1">
-                                        per property / month {billingCycle === 'annually' ? '(billed yearly)' : ''}
+                                        per property / month {billingCycle === 'annually' ? '(billed yearly - Save 20%)' : ''}
                                     </span>
                                 </div>
 
@@ -1186,27 +1249,24 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                             <div className="mt-8">
                                 <Link
                                     href={route('register')}
-                                    className="w-full py-3 px-4 bg-blue-500 hover:bg-blue-400 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-500/30 block text-center transition"
+                                    className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl block text-center transition shadow-sm"
                                 >
                                     Start 14-Day Free Pro Trial
                                 </Link>
                             </div>
                         </div>
 
-                        {/* Tier 3: Enterprise Chain */}
-                        <div className="bg-slate-50 rounded-3xl p-8 border border-slate-200 flex flex-col justify-between">
+                        {/* Enterprise Group */}
+                        <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xl flex flex-col">
                             <div>
                                 <span className="text-xs font-black text-slate-500 uppercase tracking-wider">Enterprise Group</span>
-                                <h3 className="text-2xl font-black text-slate-900 mt-1">Multi-Property Chain</h3>
-                                <p className="text-xs text-slate-600 mt-2">
-                                    For hotel groups, resort chains, and safari lodge circuits requiring centralized multi-branch control.
-                                </p>
+                                <h3 className="text-2xl font-black text-slate-900 mt-1">Hotel groups, resort chains and multi-property operators</h3>
                                 <div className="mt-6">
                                     <span className="text-3xl sm:text-4xl font-black text-slate-900">
-                                        {formatPrice(650000, 269)}
+                                        {formatPrice(450000, 180, 4320000, 1728)}
                                     </span>
                                     <span className="text-xs text-slate-500 font-semibold block mt-1">
-                                        multi-property package / month
+                                        multi-property package / month {billingCycle === 'annually' ? '(billed yearly - Save 20%)' : ''}
                                     </span>
                                 </div>
 
@@ -1252,7 +1312,7 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
             </section>
 
             {/* 8. CLIENT PROOF & TESTIMONIALS */}
-            <section id="reviews" className="py-20 bg-slate-50 border-t border-slate-200">
+            {/* <section id="reviews" className="py-20 bg-slate-50 border-t border-slate-200">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center max-w-2xl mx-auto">
                         <span className="text-blue-600 font-black text-xs uppercase tracking-wider">Trusted by Industry Leaders</span>
@@ -1263,12 +1323,12 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
                         {/* Testimonial 1 */}
-                        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs">
+                        {/* <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs">
                             <div className="flex items-center gap-1 text-amber-400 mb-3">
                                 {[...Array(5)].map((_, i) => (
                                     <Star key={i} className="w-4 h-4 fill-amber-400" />
-                                ))}
-                            </div>
+                                ))} */}
+                            {/* </div>
                             <p className="text-xs text-slate-600 leading-relaxed italic">
                                 "Before THE INNS, our restaurant POS and room bookings were kept in two separate systems, causing frequent billing errors at checkout. Now, food bills post straight to the room folio, and our accountant closes books in minutes."
                             </p>
@@ -1281,15 +1341,15 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                                     <span className="text-[10px] text-slate-500">General Manager, Mount Meru Vista Lodge</span>
                                 </div>
                             </div>
-                        </div>
+                        </div> */}
 
                         {/* Testimonial 2 */}
-                        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs">
-                            <div className="flex items-center gap-1 text-amber-400 mb-3">
-                                {[...Array(5)].map((_, i) => (
+                        {/*<div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs">
+                            <div className="flex items-center gap-1 text-amber-400 mb-3">*/}
+                                {/* {[...Array(5)].map((_, i) => (
                                     <Star key={i} className="w-4 h-4 fill-amber-400" />
-                                ))}
-                            </div>
+                                ))} */}
+                            {/*</div>
                             <p className="text-xs text-slate-600 leading-relaxed italic">
                                 "The Grocery Minimart module is phenomenal. We run a tourist convenience store at our beach resort; having it decoupled from the hotel means walk-in customers checkout in 10 seconds without interfering with our hotel front desk."
                             </p>
@@ -1302,16 +1362,16 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                                     <span className="text-[10px] text-slate-500">Managing Director, Kendwa Palms Resort, Zanzibar</span>
                                 </div>
                             </div>
-                        </div>
+                        </div>*/}
 
                         {/* Testimonial 3 */}
-                        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs">
-                            <div className="flex items-center gap-1 text-amber-400 mb-3">
-                                {[...Array(5)].map((_, i) => (
+                        {/* <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs">
+                            <div className="flex items-center gap-1 text-amber-400 mb-3"> */}
+                                {/* {[...Array(5)].map((_, i) => (
                                     <Star key={i} className="w-4 h-4 fill-amber-400" />
                                 ))}
-                            </div>
-                            <p className="text-xs text-slate-600 leading-relaxed italic">
+                            </div> */}
+                            {/* <p className="text-xs text-slate-600 leading-relaxed italic">
                                 "As a Chief Accountant, having automatic double-entry journal postings with AR aging schedules and real-time P&L has eliminated our manual Excel reconciliations. Our audit was completed in half the time."
                             </p>
                             <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-3">
@@ -1326,15 +1386,15 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                         </div>
                     </div>
                 </div>
-            </section>
+            </section> */}
 
             {/* 9. FREQUENTLY ASKED QUESTIONS (FAQ) */}
             <section id="faq" className="py-20 bg-white border-t border-slate-200">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center">
-                        <span className="text-blue-600 font-black text-xs uppercase tracking-wider">Got Questions?</span>
+                        {/* <span className="text-blue-600 font-black text-xs uppercase tracking-wider">Got Questions?</span> */}
                         <h2 className="text-3xl font-black text-slate-900 mt-2">
-                            Frequently Asked Questions
+                           <i>Frequently Asked Questions</i>
                         </h2>
                     </div>
 
@@ -1392,34 +1452,37 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
             </section>
 
             {/* 10. PRE-FOOTER CALL TO ACTION */}
-            <section id="contact" className="py-20 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-950 text-white relative overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.15),transparent_50%)] pointer-events-none" />
+            <section id="contact" className="py-20 bg-slate-900 text-white relative overflow-hidden border-t border-slate-800">
+                
 
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-                    <span className="text-blue-300 font-black text-xs uppercase tracking-wider">Transform Your Hospitality Property</span>
+                    {/* <span className="text-blue-300 font-black text-xs uppercase tracking-wider">Transform Your Hospitality Property</span> */}
                     <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mt-3 text-white leading-tight">
-                        Ready to Stop Revenue Leakages and Automate Your Entire Hotel?
+                        Ready to Stop Revenue Leakages and Automate Your Entire Business?
                     </h2>
-                    <p className="mt-4 text-sm sm:text-base text-slate-300 max-w-2xl mx-auto">
-                        Join over 120+ leading lodges, hotels, and luxury safari camps using THE INNS. Get started in minutes with our 14-day risk-free trial.
+                    <p className="mt-4 text-sm sm:text-base text-slate-300 max-w-4xl mx-auto">
+                        Join <b className="text-white">THE INNS</b>. Get started in minutes with our 14-day risk-free trial.
                     </p>
 
                     <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-                        <Link
+                         <Link
                             href={user ? route('dashboard') : route('register')}
-                            className="w-full sm:w-auto px-8 py-4 bg-blue-500 hover:bg-blue-400 text-white font-extrabold text-sm rounded-2xl shadow-xl shadow-blue-500/30 transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                            className="w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm rounded-2xl transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2 shadow-sm"
                         >
                             <span>{user ? 'Go to Dashboard' : 'Start 14-Day Free Trial'}</span>
                             <ArrowRight className="w-4 h-4" />
-                        </Link>
+                        </Link> 
 
-                        <a
-                            href="tel:+255700000000"
+                        {/* <a
+                            href="tel:+255779646632"
                             className="w-full sm:w-auto px-7 py-4 bg-white/10 hover:bg-white/20 text-white font-bold text-sm rounded-2xl border border-white/20 transition flex items-center justify-center gap-2"
                         >
                             <Phone className="w-4 h-4 text-blue-300" />
-                            <span>Call Sales: +255 (0) 700 000 000</span>
-                        </a>
+                            <span>Call Sales: <br /> +255 (779) 646 632 <hr/>
+                            &nbsp; &nbsp;+255 (659) 958 595 <hr />
+                            &nbsp; &nbsp;+255 (794) 376 209
+                            </span>
+                        </a> */}
                     </div>
 
                     <div className="mt-8 text-xs text-slate-400 flex items-center justify-center gap-6">
@@ -1445,16 +1508,9 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                                 <span className="text-lg font-black text-white">THE INNS</span>
                             </div>
                             <p className="text-slate-400 text-xs max-w-sm leading-relaxed">
-                                The comprehensive Cloud Property Management System (PMS) and Hospitality ERP. Built for boutique lodges, resorts, and hotel chains across Africa and beyond.
+                                The comprehensive Inns Management System. Built for guests, lodges, resorts, and hotel chains.
                             </p>
-                            <div className="flex items-center gap-3 pt-2">
-                                <span className="px-2.5 py-1 rounded bg-slate-900 text-slate-300 font-mono text-[10px] border border-slate-800">
-                                    v2.5 Enterprise Edition
-                                </span>
-                                <span className="text-[10px] text-emerald-400 font-bold">
-                                    ● Cloud Servers Online
-                                </span>
-                            </div>
+                          
                         </div>
 
                         {/* Col 2: Modules */}
@@ -1463,10 +1519,10 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                                 Core Modules
                             </span>
                             <ul className="space-y-2 text-slate-400">
-                                <li><a href="#modules" className="hover:text-white transition">Front Desk PMS</a></li>
+                                <li><a href="#modules" className="hover:text-white transition">Front Desk</a></li>
                                 <li><a href="#modules" className="hover:text-white transition">Housekeeping Hub</a></li>
-                                <li><a href="#modules" className="hover:text-white transition">Restaurant & Bar POS</a></li>
-                                <li><a href="#modules" className="hover:text-white transition">Grocery Minimart POS</a></li>
+                                <li><a href="#modules" className="hover:text-white transition">Restaurant POS</a></li>
+                                <li><a href="#modules" className="hover:text-white transition">Grocery POS</a></li>
                                 <li><a href="#modules" className="hover:text-white transition">Store Inventory</a></li>
                                 <li><a href="#modules" className="hover:text-white transition">General Ledger GL</a></li>
                             </ul>
@@ -1481,7 +1537,7 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                                 <li><Link href={route('login')} className="hover:text-white transition">General Manager</Link></li>
                                 <li><Link href={route('login')} className="hover:text-white transition">Receptionist Desk</Link></li>
                                 <li><Link href={route('login')} className="hover:text-white transition">Accountant Portal</Link></li>
-                                <li><Link href={route('login')} className="hover:text-white transition">F&B Cashier POS</Link></li>
+                                <li><Link href={route('login')} className="hover:text-white transition">Cashier POS</Link></li>
                                 <li><Link href={route('login')} className="hover:text-white transition">Housekeeping Supervisor</Link></li>
                             </ul>
                         </div>
@@ -1489,23 +1545,22 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                         {/* Col 4: Regional Hubs */}
                         <div className="space-y-3">
                             <span className="text-white font-bold uppercase tracking-wider text-[11px] block">
-                                East Africa Offices
+                                HEAD OFFICE
                             </span>
                             <div className="space-y-2 text-slate-400 text-xs">
-                                <p><strong className="text-white">Arusha:</strong> Njiro Road, Arusha, Tanzania</p>
-                                <p><strong className="text-white">Dar es Salaam:</strong> Masaki Peninsula, Dar, Tanzania</p>
-                                <p><strong className="text-white">Zanzibar:</strong> Stone Town, Zanzibar</p>
-                                <p><strong className="text-white">Support:</strong> support@theinns.com</p>
+                                <p><strong className="text-white">MOROGORO:</strong> Msamvu, whitehouse street</p>
+                                <p><strong className="text-white">Email:</strong>support@inns.haulaenterprises.co.tz</p>
                             </div>
                         </div>
                     </div>
 
                     <div className="pt-8 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-                        <p>&copy; {new Date().getFullYear()} THE INNS Cloud Hotel PMS. All rights reserved.</p>
+                        <p>&copy; {new Date().getFullYear()} THE INNS Cloud Hotel Management System. All rights reserved.</p>
+                        <p>Powered by <a href="https://www.haulaenterprises.co.tz" target="_blank" className="hover:text-white transition">Haula Enterprises</a></p>
                         <div className="flex items-center gap-6">
-                            <a href="#privacy" className="hover:text-slate-400">Privacy Policy</a>
-                            <a href="#terms" className="hover:text-slate-400">Terms of Service</a>
-                            <a href="#security" className="hover:text-slate-400">Security & TRA Compliance</a>
+                            <a href="#privacy" className="hover:text-slate-400 transition">Privacy Policy</a>
+                            <a href="#terms" className="hover:text-slate-400 transition">Terms of Service</a>
+                            <a href="#security" className="hover:text-slate-400 transition">Security & TRA Compliance</a>
                         </div>
                     </div>
                 </div>

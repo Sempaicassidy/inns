@@ -3,13 +3,39 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-        <meta name="theme-color" content="#2563eb" media="(prefers-color-scheme: light)">
-        <meta name="theme-color" content="#1e3a8a" media="(prefers-color-scheme: dark)">
-        <meta name="apple-mobile-web-app-capable" content="yes">
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="theme-color" content="#1E3A5F">
         <meta name="format-detection" content="telephone=no">
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
+
+        <!-- Favicon & Icons -->
+        <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}?v={{ time() }}">
+        <link rel="shortcut icon" href="{{ asset('favicon.ico') }}?v={{ time() }}">
+        <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}?v={{ time() }}">
+
+        @if (($page['component'] ?? '') !== 'Welcome')
+        <!-- PWA Configuration: Enabled starting from Login & throughout all modules (Excluded from Landing Page) -->
+        <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="apple-mobile-web-app-title" content="THE INNS">
+        <meta name="application-name" content="THE INNS">
+
+        <script>
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('{{ asset('sw.js') }}?v={{ time() }}')
+                        .then(function(reg) {
+                            console.log('[THE INNS PWA] Active for', reg.scope);
+                        })
+                        .catch(function(err) {
+                            console.warn('[THE INNS PWA] SW Init note:', err);
+                        });
+                });
+            }
+        </script>
+        @endif
 
         <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
         <link rel="preconnect" href="https://fonts.googleapis.com">

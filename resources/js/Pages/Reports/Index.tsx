@@ -8,6 +8,7 @@ import {
     Award,
     Banknote,
     BarChart3,
+    BellRing,
     BedDouble,
     BookOpen,
     Boxes,
@@ -327,27 +328,9 @@ export default function ReportsIndex({
                 {/* 1. TOP EXECUTIVE HEADER */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                                 Hotel Performance Report
                             </h1>
-                            <span className="px-3 py-1 bg-sky-50 text-sky-800 border border-sky-200 text-xs font-bold rounded-full">
-                                Executive Overview
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-500 font-medium">
-                            <span>Income</span>
-                            <span>•</span>
-                            <span>Expenses</span>
-                            <span>•</span>
-                            <span>Rooms</span>
-                            <span>•</span>
-                            <span>Guests</span>
-                            <span>•</span>
-                            <span>POS & Stock</span>
-                            <span>•</span>
-                            <span>Glossary</span>
-                        </div>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
@@ -374,11 +357,18 @@ export default function ReportsIndex({
                             ))}
                         </div>
 
+                        <Link
+                            href={route('manager.notifications.index')}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#D4AF37] hover:bg-[#B8960C] text-[#1E3A5F] rounded-xl text-xs font-black shadow-xs transition active:scale-95"
+                            title="Weka namba, email na saa ya kutuma ripoti za kila siku na booking alerts kwa SMS, WhatsApp na Email"
+                        >
+                            <span>Manager Alerts (SMS/WhatsApp/Email)</span>
+                        </Link>
+
                         <button
                             onClick={() => window.print()}
                             className="inline-flex items-center gap-1.5 px-3 py-2 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold shadow-2xs transition active:scale-95"
                         >
-                            <Printer className="w-4 h-4 text-slate-500" />
                             <span>Print</span>
                         </button>
                     </div>
@@ -408,7 +398,6 @@ export default function ReportsIndex({
                                         : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/80'
                                 }`}
                             >
-                                <Icon className="w-3.5 h-3.5" />
                                 <span>{tab.label}</span>
                             </button>
                         );
@@ -423,9 +412,7 @@ export default function ReportsIndex({
                             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                                 Total Gross Income
                             </span>
-                            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                                <TrendingUp className="w-4 h-4" />
-                            </div>
+                            
                         </div>
                         <div className="my-2">
                             <div className="text-xl sm:text-2xl font-black text-slate-900">
@@ -452,17 +439,13 @@ export default function ReportsIndex({
                             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                                 Total Operating Expenses
                             </span>
-                            <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
-                                <TrendingDown className="w-4 h-4" />
-                            </div>
+                            
                         </div>
                         <div className="my-2">
                             <div className="text-xl sm:text-2xl font-black text-rose-700">
                                 {formatTsh(summary.total_expenses_minor)}
                             </div>
-                            <div className="text-[11px] text-slate-500 mt-1 font-semibold">
-                                Operations • Purchases • Payroll
-                            </div>
+                            
                         </div>
                         <Link
                             href={route('accounting.index')}
@@ -479,9 +462,7 @@ export default function ReportsIndex({
                             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                                 Net Operating Profit
                             </span>
-                            <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                                <Award className="w-4 h-4" />
-                            </div>
+                            
                         </div>
                         <div className="my-2">
                             <div className={`text-xl sm:text-2xl font-black ${
@@ -508,9 +489,7 @@ export default function ReportsIndex({
                             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                                 Occupancy & ADR
                             </span>
-                            <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                                <BedDouble className="w-4 h-4" />
-                            </div>
+                            
                         </div>
                         <div className="my-2">
                             <div className="text-xl sm:text-2xl font-black text-slate-900">
@@ -538,7 +517,6 @@ export default function ReportsIndex({
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-4">
                             <div>
                                 <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-                                    <Banknote className="w-5 h-5 text-emerald-600" />
                                     <span>Income & Collections</span>
                                 </h2>
                                 <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
@@ -705,7 +683,6 @@ export default function ReportsIndex({
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-6">
                             <div>
                                 <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-                                    <Wallet className="w-5 h-5 text-rose-600" />
                                     <span>Operating Expenses & Net Profit</span>
                                 </h2>
                                 <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
@@ -836,7 +813,6 @@ export default function ReportsIndex({
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-6">
                             <div>
                                 <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-                                    <BedDouble className="w-5 h-5 text-sky-700" />
                                     <span>Rooms & Occupancy</span>
                                 </h2>
                                 <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
@@ -963,7 +939,6 @@ export default function ReportsIndex({
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-6">
                             <div>
                                 <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-                                    <Users className="w-5 h-5 text-indigo-600" />
                                     <span>Guests & In-House Stays</span>
                                 </h2>
                                 <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
@@ -1115,7 +1090,6 @@ export default function ReportsIndex({
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-6">
                             <div>
                                 <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-                                    <UtensilsCrossed className="w-5 h-5 text-amber-600" />
                                     <span>Restaurant, Food & Beverage Overview</span>
                                 </h2>
                                 <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
@@ -1422,7 +1396,6 @@ export default function ReportsIndex({
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-6">
                             <div>
                                 <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-                                    <Package className="w-5 h-5 text-emerald-700" />
                                     <span>Hotel Store & Central Inventory Overview</span>
                                 </h2>
                                 <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
@@ -1641,7 +1614,6 @@ export default function ReportsIndex({
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-6">
                             <div>
                                 <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
-                                    <BookOpen className="w-5 h-5 text-sky-700" />
                                     <span>Hotel Metrics Glossary & KPI Formulas</span>
                                 </h2>
                                 <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">

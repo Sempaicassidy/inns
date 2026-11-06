@@ -274,19 +274,9 @@ export default function GuestsIndex({
                 {/* 1. TOP HEADER */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs">
                     <div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black shadow-xs">
-                                <Users className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
-                                    Guest Portal
-                                </h1>
-                                <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
-                                    Guest Directory • Assigned Rooms • Folios
-                                </span>
-                            </div>
-                        </div>
+                        <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
+                            Guest Portal
+                        </h1>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -295,7 +285,6 @@ export default function GuestsIndex({
                             onClick={() => setIsCreateModalOpen(true)}
                             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-xs transition active:scale-95 cursor-pointer"
                         >
-                            <UserPlus className="w-4 h-4 stroke-[2.5]" />
                             <span>Add Guest</span>
                         </button>
                     </div>
@@ -305,9 +294,6 @@ export default function GuestsIndex({
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
                     {/* Total Guests */}
                     <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black shrink-0">
-                            <Users className="w-5 h-5" />
-                        </div>
                         <div className="min-w-0">
                             <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider block truncate">
                                 Total Guests
@@ -320,9 +306,6 @@ export default function GuestsIndex({
 
                     {/* In-House Guests */}
                     <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-emerald-200/90 bg-emerald-50/10 shadow-2xs flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black shrink-0">
-                            <Bed className="w-5 h-5" />
-                        </div>
                         <div className="min-w-0">
                             <span className="text-[10px] sm:text-[11px] font-bold text-emerald-700 uppercase tracking-wider block truncate">
                                 In-House Guests
@@ -335,9 +318,6 @@ export default function GuestsIndex({
 
                     {/* Total Outstanding Balance */}
                     <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-rose-200/90 bg-rose-50/10 shadow-2xs flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-black shrink-0">
-                            <Receipt className="w-5 h-5" />
-                        </div>
                         <div className="min-w-0">
                             <span className="text-[10px] sm:text-[11px] font-bold text-rose-700 uppercase tracking-wider block truncate">
                                 Outstanding Balance

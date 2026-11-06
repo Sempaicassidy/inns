@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SystemNotification;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -178,5 +179,39 @@ class NotificationController extends Controller
             ->delete();
 
         return redirect()->back()->with('success', 'Read notifications cleared.');
+    }
+
+    /**
+     * Polling endpoint for PWA real-time notification popups
+     */
+    public function unreadLatest(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['unread_count' => 0, 'notifications' => []]);
+        }
+
+        $notifications = SystemNotification::where('tenant_id', $user->tenant_id)
+            ->forUser($user)
+            ->unread()
+            ->latest()
+            ->take(10)
+            ->get()
+            ->map(fn ($n) => [
+                'id' => $n->id,
+                'title' => $n->title,
+                'message' => $n->message,
+                'category' => $n->category,
+                'severity' => $n->severity,
+                'action_url' => $n->resolved_action_url ?: route('dashboard'),
+                'go_url' => route('notifications.go', $n->id),
+                'created_at' => $n->created_at->diffForHumans(),
+                'timestamp' => $n->created_at->timestamp,
+            ]);
+
+        return response()->json([
+            'unread_count' => SystemNotification::where('tenant_id', $user->tenant_id)->forUser($user)->unread()->count(),
+            'notifications' => $notifications,
+        ]);
     }
 }

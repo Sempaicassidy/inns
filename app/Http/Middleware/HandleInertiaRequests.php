@@ -9,6 +9,7 @@ use App\Models\Property;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\SystemNotification;
+use App\Models\Tenant;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -37,6 +38,7 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
+        $tenant = null;
         $property = null;
         $branches = [];
         $businessDate = null;
@@ -221,10 +223,39 @@ class HandleInertiaRequests extends Middleware
             }
         }
 
+        if (! $tenant) {
+            $tenant = Tenant::first();
+        }
+
         return [
             ...parent::share($request),
             'auth' => [
                 'user' => $user,
+                'tenant' => $tenant ? [
+                    'id' => $tenant->id,
+                    'name' => $tenant->name,
+                    'slug' => $tenant->slug,
+                    'plan' => $tenant->plan,
+                    'settings' => $tenant->settings ?? [],
+                    'system_name' => $tenant->settings['system_name'] ?? $tenant->name ?? 'THE INNS',
+                    'tagline' => $tenant->settings['tagline'] ?? null,
+                    'tin' => $tenant->settings['tin'] ?? ($property?->tax_config['tin'] ?? null),
+                    'vrn' => $tenant->settings['vrn'] ?? ($property?->tax_config['vrn'] ?? null),
+                    'business_license' => $tenant->settings['business_license'] ?? null,
+                    'phone' => $tenant->settings['phone'] ?? $property?->phone,
+                    'email' => $tenant->settings['email'] ?? $property?->email,
+                    'address' => $tenant->settings['address'] ?? $property?->address,
+                    'city' => $tenant->settings['city'] ?? $property?->city,
+                    'country' => $tenant->settings['country'] ?? ($property?->country ?? 'Tanzania'),
+                    'website' => $tenant->settings['website'] ?? null,
+                    'receipt_header' => $tenant->settings['receipt_header'] ?? 'OFFICIAL CASH RECEIPT / INVOICE',
+                    'receipt_footer' => $tenant->settings['receipt_footer'] ?? 'Thank you for choosing us! Goods & services once paid are non-refundable.',
+                    'currency' => $tenant->settings['currency'] ?? ($property?->currency ?? 'TZS'),
+                    'currency_symbol' => $tenant->settings['currency_symbol'] ?? 'TZS',
+                    'sender_id' => $tenant->settings['sender_id'] ?? $tenant->name ?? 'THE INNS',
+                    'wifi_ssid' => $tenant->settings['wifi_ssid'] ?? null,
+                    'wifi_password' => $tenant->settings['wifi_password'] ?? null,
+                ] : null,
                 'active_role' => $user?->active_role,
                 'property' => $property,
                 'branches' => $branches,

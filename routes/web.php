@@ -11,6 +11,7 @@ use App\Http\Controllers\GuestController;
 use App\Http\Controllers\HousekeepingController;
 use App\Http\Controllers\HrController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\ManagerNotificationController;
 use App\Http\Controllers\NightAuditController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PosController;
@@ -21,6 +22,8 @@ use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\RestaurantController;
 use App\Http\Controllers\RoomTypeController;
 use App\Http\Controllers\SaasAdminController;
+use App\Http\Controllers\SpreadsheetDataEntryController;
+use App\Http\Controllers\TenantSettingsController;
 use App\Http\Controllers\WhatsAppController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -32,6 +35,22 @@ Route::get('/', function () {
         'user' => auth()->user(),
     ]);
 })->name('home');
+
+// PWA Assets (Web Manifest & Service Worker)
+Route::get('/manifest.webmanifest', function () {
+    return response()->file(public_path('manifest.webmanifest'), [
+        'Content-Type' => 'application/manifest+json',
+        'Cache-Control' => 'public, max-age=3600',
+    ]);
+});
+
+Route::get('/sw.js', function () {
+    return response()->file(public_path('sw.js'), [
+        'Content-Type' => 'application/javascript',
+        'Service-Worker-Allowed' => '/',
+        'Cache-Control' => 'no-cache',
+    ]);
+});
 
 Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     // 1. Dashboard
@@ -165,13 +184,20 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     // 10. Manager Executive Reports & Analytics
     Route::get('/reports', [ReportsController::class, 'index'])->name('reports.index');
 
+    // 10a. Manager Automated Notifications (SMS, WhatsApp, Email & Scheduled Morning Reports)
+    Route::get('/manager-notifications', [ManagerNotificationController::class, 'index'])->name('manager.notifications.index');
+    Route::post('/manager-notifications/settings', [ManagerNotificationController::class, 'updateSettings'])->name('manager.notifications.settings.update');
+    Route::post('/manager-notifications/send-test-report', [ManagerNotificationController::class, 'sendTestReport'])->name('manager.notifications.test-report');
+    Route::post('/manager-notifications/send-test-reservation', [ManagerNotificationController::class, 'sendTestReservationAlert'])->name('manager.notifications.test-reservation');
+
     // 10. WhatsApp Guest Messaging & API Settings
     Route::get('/whatsapp', [WhatsAppController::class, 'index'])->name('whatsapp.index');
     Route::post('/whatsapp/settings', [WhatsAppController::class, 'updateSettings'])->name('whatsapp.settings.update');
     Route::post('/whatsapp/send', [WhatsAppController::class, 'sendManualMessage'])->name('whatsapp.send');
 
-    // 10b. In-App System Notifications Hub
+    // 10b. In-App System Notifications Hub & PWA Push API
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/unread-latest', [NotificationController::class, 'unreadLatest'])->name('notifications.unread-latest');
     Route::get('/notifications/{notification}/go', [NotificationController::class, 'go'])->name('notifications.go');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
@@ -229,6 +255,16 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     Route::put('/branches/{branch}', [BranchController::class, 'update'])->name('branches.update');
     Route::patch('/branches/{branch}/toggle', [BranchController::class, 'toggle'])->name('branches.toggle');
     Route::post('/branches/{branch}/switch', [BranchController::class, 'switchBranch'])->name('branches.switch');
+
+    // 14. Manager Hotel Identity, Receipt & System Branding Settings
+    Route::get('/settings/tenant', [TenantSettingsController::class, 'edit'])->name('tenant.settings');
+    Route::post('/settings/tenant', [TenantSettingsController::class, 'update'])->name('tenant.settings.update');
+
+    // 15. Universal Spreadsheet CSV Data Entry (Importer & Exporter)
+    Route::get('/data-entry', [SpreadsheetDataEntryController::class, 'index'])->name('data-entry.index');
+    Route::get('/data-entry/template/{type}', [SpreadsheetDataEntryController::class, 'downloadTemplate'])->name('data-entry.template');
+    Route::get('/data-entry/export/{type}', [SpreadsheetDataEntryController::class, 'exportCsv'])->name('data-entry.export');
+    Route::post('/data-entry/import/{type}', [SpreadsheetDataEntryController::class, 'importCsv'])->name('data-entry.import');
 
     // Profile Settings
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

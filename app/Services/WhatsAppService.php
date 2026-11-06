@@ -98,7 +98,9 @@ class WhatsAppService
     {
         $guest = $reservation->guest;
         $property = $reservation->property;
-        $hotelName = $property ? $property->name : 'THE INNS';
+        $tenant = $reservation->tenant ?? ($reservation->tenant_id ? Tenant::find($reservation->tenant_id) : $property?->tenant);
+        $hotelName = $tenant?->settings['sender_id'] ?? $tenant?->name ?? $property?->name ?? 'THE INNS';
+        $currency = $tenant?->settings['currency'] ?? $property?->currency ?? 'TZS';
         $checkIn = $reservation->check_in_date->format('d M Y');
         $checkOut = $reservation->check_out_date->format('d M Y');
 
@@ -129,13 +131,16 @@ class WhatsAppService
         $guest = $reservation?->guest;
         $room = $stay->room;
         $property = $room?->property;
-        $hotelName = $property ? $property->name : 'THE INNS';
+        $tenant = $property?->tenant ?? ($reservation?->tenant_id ? Tenant::find($reservation->tenant_id) : null);
+        $hotelName = $tenant?->settings['sender_id'] ?? $tenant?->name ?? $property?->name ?? 'THE INNS';
+        $wifiSsid = $tenant?->settings['wifi_ssid'] ?? 'THE-INNS-GUEST';
+        $wifiPassword = $tenant?->settings['wifi_password'] ?? 'welcome2026';
 
         $body = "✨ *Karibu Sana {$hotelName}!*\n\n"
             ."Habari {$guest?->full_name},\n"
             ."Umekamilisha usajili kwenye *Chumba {$room?->room_number}*.\n\n"
-            ."📶 *Wi-Fi Network:* THE-INNS-GUEST\n"
-            ."🔑 *Password:* welcome2026\n"
+            ."📶 *Wi-Fi Network:* {$wifiSsid}\n"
+            ."🔑 *Password:* {$wifiPassword}\n"
             ."🍳 *Breakfast Time:* 06:30 - 10:30 AM (Main Restaurant)\n"
             ."📞 *Room Service / Reception:* Piga 0 au piga simu hii.\n\n"
             .'Furahia ukaaji wako!';
@@ -157,14 +162,16 @@ class WhatsAppService
     {
         $guest = $folio->guest;
         $property = $folio->property;
-        $hotelName = $property ? $property->name : 'THE INNS';
+        $tenant = $property?->tenant ?? ($folio->tenant_id ? Tenant::find($folio->tenant_id) : null);
+        $hotelName = $tenant?->settings['sender_id'] ?? $tenant?->name ?? $property?->name ?? 'THE INNS';
+        $currency = $tenant?->settings['currency'] ?? $property?->currency ?? 'TZS';
         $total = number_format($folio->balance_minor / 100, 2);
 
         $body = "🧾 *{$hotelName} - Stakabadhi ya Malipo*\n\n"
             ."Habari {$guest?->full_name},\n"
             ."Asante sana kwa kuchagua kukaa nasi.\n"
             ."📄 *Folio Ref:* #{$folio->folio_number}\n"
-            ."💵 *Kiasi Kamili:* \${$total}\n"
+            ."💵 *Kiasi Kamili:* {$currency} {$total}\n"
             ."Hali ya Malipo: *Imelipwa (Settled)*\n\n"
             .'Tunakutakia safari njema na tunatarajia kukukaribisha tena hivi karibuni!';
 

@@ -21,6 +21,7 @@ import {
     Eye,
     FileText,
     Filter,
+    Info,
     LogOut,
     Luggage,
     MessageSquare,
@@ -155,12 +156,13 @@ export default function Dashboard({
     };
     const safeStats = { ...defaultStats, ...(stats || {}) };
 
-    const formatCurrency = (amount: number = 0) => {
+    const formatCurrency = (amountMinor: number = 0) => {
         return new Intl.NumberFormat('en-TZ', {
             style: 'currency',
             currency: 'TZS',
             minimumFractionDigits: 0,
-        }).format(amount || 0);
+            maximumFractionDigits: 0,
+        }).format(Math.round((amountMinor || 0) / 100));
     };
 
     const handleRangeChange = (range: string) => {
@@ -219,7 +221,7 @@ export default function Dashboard({
 
     return (
         <AuthenticatedLayout>
-            <Head title={isReceptionist ? 'Reception Desk Console - THE INNS' : 'Manager Dashboard - THE INNS'} />
+            <Head title={isReceptionist ? 'THE INNS' : 'THE INNS'} />
 
             {isReceptionist ? (
                 /* ========================================================================= */
@@ -229,18 +231,14 @@ export default function Dashboard({
                     {/* 1. Reception Header & Fast Action Console */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs">
                         <div>
-                            <div className="flex items-center gap-2 text-[11px] font-extrabold text-blue-600 uppercase tracking-wider">
-                                <Users className="w-3.5 h-3.5" />
-                                <span>Front Desk & Reception Portal</span>
+                            <div className="flex items-center gap-2 text-[11px] font-extrabold text-blue-600 uppercase tracking-wider"><span>Front Desk & Reception Portal</span>
                                 <span>•</span>
                                 <span className="text-slate-400 font-medium">Business Date: {safeStats.current_business_date}</span>
                             </div>
                             <h1 className="text-lg sm:text-2xl font-black text-slate-900 mt-1">
                                 Receptionist Operational Console
                             </h1>
-                            <p className="text-xs text-slate-500 mt-0.5">
-                                Real-time guest arrivals, departures, check-in queue, and room status management
-                            </p>
+                            
                         </div>
 
                         {/* Fast Action Buttons */}
@@ -286,14 +284,8 @@ export default function Dashboard({
                             href={route('reservations.checkin')}
                             className="bg-white rounded-xl p-3 border border-slate-200/90 shadow-2xs hover:border-blue-300 hover:shadow-xs transition flex flex-col justify-between"
                         >
-                            <div className="flex items-center justify-between text-blue-600">
-                                <span className="text-[10px] font-black uppercase tracking-wider">Arrivals</span>
-                                <Luggage className="w-4 h-4" />
-                            </div>
-                            <div className="mt-2">
-                                <div className="text-xl font-black text-slate-900">{safeStats.arrivals_count}</div>
-                                <span className="text-[10px] font-semibold text-blue-600">Due Today</span>
-                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-wider text-blue-600">Arrivals</span>
+                            <div className="mt-2 text-xl font-black text-slate-900">{safeStats.arrivals_count}</div>
                         </Link>
 
                         {/* 2. Departures Today */}
@@ -301,26 +293,14 @@ export default function Dashboard({
                             href={route('reservations.checkout')}
                             className="bg-white rounded-xl p-3 border border-slate-200/90 shadow-2xs hover:border-amber-300 hover:shadow-xs transition flex flex-col justify-between"
                         >
-                            <div className="flex items-center justify-between text-amber-600">
-                                <span className="text-[10px] font-black uppercase tracking-wider">Departures</span>
-                                <DoorOpen className="w-4 h-4" />
-                            </div>
-                            <div className="mt-2">
-                                <div className="text-xl font-black text-slate-900">{safeStats.departures_count}</div>
-                                <span className="text-[10px] font-semibold text-amber-600">Checkout Due</span>
-                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-wider text-amber-600">Departures</span>
+                            <div className="mt-2 text-xl font-black text-slate-900">{safeStats.departures_count}</div>
                         </Link>
 
                         {/* 3. In-House Guests */}
                         <div className="bg-white rounded-xl p-3 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
-                            <div className="flex items-center justify-between text-indigo-600">
-                                <span className="text-[10px] font-black uppercase tracking-wider">In-House</span>
-                                <Users className="w-4 h-4" />
-                            </div>
-                            <div className="mt-2">
-                                <div className="text-xl font-black text-slate-900">{safeStats.in_house_count}</div>
-                                <span className="text-[10px] font-semibold text-indigo-600">Active Guests</span>
-                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600">In-House</span>
+                            <div className="mt-2 text-xl font-black text-slate-900">{safeStats.in_house_count}</div>
                         </div>
 
                         {/* 4. Available Rooms */}
@@ -328,26 +308,17 @@ export default function Dashboard({
                             href={route('housekeeping.index')}
                             className="bg-white rounded-xl p-3 border border-slate-200/90 shadow-2xs hover:border-emerald-300 hover:shadow-xs transition flex flex-col justify-between"
                         >
-                            <div className="flex items-center justify-between text-emerald-600">
-                                <span className="text-[10px] font-black uppercase tracking-wider">Available</span>
-                                <Bed className="w-4 h-4" />
-                            </div>
-                            <div className="mt-2">
-                                <div className="text-xl font-black text-emerald-700">{safeStats.available_count}</div>
-                                <span className="text-[10px] font-semibold text-emerald-600">Ready to Sell</span>
-                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600">Available</span>
+                            <div className="mt-2 text-xl font-black text-emerald-700">{safeStats.available_count}</div>
                         </Link>
 
                         {/* 5. Occupied Rooms */}
                         <div className="bg-white rounded-xl p-3 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
-                            <div className="flex items-center justify-between text-sky-600">
-                                <span className="text-[10px] font-black uppercase tracking-wider">Occupied</span>
-                                <DoorClosed className="w-4 h-4" />
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-black uppercase tracking-wider text-sky-600">Occupied</span>
+                                <span className="text-[10px] font-bold text-sky-600">{safeStats.occupancy_percent}%</span>
                             </div>
-                            <div className="mt-2">
-                                <div className="text-xl font-black text-slate-900">{safeStats.occupied_rooms}</div>
-                                <span className="text-[10px] font-semibold text-sky-600">{safeStats.occupancy_percent}% Full</span>
-                            </div>
+                            <div className="mt-2 text-xl font-black text-slate-900">{safeStats.occupied_rooms}</div>
                         </div>
 
                         {/* 6. Dirty Rooms */}
@@ -355,14 +326,8 @@ export default function Dashboard({
                             href={route('housekeeping.status')}
                             className="bg-white rounded-xl p-3 border border-slate-200/90 shadow-2xs hover:border-amber-300 hover:shadow-xs transition flex flex-col justify-between"
                         >
-                            <div className="flex items-center justify-between text-amber-600">
-                                <span className="text-[10px] font-black uppercase tracking-wider">Dirty Rooms</span>
-                                <Sparkles className="w-4 h-4" />
-                            </div>
-                            <div className="mt-2">
-                                <div className="text-xl font-black text-amber-700">{safeStats.vacant_dirty}</div>
-                                <span className="text-[10px] font-semibold text-amber-600">Needs Cleaning</span>
-                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-wider text-amber-600">Dirty Rooms</span>
+                            <div className="mt-2 text-xl font-black text-amber-700">{safeStats.vacant_dirty}</div>
                         </Link>
 
                         {/* 7. Pending Bookings */}
@@ -370,14 +335,8 @@ export default function Dashboard({
                             href={route('reservations.index')}
                             className="bg-white rounded-xl p-3 border border-slate-200/90 shadow-2xs hover:border-purple-300 hover:shadow-xs transition flex flex-col justify-between"
                         >
-                            <div className="flex items-center justify-between text-purple-600">
-                                <span className="text-[10px] font-black uppercase tracking-wider">Pending</span>
-                                <Calendar className="w-4 h-4" />
-                            </div>
-                            <div className="mt-2">
-                                <div className="text-xl font-black text-slate-900">{safeStats.reserved_count}</div>
-                                <span className="text-[10px] font-semibold text-purple-600">To Confirm</span>
-                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-wider text-purple-600">Pending</span>
+                            <div className="mt-2 text-xl font-black text-slate-900">{safeStats.reserved_count}</div>
                         </Link>
 
                         {/* 8. Unpaid Folios */}
@@ -385,14 +344,8 @@ export default function Dashboard({
                             href={route('folios.index')}
                             className="bg-white rounded-xl p-3 border border-slate-200/90 shadow-2xs hover:border-rose-300 hover:shadow-xs transition flex flex-col justify-between"
                         >
-                            <div className="flex items-center justify-between text-rose-600">
-                                <span className="text-[10px] font-black uppercase tracking-wider">Unpaid Folios</span>
-                                <Receipt className="w-4 h-4" />
-                            </div>
-                            <div className="mt-2">
-                                <div className="text-xl font-black text-rose-700">{pendingFoliosCount}</div>
-                                <span className="text-[10px] font-semibold text-rose-600">Balance Due</span>
-                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-wider text-rose-600">Unpaid Folios</span>
+                            <div className="mt-2 text-xl font-black text-rose-700">{pendingFoliosCount}</div>
                         </Link>
                     </div>
 
@@ -437,7 +390,6 @@ export default function Dashboard({
                                             : 'text-slate-600 hover:text-slate-900'
                                     }`}
                                 >
-                                    <Users className="w-3.5 h-3.5" />
                                     <span>In-House Guests ({safeInHouse.length})</span>
                                 </button>
                             </div>
@@ -828,102 +780,68 @@ export default function Dashboard({
                     {/* 2. Top Summary Metrics Cards (Executive View) */}
                     <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-3.5">
                         {/* TOTAL ROOMS */}
-                        <div className="bg-white rounded-xl sm:rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow flex items-center justify-between">
-                            <div className="min-w-0 flex-1 pr-2">
-                                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 block truncate">
-                                    TOTAL ROOMS
-                                </span>
-                                <div className="text-xl sm:text-2xl 2xl:text-3xl font-black text-slate-900 mt-0.5 leading-tight">
-                                    {safeStats.total_rooms}
-                                </div>
-                                <div className="text-[11px] text-slate-500 mt-0.5 truncate">
-                                    Total inventory
-                                </div>
-                            </div>
-                            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-600 shrink-0">
-                                <DoorClosed className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.75]" />
+                        <div className="bg-white rounded-xl sm:rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow">
+                            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 block truncate">
+                                TOTAL ROOMS
+                            </span>
+                            <div className="text-xl sm:text-2xl 2xl:text-3xl font-black text-slate-900 mt-1 leading-tight">
+                                {safeStats.total_rooms}
                             </div>
                         </div>
 
                         {/* AVAILABLE */}
-                        <div className="bg-white rounded-xl sm:rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow flex items-center justify-between">
-                            <div className="min-w-0 flex-1 pr-2">
-                                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-600 block truncate">
-                                    AVAILABLE
-                                </span>
-                                <div className="text-xl sm:text-2xl 2xl:text-3xl font-black text-emerald-700 mt-0.5 leading-tight">
-                                    {safeStats.available_count}
-                                </div>
-                                <div className="text-[11px] text-emerald-600/80 mt-0.5 truncate">
-                                    Ready for check-in
-                                </div>
-                            </div>
-                            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-                                <Bed className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.75]" />
+                        <div className="bg-white rounded-xl sm:rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow">
+                            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-600 block truncate">
+                                AVAILABLE
+                            </span>
+                            <div className="text-xl sm:text-2xl 2xl:text-3xl font-black text-emerald-700 mt-1 leading-tight">
+                                {safeStats.available_count}
                             </div>
                         </div>
 
                         {/* OCCUPIED */}
-                        <div className="bg-white rounded-xl sm:rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow flex items-center justify-between">
-                            <div className="min-w-0 flex-1 pr-2">
+                        <div className="bg-white rounded-xl sm:rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow">
+                            <div className="flex items-center justify-between">
                                 <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-blue-600 block truncate">
                                     OCCUPIED
                                 </span>
-                                <div className="text-xl sm:text-2xl 2xl:text-3xl font-black text-blue-700 mt-0.5 leading-tight">
-                                    {safeStats.occupied_rooms}
-                                </div>
-                                <div className="text-[11px] text-blue-600/80 mt-0.5 truncate">
-                                    {safeStats.occupancy_percent}% occupancy
-                                </div>
+                                <span className="text-[10px] font-bold text-blue-600/80">
+                                    {safeStats.occupancy_percent}%
+                                </span>
                             </div>
-                            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
-                                <Luggage className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.75]" />
+                            <div className="text-xl sm:text-2xl 2xl:text-3xl font-black text-blue-700 mt-1 leading-tight">
+                                {safeStats.occupied_rooms}
                             </div>
                         </div>
 
                         {/* REVENUE */}
-                        <div className="bg-white rounded-xl sm:rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow flex items-center justify-between">
-                            <div className="min-w-0 flex-1 pr-2">
+                        <div className="bg-white rounded-xl sm:rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow">
+                            <div className="flex items-center justify-between">
                                 <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-amber-600 block truncate">
                                     REVENUE
                                 </span>
-                                <div
-                                    className="text-sm sm:text-lg lg:text-base xl:text-lg 2xl:text-2xl font-black text-slate-900 mt-0.5 leading-tight truncate"
-                                    title={formatCurrency(safeStats.today_revenue_minor)}
-                                >
-                                    {formatCurrency(safeStats.today_revenue_minor)}
-                                </div>
-                                <div className="flex items-center gap-1 text-[11px] mt-0.5 truncate">
-                                    <span className={revenueChangePct >= 0 ? 'text-emerald-600 font-semibold flex items-center shrink-0' : 'text-rose-500 font-semibold flex items-center shrink-0'}>
-                                        {revenueChangePct >= 0 ? <ArrowUpRight className="w-3 h-3 inline" /> : <ArrowDownRight className="w-3 h-3 inline" />}
-                                        {Math.abs(revenueChangePct)}%
-                                    </span>
-                                    <span className="text-slate-400 truncate">vs prev</span>
-                                </div>
+                                <span className={`text-[11px] font-semibold ${revenueChangePct >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                                    {revenueChangePct >= 0 ? `+${revenueChangePct}%` : `${revenueChangePct}%`}
+                                </span>
                             </div>
-                            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0">
-                                <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.75]" />
+                            <div
+                                className="text-sm sm:text-lg lg:text-base xl:text-lg 2xl:text-2xl font-black text-slate-900 mt-1 leading-tight truncate"
+                                title={formatCurrency(safeStats.today_revenue_minor)}
+                            >
+                                {formatCurrency(safeStats.today_revenue_minor)}
                             </div>
                         </div>
 
                         {/* SMS CREDITS BALANCE */}
                         <Link
                             href={route('whatsapp.index')}
-                            className="bg-white rounded-xl sm:rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs hover:shadow-xs hover:border-emerald-300 transition flex items-center justify-between cursor-pointer"
+                            className="bg-white rounded-xl sm:rounded-2xl p-3.5 sm:p-4 border border-slate-200/80 shadow-2xs hover:shadow-xs hover:border-emerald-300 transition block cursor-pointer"
                         >
-                            <div className="min-w-0 flex-1 pr-2">
-                                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-600 block truncate">
-                                    SMS BALANCE
-                                </span>
-                                <div className="text-xl sm:text-2xl 2xl:text-3xl font-black text-slate-900 mt-0.5 leading-tight">
-                                    {Number((auth as any)?.sms_balance ?? 0).toLocaleString()}
-                                </div>
-                                <div className="text-[11px] text-slate-500 mt-0.5 truncate">
-                                    {Number((auth as any)?.sms_balance ?? 0) <= 50 ? '⚠️ Low balance - Top up' : 'Guest SMS Active'}
-                                </div>
-                            </div>
-                            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-                                <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.75]" />
+                            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-600 block truncate">
+                                SMS BALANCE
+                            </span>
+                            <div className="text-xl sm:text-2xl 2xl:text-3xl font-black text-slate-900 mt-1 leading-tight">
+                                {Number((auth as any)?.sms_balance ?? 0).toLocaleString()}
                             </div>
                         </Link>
                     </div>
@@ -938,7 +856,7 @@ export default function Dashboard({
                                         {safeStats.total_rooms} Rooms Total
                                     </span>
                                 </div>
-                                <p className="text-xs text-slate-500 mt-0.5">Real-time housekeeping and room allocation</p>
+                                
                             </div>
 
                             <Link
@@ -1003,7 +921,7 @@ export default function Dashboard({
                             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                                 <div>
                                     <h3 className="text-sm sm:text-base font-bold text-slate-900">Guest Movements</h3>
-                                    <p className="text-[11px] text-slate-500">Arrivals and departures for today</p>
+                                    
                                 </div>
                                 <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-xs font-semibold">
                                     <button
@@ -1082,49 +1000,24 @@ export default function Dashboard({
                         <div className="lg:col-span-5 bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-2xs space-y-3.5">
                             <div className="border-b border-slate-100 pb-3">
                                 <h3 className="text-sm sm:text-base font-bold text-slate-900">Revenue & Rates</h3>
-                                <p className="text-[11px] text-slate-500">Financial distribution for selected period</p>
                             </div>
 
                             <div className="space-y-2.5">
                                 {/* Room Revenue */}
                                 <div className="flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-slate-50/80 border border-slate-100">
-                                    <div className="flex items-center gap-2.5">
-                                        <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                                            <Bed className="w-4 h-4 stroke-[2]" />
-                                        </div>
-                                        <div>
-                                            <div className="text-xs font-bold text-slate-800">Room Accommodation</div>
-                                            <div className="text-[10px] text-slate-400">Total room sales</div>
-                                        </div>
-                                    </div>
+                                    <span className="text-xs font-bold text-slate-800">Room Accommodation</span>
                                     <div className="text-xs sm:text-sm font-extrabold text-slate-900">{formatCurrency(safeStats.room_revenue_minor)}</div>
                                 </div>
 
                                 {/* Restaurant & POS */}
                                 <div className="flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-slate-50/80 border border-slate-100">
-                                    <div className="flex items-center gap-2.5">
-                                        <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
-                                            <Utensils className="w-4 h-4 stroke-[2]" />
-                                        </div>
-                                        <div>
-                                            <div className="text-xs font-bold text-slate-800">Restaurant & POS</div>
-                                            <div className="text-[10px] text-slate-400">Food, bar & grocery</div>
-                                        </div>
-                                    </div>
+                                    <span className="text-xs font-bold text-slate-800">Restaurant & POS</span>
                                     <div className="text-xs sm:text-sm font-extrabold text-slate-900">{formatCurrency(safeStats.pos_revenue_minor)}</div>
                                 </div>
 
                                 {/* Outstanding Folios */}
                                 <div className="flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-rose-50/50 border border-rose-100">
-                                    <div className="flex items-center gap-2.5">
-                                        <div className="w-8 h-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
-                                            <AlertCircle className="w-4 h-4 stroke-[2]" />
-                                        </div>
-                                        <div>
-                                            <div className="text-xs font-bold text-slate-800">Pending Folios</div>
-                                            <div className="text-[10px] text-slate-400">Unsettled guest balance</div>
-                                        </div>
-                                    </div>
+                                    <span className="text-xs font-bold text-slate-800">Pending Folios</span>
                                     <div className="text-xs sm:text-sm font-extrabold text-rose-600">{formatCurrency(safeStats.outstanding_minor)}</div>
                                 </div>
                             </div>
@@ -1132,15 +1025,13 @@ export default function Dashboard({
                             {/* ADR and RevPAR */}
                             <div className="grid grid-cols-2 gap-2.5 pt-1">
                                 <div className="p-2.5 sm:p-3 rounded-xl border border-slate-200/80 bg-white">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">ADR (Avg Rate)</span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">ADR (Avg Rate)</span>
                                     <div className="text-sm sm:text-base font-extrabold text-slate-900 mt-0.5">{formatCurrency(safeStats.adr)}</div>
-                                    <div className="text-[10px] text-slate-400 mt-0.5">Per occupied room</div>
                                 </div>
 
                                 <div className="p-2.5 sm:p-3 rounded-xl border border-slate-200/80 bg-white">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">RevPAR</span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">RevPAR</span>
                                     <div className="text-sm sm:text-base font-extrabold text-slate-900 mt-0.5">{formatCurrency(safeStats.revpar)}</div>
-                                    <div className="text-[10px] text-slate-400 mt-0.5">Per available room</div>
                                 </div>
                             </div>
                         </div>

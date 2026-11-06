@@ -111,15 +111,14 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
                 {/* Header */}
                 <div className="border-b border-slate-100 pb-5 mb-5 sm:pb-6 sm:mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center space-x-3.5">
-                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-700 shadow-xs shrink-0">
-                            <Hotel className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
-                        </div>
+                        
                         <div>
                             <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
-                                {auth.property?.name || 'Haula Serengeti Safari Lodge'}
+                                {auth.tenant?.name || auth.property?.name || 'Hotel Property'}
                             </h2>
                             <p className="text-[11px] sm:text-xs text-slate-500">
-                                Official Guest Folio Statement &bull; TIN: 102-458-999
+                                {auth.tenant?.receipt_header || 'Official Guest Folio Statement'} &bull; TIN: {auth.tenant?.tin || (auth.property?.tax_config as any)?.tin || '102-458-999'}
+                                {auth.tenant?.vrn ? ` • VRN: ${auth.tenant.vrn}` : ''}
                             </p>
                         </div>
                     </div>
@@ -137,7 +136,7 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
                             onClick={handlePrintA4}
                             className="inline-flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold px-3 py-2 rounded-xl text-xs transition active-press cursor-pointer shadow-xs flex-1 sm:flex-none justify-center"
                         >
-                            <Printer className="w-4 h-4 text-slate-500" />
+                            
                             <span>Print A4</span>
                         </button>
 
@@ -145,7 +144,7 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
                             onClick={() => setIsAddChargeModalOpen(true)}
                             className="inline-flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold px-3 py-2 rounded-xl text-xs transition active-press cursor-pointer shadow-xs flex-1 sm:flex-none justify-center"
                         >
-                            <Plus className="w-4 h-4 text-emerald-600" />
+                            
                             <span>Post Charge</span>
                         </button>
 
@@ -519,10 +518,13 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
                         {/* 80mm Thermal Paper Simulation Container */}
                         <div id="thermal-receipt-area" className="w-[280px] bg-white border-2 border-dashed border-slate-300 p-4 font-mono text-[11px] text-slate-900 leading-tight shadow-inner rounded-sm">
                             <div className="text-center pb-2 border-b border-dashed border-slate-300">
-                                <h4 className="font-extrabold text-xs uppercase tracking-wider">HAULA SERENGETI LODGE</h4>
-                                <p className="text-[10px] text-slate-600">P.O. BOX 1042, SERONERA, TZ</p>
-                                <p className="text-[10px] text-slate-600">TIN: 102-458-999 | VRN: 40-0012</p>
-                                <p className="text-[10px] text-slate-600">TEL: +255 754 000 111</p>
+                                <h4 className="font-extrabold text-xs uppercase tracking-wider">{auth.tenant?.name || auth.property?.name || 'HOTEL RECEIPT'}</h4>
+                                <p className="text-[10px] text-slate-600">{auth.tenant?.address || auth.property?.address || 'P.O. BOX 1042, SERONERA, TZ'}{auth.tenant?.city ? `, ${auth.tenant.city}` : ''}</p>
+                                <p className="text-[10px] text-slate-600">
+                                    TIN: {auth.tenant?.tin || (auth.property?.tax_config as any)?.tin || '102-458-999'}
+                                    {auth.tenant?.vrn ? ` | VRN: ${auth.tenant.vrn}` : ''}
+                                </p>
+                                <p className="text-[10px] text-slate-600">TEL: {auth.tenant?.phone || auth.property?.phone || '+255 754 000 111'}</p>
                             </div>
 
                             <div className="py-2 border-b border-dashed border-slate-300 text-[10px]">
@@ -584,8 +586,8 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
                                 <div className="w-16 h-16 border border-slate-300 mx-auto flex items-center justify-center bg-slate-50 text-[8px] font-bold text-slate-400 mb-1">
                                     [TRA QR]
                                 </div>
-                                <p className="font-bold">VERIFIED FISCAL RECEIPT</p>
-                                <p>Asante kwa kutembelea THE INNS!</p>
+                                <p className="font-bold">{auth.tenant?.receipt_header || 'VERIFIED FISCAL RECEIPT'}</p>
+                                <p>{auth.tenant?.receipt_footer || `Asante kwa kutembelea ${auth.tenant?.name || 'hoteli yetu'}!`}</p>
                             </div>
                         </div>
 
@@ -601,7 +603,7 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
                                 onClick={handlePrintThermal}
                                 className="flex-1 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-md transition active-press cursor-pointer flex items-center justify-center space-x-1"
                             >
-                                <Printer className="w-4 h-4" />
+                                
                                 <span>Print 80mm</span>
                             </button>
                         </div>

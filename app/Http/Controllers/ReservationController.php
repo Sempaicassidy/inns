@@ -15,6 +15,7 @@ use App\Models\Room;
 use App\Models\RoomType;
 use App\Models\Stay;
 use App\Models\SystemNotification;
+use App\Services\ManagerNotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -173,7 +174,9 @@ class ReservationController extends Controller
             ? (float) $validated['rate_price']
             : (($roomType?->base_price_minor ?? 35000000) / 100);
 
-        DB::transaction(function () use ($validated, $user, $property, $tenantId, $selectedRoomIds, $primaryRoomId, $roomTypeId, $ratePlanId, $ratePrice) {
+        $createdReservation = null;
+
+        DB::transaction(function () use (&$createdReservation, $validated, $user, $property, $tenantId, $selectedRoomIds, $primaryRoomId, $roomTypeId, $ratePlanId, $ratePrice) {
             // Find or create guest
             if (! empty($validated['guest_id'])) {
                 $guest = Guest::findOrFail($validated['guest_id']);
@@ -262,6 +265,8 @@ class ReservationController extends Controller
                 'notes' => $validated['notes'] ?? null,
                 'created_by' => $user->id,
             ]);
+
+            $createdReservation = $reservation;
 
             // Create ReservationRoom for each room selected (or primary room)
             $createdRooms = [];
@@ -359,6 +364,15 @@ class ReservationController extends Controller
 
             $folio->recalculateBalance();
         });
+
+        // Trigger Instant Manager Alert (SMS, WhatsApp & Email) on room reservation
+        if ($createdReservation) {
+            try {
+                app(ManagerNotificationService::class)->notifyReservationCreated($createdReservation);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Failed sending manager reservation notification: ' . $e->getMessage());
+            }
+        }
 
         try {
             SystemNotification::send(

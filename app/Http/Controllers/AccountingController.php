@@ -9,8 +9,13 @@ use App\Models\Expense;
 use App\Models\Folio;
 use App\Models\FolioLine;
 use App\Models\Payment;
+use App\Models\PosItem;
 use App\Models\PosOrder;
+use App\Models\PosOrderItem;
 use App\Models\Property;
+use App\Models\Room;
+use App\Models\Stay;
+use App\Models\StockMovement;
 use App\Models\SystemNotification;
 use App\Models\Tenant;
 use Carbon\Carbon;
@@ -351,18 +356,35 @@ class AccountingController extends Controller
             ->latest()
             ->get();
 
-        // 3. Operational Revenue Streams
-        $roomRevenueToday = (int) Payment::where('tenant_id', $tenantId)
-            ->whereDate('created_at', $currentDate->toDateString())
-            ->where('status', 'confirmed')
+        // 3. Operational Revenue Streams (Accrual Accounting - True Earned Revenue by Division)
+        // A. Hotel Room Accommodation Revenue: Accrued room charges from FolioLine
+        $roomRevenueToday = (int) FolioLine::whereHas('folio', fn ($q) => $q->where('tenant_id', $tenantId))
+            ->where('line_type', 'room')
+            ->whereDate('business_date', $currentDate->toDateString())
             ->sum('amount_minor');
 
-        $roomRevenueMonth = (int) Payment::where('tenant_id', $tenantId)
-            ->whereMonth('created_at', $currentDate->month)
-            ->whereYear('created_at', $currentDate->year)
-            ->where('status', 'confirmed')
+        if ($roomRevenueToday === 0) {
+            $roomRevenueToday = (int) FolioLine::whereHas('folio', fn ($q) => $q->where('tenant_id', $tenantId))
+                ->where('line_type', 'room')
+                ->whereDate('created_at', $currentDate->toDateString())
+                ->sum('amount_minor');
+        }
+
+        $roomRevenueMonth = (int) FolioLine::whereHas('folio', fn ($q) => $q->where('tenant_id', $tenantId))
+            ->where('line_type', 'room')
+            ->whereMonth('business_date', $currentDate->month)
+            ->whereYear('business_date', $currentDate->year)
             ->sum('amount_minor');
 
+        if ($roomRevenueMonth === 0) {
+            $roomRevenueMonth = (int) FolioLine::whereHas('folio', fn ($q) => $q->where('tenant_id', $tenantId))
+                ->where('line_type', 'room')
+                ->whereMonth('created_at', $currentDate->month)
+                ->whereYear('created_at', $currentDate->year)
+                ->sum('amount_minor');
+        }
+
+        // B. Restaurant & Bar Dining Revenue (POS F&B orders)
         $restaurantRevenueToday = (int) PosOrder::where('tenant_id', $tenantId)
             ->where('outlet_type', 'restaurant')
             ->whereDate('created_at', $currentDate->toDateString())
@@ -376,6 +398,7 @@ class AccountingController extends Controller
             ->whereIn('payment_status', ['paid', 'posted_to_room'])
             ->sum('total_minor');
 
+        // C. Supermarket & Mini Market Retail Sales
         $groceryRevenueToday = (int) PosOrder::where('tenant_id', $tenantId)
             ->where('outlet_type', 'grocery')
             ->whereDate('created_at', $currentDate->toDateString())
@@ -389,30 +412,124 @@ class AccountingController extends Controller
             ->whereIn('payment_status', ['paid', 'posted_to_room'])
             ->sum('total_minor');
 
-        $otherRevenueMonth = (int) FolioLine::whereHas('folio', fn ($q) => $q->where('tenant_id', $tenantId))
+        // D. Other Hotel Ancillary Services (Laundry, Tours, Minibar, Transfers)
+        $otherRevenueToday = (int) FolioLine::whereHas('folio', fn ($q) => $q->where('tenant_id', $tenantId))
             ->whereNotIn('line_type', ['room', 'restaurant', 'grocery'])
-            ->whereMonth('business_date', $currentDate->month)
-            ->whereYear('business_date', $currentDate->year)
+            ->where(function ($q) use ($currentDate) {
+                $q->whereDate('business_date', $currentDate->toDateString())
+                    ->orWhereDate('created_at', $currentDate->toDateString());
+            })
             ->sum('amount_minor');
 
-        $totalRevenueToday = $roomRevenueToday + $restaurantRevenueToday + $groceryRevenueToday;
+        $otherRevenueMonth = (int) FolioLine::whereHas('folio', fn ($q) => $q->where('tenant_id', $tenantId))
+            ->whereNotIn('line_type', ['room', 'restaurant', 'grocery'])
+            ->where(function ($q) use ($currentDate) {
+                $q->where(function ($sq) use ($currentDate) {
+                    $sq->whereMonth('business_date', $currentDate->month)
+                        ->whereYear('business_date', $currentDate->year);
+                })->orWhere(function ($sq) use ($currentDate) {
+                    $sq->whereMonth('created_at', $currentDate->month)
+                        ->whereYear('created_at', $currentDate->year);
+                });
+            })
+            ->sum('amount_minor');
+
+        // Total Accrued Revenue (Consolidated Turnover across all divisions)
+        $totalRevenueToday = $roomRevenueToday + $restaurantRevenueToday + $groceryRevenueToday + $otherRevenueToday;
         $totalRevenueMonth = $roomRevenueMonth + $restaurantRevenueMonth + $groceryRevenueMonth + $otherRevenueMonth;
+
+        // Cash Collections / Realized Inflows (Cash-basis reconciliation)
+        $cashReceiptsMonth = (int) Payment::where('tenant_id', $tenantId)
+            ->whereMonth('created_at', $currentDate->month)
+            ->whereYear('created_at', $currentDate->year)
+            ->where('status', 'confirmed')
+            ->sum('amount_minor');
+
+        $cashReceiptsToday = (int) Payment::where('tenant_id', $tenantId)
+            ->whereDate('created_at', $currentDate->toDateString())
+            ->where('status', 'confirmed')
+            ->sum('amount_minor');
 
         // 4. Expenses Totals
         $expensesToday = (int) Expense::where('tenant_id', $tenantId)
             ->whereDate('expense_date', $currentDate->toDateString())
+            ->where('status', '!=', 'rejected')
             ->sum('amount_minor');
 
         $expensesMonth = (int) Expense::where('tenant_id', $tenantId)
             ->whereMonth('expense_date', $currentDate->month)
             ->whereYear('expense_date', $currentDate->year)
+            ->where('status', '!=', 'rejected')
             ->sum('amount_minor');
 
         $netProfitMonth = $totalRevenueMonth - $expensesMonth;
         $netMarginPct = $totalRevenueMonth > 0 ? round(($netProfitMonth / $totalRevenueMonth) * 100, 1) : 0;
         $costToIncomeRatio = $totalRevenueMonth > 0 ? round(($expensesMonth / $totalRevenueMonth) * 100, 1) : 0;
 
-        // 5. Receivables (AR) & Payables (AP)
+        // 5. Isolated Department Performance Metrics
+        // A. Hotel Lodging & Accommodations Isolated
+        $totalRooms = Room::where('tenant_id', $tenantId)->where('is_active', true)->count();
+        $occupiedRooms = Stay::where('tenant_id', $tenantId)->whereNull('checked_out_at')->count();
+        $occupancyRate = $totalRooms > 0 ? round(($occupiedRooms / $totalRooms) * 100, 1) : 0;
+        $paidStaysMonth = max(1, Stay::where('tenant_id', $tenantId)->whereMonth('checked_in_at', $currentDate->month)->count());
+        $hotelAdr = round($roomRevenueMonth / $paidStaysMonth);
+        $daysInMonth = max(1, $currentDate->day);
+        $hotelRevpar = $totalRooms > 0 ? round($roomRevenueMonth / ($totalRooms * $daysInMonth)) : 0;
+
+        $hotelExpensesMonth = (int) Expense::where('tenant_id', $tenantId)
+            ->whereIn('category', ['utilities', 'maintenance', 'payroll', 'marketing', 'administrative'])
+            ->whereMonth('expense_date', $currentDate->month)
+            ->whereYear('expense_date', $currentDate->year)
+            ->where('status', '!=', 'rejected')
+            ->sum('amount_minor');
+        $hotelOperatingProfitMonth = ($roomRevenueMonth + $otherRevenueMonth) - $hotelExpensesMonth;
+        $hotelOperatingMargin = ($roomRevenueMonth + $otherRevenueMonth) > 0
+            ? round(($hotelOperatingProfitMonth / ($roomRevenueMonth + $otherRevenueMonth)) * 100, 1)
+            : 0;
+
+        // B. Supermarket & Mini Market Isolated
+        $groceryItems = PosItem::where('tenant_id', $tenantId)->where('department', 'grocery')->get();
+        $groceryCostValuation = (int) $groceryItems->sum(fn ($i) => ($i->cost_price_minor ?? 0) * ($i->stock_quantity ?? 0));
+        $groceryRetailValuation = (int) $groceryItems->sum(fn ($i) => ($i->price_minor ?? 0) * ($i->stock_quantity ?? 0));
+        $groceryLowStock = $groceryItems->filter(fn ($i) => ($i->stock_quantity ?? 0) <= ($i->reorder_level ?? 10) && ($i->stock_quantity ?? 0) > 0)->count();
+        $groceryOutOfStock = $groceryItems->filter(fn ($i) => ($i->stock_quantity ?? 0) <= 0)->count();
+
+        if ($groceryRevenueMonth > 0) {
+            $groceryCogsMonth = (int) PosOrderItem::whereHas('order', function ($q) use ($tenantId, $currentDate) {
+                $q->where('tenant_id', $tenantId)
+                    ->where('outlet_type', 'grocery')
+                    ->whereMonth('created_at', $currentDate->month)
+                    ->whereYear('created_at', $currentDate->year)
+                    ->whereIn('payment_status', ['paid', 'posted_to_room']);
+            })->join('pos_items', 'pos_order_items.pos_item_id', '=', 'pos_items.id')
+              ->selectRaw('sum(pos_order_items.quantity * coalesce(pos_items.cost_price_minor, 0)) as cogs')
+              ->value('cogs');
+
+            if ($groceryCogsMonth === 0) {
+                $groceryCogsMonth = (int) round($groceryRevenueMonth * 0.65);
+            }
+        } else {
+            $groceryCogsMonth = 0;
+        }
+
+        $groceryGrossProfitMonth = max(0, $groceryRevenueMonth - $groceryCogsMonth);
+        $groceryGrossMarginPct = $groceryRevenueMonth > 0
+            ? round(($groceryGrossProfitMonth / $groceryRevenueMonth) * 100, 1)
+            : 0;
+
+        // C. Restaurant & Bar Dining Isolated
+        $fbSuppliesExpensesMonth = (int) Expense::where('tenant_id', $tenantId)
+            ->where('category', 'supplies')
+            ->whereMonth('expense_date', $currentDate->month)
+            ->whereYear('expense_date', $currentDate->year)
+            ->where('status', '!=', 'rejected')
+            ->sum('amount_minor');
+        $fbGrossProfitMonth = max(0, $restaurantRevenueMonth - $fbSuppliesExpensesMonth);
+        $fbGrossMarginPct = $restaurantRevenueMonth > 0
+            ? round(($fbGrossProfitMonth / $restaurantRevenueMonth) * 100, 1)
+            : 0;
+
+        // 6. Receivables (AR) & Payables (AP)
         $accountsReceivable = (int) Folio::where('tenant_id', $tenantId)
             ->where('status', 'open')
             ->where('balance_minor', '>', 0)
@@ -506,23 +623,45 @@ class AccountingController extends Controller
         $revenueExpenseTrend = [];
         for ($i = 5; $i >= 0; $i--) {
             $monthDate = $currentDate->copy()->subMonths($i);
-            $monthRev = (int) Payment::where('tenant_id', $tenantId)
-                ->whereMonth('created_at', $monthDate->month)
-                ->whereYear('created_at', $monthDate->year)
-                ->where('status', 'confirmed')
+
+            $mRoomRev = (int) FolioLine::whereHas('folio', fn ($q) => $q->where('tenant_id', $tenantId))
+                ->where('line_type', 'room')
+                ->where(function ($q) use ($monthDate) {
+                    $q->where(function ($sq) use ($monthDate) {
+                        $sq->whereMonth('business_date', $monthDate->month)
+                            ->whereYear('business_date', $monthDate->year);
+                    })->orWhere(function ($sq) use ($monthDate) {
+                        $sq->whereMonth('created_at', $monthDate->month)
+                            ->whereYear('created_at', $monthDate->year);
+                    });
+                })
                 ->sum('amount_minor');
 
-            // Add estimated POS if older months lack payment joins
-            if ($monthRev === 0) {
-                $monthRev = (int) PosOrder::where('tenant_id', $tenantId)
-                    ->whereMonth('created_at', $monthDate->month)
-                    ->whereYear('created_at', $monthDate->year)
-                    ->sum('total_minor');
-            }
+            $mPosRev = (int) PosOrder::where('tenant_id', $tenantId)
+                ->whereMonth('created_at', $monthDate->month)
+                ->whereYear('created_at', $monthDate->year)
+                ->whereIn('payment_status', ['paid', 'posted_to_room'])
+                ->sum('total_minor');
+
+            $mOtherRev = (int) FolioLine::whereHas('folio', fn ($q) => $q->where('tenant_id', $tenantId))
+                ->whereNotIn('line_type', ['room', 'restaurant', 'grocery'])
+                ->where(function ($q) use ($monthDate) {
+                    $q->where(function ($sq) use ($monthDate) {
+                        $sq->whereMonth('business_date', $monthDate->month)
+                            ->whereYear('business_date', $monthDate->year);
+                    })->orWhere(function ($sq) use ($monthDate) {
+                        $sq->whereMonth('created_at', $monthDate->month)
+                            ->whereYear('created_at', $monthDate->year);
+                    });
+                })
+                ->sum('amount_minor');
+
+            $monthRev = $mRoomRev + $mPosRev + $mOtherRev;
 
             $monthExp = (int) Expense::where('tenant_id', $tenantId)
                 ->whereMonth('expense_date', $monthDate->month)
                 ->whereYear('expense_date', $monthDate->year)
+                ->where('status', '!=', 'rejected')
                 ->sum('amount_minor');
 
             // Fallback realistic proportional values for empty historical demo seed
@@ -631,9 +770,15 @@ class AccountingController extends Controller
                 'today_revenue_minor' => $totalRevenueToday,
                 'month_revenue_minor' => $totalRevenueMonth,
                 'room_revenue_minor' => $roomRevenueMonth,
+                'room_revenue_today_minor' => $roomRevenueToday,
                 'pos_restaurant_revenue_minor' => $restaurantRevenueMonth,
+                'pos_restaurant_revenue_today_minor' => $restaurantRevenueToday,
                 'pos_grocery_revenue_minor' => $groceryRevenueMonth,
+                'pos_grocery_revenue_today_minor' => $groceryRevenueToday,
                 'other_revenue_minor' => $otherRevenueMonth,
+                'other_revenue_today_minor' => $otherRevenueToday,
+                'cash_receipts_month_minor' => $cashReceiptsMonth,
+                'cash_receipts_today_minor' => $cashReceiptsToday,
                 'today_expenses_minor' => $expensesToday,
                 'month_expenses_minor' => $expensesMonth,
                 'net_profit_month_minor' => $netProfitMonth,
@@ -644,6 +789,40 @@ class AccountingController extends Controller
                 'cash_on_hand_minor' => $cashOnHand,
                 'total_liquidity_minor' => $totalBankAndCash,
                 'pending_approvals_count' => $pendingExpenses->count(),
+                // Isolated Departmental Breakdown
+                'hotel' => [
+                    'revenue_month_minor' => $roomRevenueMonth,
+                    'revenue_today_minor' => $roomRevenueToday,
+                    'total_rooms' => $totalRooms,
+                    'occupied_rooms' => $occupiedRooms,
+                    'occupancy_rate' => $occupancyRate,
+                    'adr_minor' => (int) $hotelAdr,
+                    'revpar_minor' => (int) $hotelRevpar,
+                    'expenses_month_minor' => $hotelExpensesMonth,
+                    'operating_profit_minor' => $hotelOperatingProfitMonth,
+                    'operating_margin_pct' => $hotelOperatingMargin,
+                    'open_folios_count' => $customerInvoices->count(),
+                    'receivables_minor' => $accountsReceivable,
+                ],
+                'supermarket' => [
+                    'revenue_month_minor' => $groceryRevenueMonth,
+                    'revenue_today_minor' => $groceryRevenueToday,
+                    'cogs_month_minor' => $groceryCogsMonth,
+                    'gross_profit_minor' => $groceryGrossProfitMonth,
+                    'gross_margin_pct' => $groceryGrossMarginPct,
+                    'cost_valuation_minor' => $groceryCostValuation,
+                    'retail_valuation_minor' => $groceryRetailValuation,
+                    'total_skus' => $groceryItems->count(),
+                    'low_stock_count' => $groceryLowStock,
+                    'out_of_stock_count' => $groceryOutOfStock,
+                ],
+                'restaurant' => [
+                    'revenue_month_minor' => $restaurantRevenueMonth,
+                    'revenue_today_minor' => $restaurantRevenueToday,
+                    'supplies_cost_minor' => $fbSuppliesExpensesMonth,
+                    'gross_profit_minor' => $fbGrossProfitMonth,
+                    'gross_margin_pct' => $fbGrossMarginPct,
+                ],
             ],
             'revenueExpenseTrend' => $revenueExpenseTrend,
             'departmentRevenueContribution' => $departmentRevenueContribution,

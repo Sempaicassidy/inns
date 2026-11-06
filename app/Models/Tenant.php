@@ -47,6 +47,62 @@ class Tenant extends Model
         return $this->license_expiry && $this->license_expiry->isPast();
     }
 
+    /**
+     * Get a setting from the JSON settings store with fallback.
+     */
+    public function getSetting(string $key, mixed $default = null): mixed
+    {
+        return $this->settings[$key] ?? $default;
+    }
+
+    /**
+     * Get system display name for this tenant.
+     */
+    public function getSystemNameAttribute(): string
+    {
+        return $this->getSetting('system_name', $this->name ?? 'THE INNS');
+    }
+
+    /**
+     * Get SMS / WhatsApp sender brand name.
+     */
+    public function getSenderIdAttribute(): string
+    {
+        return $this->getSetting('sender_id', $this->name ?? 'THE INNS');
+    }
+
+    /**
+     * Get Tax Identification Number (TIN).
+     */
+    public function getTinAttribute(): ?string
+    {
+        return $this->getSetting('tin');
+    }
+
+    /**
+     * Get VAT Registration Number (VRN).
+     */
+    public function getVrnAttribute(): ?string
+    {
+        return $this->getSetting('vrn');
+    }
+
+    /**
+     * Get customized receipt header.
+     */
+    public function getReceiptHeaderAttribute(): string
+    {
+        return $this->getSetting('receipt_header', 'OFFICIAL CASH RECEIPT / INVOICE');
+    }
+
+    /**
+     * Get customized receipt footer terms note.
+     */
+    public function getReceiptFooterAttribute(): string
+    {
+        return $this->getSetting('receipt_footer', 'Thank you for your patronage! Goods & services once paid are non-refundable.');
+    }
+
     public function properties(): HasMany
     {
         return $this->hasMany(Property::class);

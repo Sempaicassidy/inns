@@ -129,9 +129,7 @@ export default function WhatsAppIndex({
                         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-slate-900">
                             Messaging & Notifications Hub
                         </h1>
-                        <p className="text-xs sm:text-sm text-slate-500 mt-0.5 sm:mt-1">
-                            Automated guest booking confirmations, check-in greetings, room folio PDF invoices & direct messaging
-                        </p>
+                        
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -139,30 +137,21 @@ export default function WhatsAppIndex({
                             onClick={() => setActiveTab('settings')}
                             className="inline-flex items-center gap-1.5 bg-white text-slate-700 hover:bg-slate-50 font-semibold px-3 py-2 rounded-xl border border-slate-200 shadow-sm text-xs sm:text-sm transition-all min-h-[38px]"
                         >
-                            <Settings className="w-4 h-4 text-slate-500" />
                             <span>API Credentials</span>
                         </button>
                     </div>
                 </div>
 
-                {/* SMS Wallet & Live Credits Status Card - Clean Humanic UI */}
-                <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3.5 sm:gap-4">
-                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-                            <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6" />
-                        </div>
-                        <div className="min-w-0">
-                            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
-                                Hotel SMS Credit Wallet
-                            </span>
-                            <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mt-0.5 flex items-baseline gap-2">
-                                <span>{Number((auth as any)?.sms_balance ?? 0).toLocaleString()}</span>
-                                <span className="text-xs sm:text-sm font-normal text-slate-500">Credits Available</span>
-                            </h3>
-                            <p className="text-xs text-slate-500 mt-0.5">
-                                Automated guest SMS notifications (Booking Confirmations, Folio Receipts & Check-In Greetings).
-                            </p>
-                        </div>
+                {/* SMS Wallet & Live Credits Status Card - Clean & Slim */}
+                <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div className="min-w-0">
+                        <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+                            Hotel SMS Credit Wallet
+                        </span>
+                        <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-0.5 flex items-baseline gap-2">
+                            <span>{Number((auth as any)?.sms_balance ?? 0).toLocaleString()}</span>
+                            <span className="text-xs sm:text-sm font-normal text-slate-500">Credits Available</span>
+                        </h3>
                     </div>
 
                     <div className="flex items-center gap-2.5 sm:gap-3 text-xs shrink-0">
@@ -184,9 +173,7 @@ export default function WhatsAppIndex({
                 {/* 4 KPI Cards (2-col mobile, 4-col desktop) */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
                     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3.5 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">
-                            <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6" />
-                        </div>
+                        
                         <div className="min-w-0">
                             <div className="text-[11px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider truncate">
                                 Sent
@@ -194,14 +181,12 @@ export default function WhatsAppIndex({
                             <div className="text-xl sm:text-2xl font-bold text-slate-900 mt-0.5">
                                 {stats.total_sent}
                             </div>
-                            <div className="text-[11px] text-slate-500 mt-0.5 truncate hidden sm:block">Lifetime dispatches</div>
+                            
                         </div>
                     </div>
 
                     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3.5 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0">
-                            <CheckCheck className="w-5 h-5 sm:w-6 sm:h-6" />
-                        </div>
+                        
                         <div className="min-w-0">
                             <div className="text-[11px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider truncate">
                                 Delivery Rate
@@ -209,16 +194,12 @@ export default function WhatsAppIndex({
                             <div className="text-xl sm:text-2xl font-bold text-slate-900 mt-0.5">
                                 {deliveryRate}%
                             </div>
-                            <div className="text-[11px] text-emerald-600 font-medium mt-0.5 truncate hidden sm:block">
-                                {stats.delivered_count} confirmed
-                            </div>
+                            
                         </div>
                     </div>
 
                     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3.5 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold shrink-0">
-                            <Bell className="w-5 h-5 sm:w-6 sm:h-6" />
-                        </div>
+                        
                         <div className="min-w-0">
                             <div className="text-[11px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider truncate">
                                 Auto Triggers
@@ -226,14 +207,12 @@ export default function WhatsAppIndex({
                             <div className="text-xl sm:text-2xl font-bold text-slate-900 mt-0.5">
                                 4 Active
                             </div>
-                            <div className="text-[11px] text-slate-500 mt-0.5 truncate hidden sm:block">Booking, Folio, Clean</div>
+                            
                         </div>
                     </div>
 
                     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3.5 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold shrink-0">
-                            <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6" />
-                        </div>
+                        
                         <div className="min-w-0">
                             <div className="text-[11px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider truncate">
                                 Sender
@@ -241,7 +220,7 @@ export default function WhatsAppIndex({
                             <div className="text-xs sm:text-sm font-bold text-slate-900 mt-1 truncate">
                                 {setting?.sender_phone_number || '+255 (Haula HMS)'}
                             </div>
-                            <div className="text-[11px] text-slate-500 mt-0.5 truncate hidden sm:block">Verified Profile</div>
+                            
                         </div>
                     </div>
                 </div>
@@ -267,7 +246,7 @@ export default function WhatsAppIndex({
                                 : 'border-transparent text-slate-500 hover:text-slate-900'
                         }`}
                     >
-                        <Settings className="w-4 h-4 shrink-0" />
+                        
                         API Credentials & Automated Triggers
                     </button>
                 </div>

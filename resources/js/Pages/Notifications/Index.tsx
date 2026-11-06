@@ -171,9 +171,7 @@ export default function NotificationsIndex({
                         <h1 className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
                             Notifications & Operational Alerts
                         </h1>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                            Real-time operational alerts for Front Desk, Housekeeping, Accounting, and Store inventory
-                        </p>
+                        
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
@@ -183,7 +181,7 @@ export default function NotificationsIndex({
                                 onClick={handleMarkAllRead}
                                 className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition"
                             >
-                                <CheckCheck className="w-3.5 h-3.5" />
+                                
                                 <span>Mark All Read</span>
                             </button>
                         )}
@@ -193,7 +191,7 @@ export default function NotificationsIndex({
                             onClick={handleClearRead}
                             className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition"
                         >
-                            <Trash2 className="w-3.5 h-3.5 text-slate-500" />
+                            
                             <span>Clear Read</span>
                         </button>
                     </div>
@@ -392,7 +390,7 @@ export default function NotificationsIndex({
                                         className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
                                         title="Delete notification"
                                     >
-                                        <Trash2 className="w-3.5 h-3.5" />
+                                        
                                     </button>
                                 </div>
                             </div>

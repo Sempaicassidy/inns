@@ -1,6 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import { PageProps } from '@/types';
-import { CheckCircle, Building2 } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
+import ApplicationLogo from '@/Components/ApplicationLogo';
 
 interface RoleMeta {
     role: string;
@@ -33,8 +34,8 @@ export default function SelectRole({ roles, activeRole, property }: SelectRolePr
     };
 
     const colorBorder = (color: string, selected: boolean) => {
-        if (!selected) return 'border-[#E2E8F0] hover:border-[#2563EB]';
-        if (color === 'blue') return 'border-[#2563EB] ring-2 ring-[#2563EB]/20';
+        if (!selected) return 'border-[#E2E8F0]/30 bg-white/5 hover:border-[#D4AF37]';
+        if (color === 'blue') return 'border-[#D4AF37] ring-2 ring-[#D4AF37]/30';
         if (color === 'green') return 'border-[#15803D] ring-2 ring-[#15803D]/20';
         if (color === 'amber') return 'border-[#B45309] ring-2 ring-[#B45309]/20';
         if (color === 'red') return 'border-[#B91C1C] ring-2 ring-[#B91C1C]/20';
@@ -62,20 +63,18 @@ export default function SelectRole({ roles, activeRole, property }: SelectRolePr
         <>
             <Head title="Select Your Role — THE INNS" />
 
-            <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-4">
+            <div className="min-h-screen bg-gradient-to-br from-[#1E3A5F] via-[#1E3A5F]/90 to-[#1E3A5F]/80 flex flex-col items-center justify-center p-4">
                 {/* Header */}
                 <div className="w-full max-w-lg text-center mb-8">
-                    <div className="flex items-center justify-center gap-2 mb-4">
-                        <div className="w-10 h-10 bg-[#1E3A5F] rounded-lg flex items-center justify-center">
-                            <Building2 className="w-6 h-6 text-white" />
-                        </div>
-                        <span className="text-xl font-bold text-[#1E3A5F] tracking-wide">THE INNS</span>
+                    <div className="flex items-center justify-center gap-3 mb-4">
+                        <ApplicationLogo className="w-12 h-12 shadow-md" />
+                        <span className="text-xl font-bold text-[#D4AF37] tracking-wide">THE INNS</span>
                     </div>
                     {property && (
-                        <p className="text-sm text-[#64748B] mb-1">{property.name}</p>
+                        <p className="text-sm text-[#D4AF37]/80 mb-1">{property.name}</p>
                     )}
-                    <h1 className="text-2xl font-bold text-[#1E293B]">Chagua Jukumu Lako</h1>
-                    <p className="text-sm text-[#64748B] mt-2">
+                    <h1 className="text-2xl font-bold text-white">Chagua Jukumu Lako</h1>
+                    <p className="text-sm text-white/70 mt-2">
                         Una majukumu mengi. Chagua jukumu unalotaka kutumia sasa.
                     </p>
                 </div>
@@ -89,11 +88,11 @@ export default function SelectRole({ roles, activeRole, property }: SelectRolePr
                                 key={roleMeta.role}
                                 type="button"
                                 onClick={() => handleSelect(roleMeta.role)}
-                                className={`w-full text-left bg-white rounded-lg border-2 p-4 transition-all duration-150 flex items-center gap-4 ${colorBorder(roleMeta.color, isSelected)}`}
+                                className={`w-full text-left bg-white/10 backdrop-blur-sm rounded-lg border-2 p-4 transition-all duration-150 flex items-center gap-4 ${colorBorder(roleMeta.color, isSelected)}`}
                             >
                                 {/* Icon */}
                                 <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-xl flex-shrink-0 ${
-                                    isSelected ? 'bg-[#1E3A5F] text-white' : 'bg-[#F8FAFC]'
+                                    isSelected ? 'bg-[#D4AF37] text-[#1E3A5F]' : 'bg-white/10'
                                 }`}>
                                     {roleMeta.icon}
                                 </div>
@@ -101,12 +100,12 @@ export default function SelectRole({ roles, activeRole, property }: SelectRolePr
                                 {/* Text */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="font-semibold text-[#1E293B]">{roleMeta.title_sw}</span>
+                                        <span className="font-semibold text-white">{roleMeta.title_sw}</span>
                                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${colorBadge(roleMeta.color)}`}>
                                             {roleMeta.badge}
                                         </span>
                                     </div>
-                                    <p className="text-sm text-[#64748B] mt-0.5 line-clamp-2">{roleMeta.description}</p>
+                                    <p className="text-sm text-white/60 mt-0.5 line-clamp-2">{roleMeta.description}</p>
                                 </div>
 
                                 {/* Check */}
@@ -118,19 +117,19 @@ export default function SelectRole({ roles, activeRole, property }: SelectRolePr
                     })}
 
                     {errors.role && (
-                        <p className="text-sm text-[#B91C1C] text-center">{errors.role}</p>
+                        <p className="text-sm text-rose-300 text-center">{errors.role}</p>
                     )}
 
                     <button
                         type="submit"
                         disabled={processing || !data.role}
-                        className="w-full mt-4 py-3 bg-[#2563EB] text-white rounded-lg font-semibold hover:bg-[#1E3A5F] transition disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="w-full mt-4 py-3 bg-[#D4AF37] text-[#1E3A5F] rounded-lg font-bold hover:bg-[#B8960C] transition disabled:opacity-60 disabled:cursor-not-allowed shadow-lg shadow-[#D4AF37]/30"
                     >
                         {processing ? 'Inaendelea...' : 'Ingia kwa Jukumu Hili →'}
                     </button>
                 </form>
 
-                <p className="text-xs text-[#64748B] mt-6 text-center">
+                <p className="text-xs text-white/50 mt-6 text-center">
                     Unaweza kubadilisha jukumu wakati wowote kutoka kwa kitufe cha juu kulia.
                 </p>
             </div>

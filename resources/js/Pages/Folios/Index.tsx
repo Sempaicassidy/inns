@@ -51,14 +51,10 @@ export default function FoliosIndex({ folios, filters }: FoliosIndexProps) {
             {/* Header Toolbar (White Card) */}
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div className="flex items-center space-x-3.5">
-                    <div className="p-2.5 rounded-xl bg-sky-50 text-sky-700 border border-sky-200">
-                        <CreditCard className="w-6 h-6 stroke-[2.2]" />
-                    </div>
+                    
                     <div>
                         <h1 className="text-xl font-black text-slate-900 tracking-tight">Billing, Folios & Ledgers</h1>
-                        <p className="text-xs text-slate-500">
-                            Track guest and company folios, itemized charges and multi-method payments
-                        </p>
+                        
                     </div>
                 </div>
 

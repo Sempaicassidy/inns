@@ -15,17 +15,17 @@ return [
     |
     */
 
-    'api_key' => env('SWALASMS_API_KEY', env('SWAHILIES_API_KEY', 'swl_live_3rRTD7pHVgLewdEEmDZNvk762gvfkMefkzl7ESSQ6xQi7QNL')),
+    'api_key' => env('X-API-Key', env('X-API-Key', 'darsms_2b52ba9d1e4b3b41e8b40cd31b4d0b35a1a3b6b48a05722a')),
 
-    'base_url' => env('SWALASMS_BASE_URL', 'https://api.swalasms.com'),
+    'base_url' => env('X-Base-Url', ' https://dev.darsms.co.tz/api/v1'),
 
-    'sender_id' => env('SWALASMS_SENDER_ID', 'SWALATECH'),
+    'sender_id' => env('X-Sender-Id', 'DARSMSH'),
 
-    'environment' => env('SWALASMS_ENV', 'live'),
+    'environment' => env('DARSMS', 'live'),
 
-    'currency' => env('SWALASMS_CURRENCY', 'TZS'),
+    'currency' => env('DARSMS_CURRENCY', 'TZS'),
 
-    'webhook_secret' => env('SWALASMS_WEBHOOK_SECRET', null),
+    'webhook_secret' => env('DARSMS_WEBHOOK_SECRET', null),
 
 ];
 

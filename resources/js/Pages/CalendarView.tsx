@@ -115,17 +115,14 @@ export default function CalendarView({
             <div className="space-y-4">
                 {/* Header */}
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <CalendarIcon className="w-6 h-6 text-blue-600" />
+                    <div>
                         <h1 className="text-xl font-bold text-gray-900">Calendar View</h1>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition flex items-center gap-2">
-                            <Plus className="w-4 h-4" />
+                        <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2">
                             <span>New Booking</span>
                         </button>
-                        <button className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition flex items-center gap-2">
-                            <Search className="w-4 h-4" />
+                        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2">
                             <span>Quick Search</span>
                         </button>
                     </div>
@@ -303,13 +300,11 @@ export default function CalendarView({
                             <div className="space-y-3">
                                 <button
                                     onClick={() => setIsBlockModalOpen(true)}
-                                    className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-3 rounded-lg font-medium hover:shadow-lg transition flex items-center justify-center gap-2"
+                                    className="w-full bg-rose-600 hover:bg-rose-700 text-white px-4 py-2.5 rounded-lg font-medium transition flex items-center justify-center gap-2"
                                 >
-                                    <Lock className="w-4 h-4" />
                                     <span>Maintenance Block</span>
                                 </button>
-                                <button className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-3 rounded-lg font-medium hover:shadow-lg transition flex items-center justify-center gap-2">
-                                    <Plus className="w-4 h-4" />
+                                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg font-medium transition flex items-center justify-center gap-2">
                                     <span>Walk In / Reservation</span>
                                 </button>
                                 <button
@@ -405,7 +400,7 @@ export default function CalendarView({
                                     >
                                         Clear
                                     </button>
-                                    <button className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2.5 rounded-lg font-medium hover:shadow-lg transition-all">
+                                    <button className="flex-1 bg-rose-600 hover:bg-rose-700 text-white px-4 py-2.5 rounded-lg font-medium transition">
                                         Apply
                                     </button>
                                 </div>

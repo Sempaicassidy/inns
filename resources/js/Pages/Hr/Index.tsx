@@ -473,16 +473,12 @@ export default function HrIndex({
                 <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-2">
-                            <span className="p-2 bg-blue-50 text-blue-600 rounded-xl">
-                                <Users className="w-6 h-6" />
-                            </span>
+                            
                             <div>
                                 <h1 className="text-xl font-bold text-slate-900 tracking-tight">
                                     Staff & Human Resources
                                 </h1>
-                                <p className="text-xs text-slate-500 mt-0.5">
-                                    Comprehensive employee directory, shift rosters, attendance tracking, leave approvals, payroll engine & credentials.
-                                </p>
+                                
                             </div>
                         </div>
                     </div>
@@ -512,7 +508,7 @@ export default function HrIndex({
                     <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
                         <div className="flex items-center justify-between text-slate-500 text-xs">
                             <span>Total Staff</span>
-                            <Users className="w-4 h-4 text-blue-600" />
+                            
                         </div>
                         <p className="text-2xl font-bold text-slate-900 mt-2">{stats?.total_staff || 0}</p>
                         <span className="text-[11px] text-emerald-600 font-medium mt-0.5 block">
@@ -523,25 +519,25 @@ export default function HrIndex({
                     <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
                         <div className="flex items-center justify-between text-slate-500 text-xs">
                             <span>On Shift Today</span>
-                            <Clock className="w-4 h-4 text-indigo-600" />
+                            
                         </div>
                         <p className="text-2xl font-bold text-slate-900 mt-2">{stats?.active_on_shift || 0}</p>
-                        <span className="text-[11px] text-slate-500 mt-0.5 block">Scheduled today</span>
+                        
                     </div>
 
                     <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
                         <div className="flex items-center justify-between text-slate-500 text-xs">
                             <span>Present Today</span>
-                            <UserCheck className="w-4 h-4 text-emerald-600" />
+                            
                         </div>
                         <p className="text-2xl font-bold text-slate-900 mt-2">{stats?.present_today || 0}</p>
-                        <span className="text-[11px] text-slate-500 mt-0.5 block">Reported to work</span>
+                        
                     </div>
 
                     <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
                         <div className="flex items-center justify-between text-slate-500 text-xs">
                             <span>On Leave</span>
-                            <LogOut className="w-4 h-4 text-amber-600" />
+                            
                         </div>
                         <p className="text-2xl font-bold text-slate-900 mt-2">{stats?.on_leave_count || 0}</p>
                         <span className="text-[11px] text-amber-600 font-medium mt-0.5 block">
@@ -552,12 +548,12 @@ export default function HrIndex({
                     <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs col-span-2">
                         <div className="flex items-center justify-between text-slate-500 text-xs">
                             <span>Monthly Base Payroll</span>
-                            <DollarSign className="w-4 h-4 text-emerald-600" />
+                            
                         </div>
                         <p className="text-2xl font-bold text-slate-900 mt-2">
                             {formatMoney(stats?.total_monthly_payroll_minor || 0)}
                         </p>
-                        <span className="text-[11px] text-slate-500 mt-0.5 block">Active staff payroll commitment</span>
+                        
                     </div>
                 </div>
 
@@ -827,7 +823,7 @@ export default function HrIndex({
                                 onClick={() => setIsAssignShiftOpen(true)}
                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition cursor-pointer"
                             >
-                                <Plus className="w-3.5 h-3.5" />
+                                
                                 <span>Assign New Shift</span>
                             </button>
                         </div>
@@ -1004,14 +1000,14 @@ export default function HrIndex({
                         <div className="p-4 border-b border-slate-200 flex items-center justify-between">
                             <div>
                                 <h3 className="font-bold text-slate-900 text-sm">Leave Applications & Approvals</h3>
-                                <p className="text-xs text-slate-500">Apply for, review, approve or reject staff leave requests.</p>
+                                
                             </div>
 
                             <button
                                 onClick={() => setIsApplyLeaveOpen(true)}
                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition cursor-pointer"
                             >
-                                <Plus className="w-3.5 h-3.5" />
+                                
                                 <span>Apply for Leave</span>
                             </button>
                         </div>
@@ -1223,14 +1219,14 @@ export default function HrIndex({
                         <div className="p-4 border-b border-slate-200 flex items-center justify-between">
                             <div>
                                 <h3 className="font-bold text-slate-900 text-sm">Performance & Disciplinary Logs</h3>
-                                <p className="text-xs text-slate-500">Record employee warnings, appraisals, commendations and queries.</p>
+                                
                             </div>
 
                             <button
                                 onClick={() => setIsAddDisciplinaryOpen(true)}
                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition cursor-pointer"
                             >
-                                <Plus className="w-3.5 h-3.5" />
+                                
                                 <span>Record Event</span>
                             </button>
                         </div>
@@ -1310,7 +1306,7 @@ export default function HrIndex({
                         <div className="flex items-center justify-between pb-4 border-b border-slate-200">
                             <div>
                                 <h3 className="font-bold text-base text-slate-900">Add New Employee</h3>
-                                <p className="text-xs text-slate-500">Register employee details, salary, and system login credentials.</p>
+                                
                             </div>
                             <button
                                 type="button"
@@ -1596,7 +1592,7 @@ export default function HrIndex({
                         <div className="flex items-center justify-between pb-4 border-b border-slate-200">
                             <div>
                                 <h3 className="font-bold text-base text-slate-900">Edit Employee Details</h3>
-                                <p className="text-xs text-slate-500">Update personal info, employment status, and password credentials.</p>
+                                
                             </div>
                             <button
                                 type="button"
@@ -1882,7 +1878,7 @@ export default function HrIndex({
                         <div className="flex items-center justify-between pb-4 border-b border-slate-200">
                             <div>
                                 <h3 className="font-bold text-base text-slate-900">Assign Shift</h3>
-                                <p className="text-xs text-slate-500">Schedule shift hours for an employee</p>
+                                
                             </div>
                             <button
                                 type="button"
@@ -1996,7 +1992,7 @@ export default function HrIndex({
                         <div className="flex items-center justify-between pb-4 border-b border-slate-200">
                             <div>
                                 <h3 className="font-bold text-base text-slate-900">Record Attendance</h3>
-                                <p className="text-xs text-slate-500">Clock in or update daily staff attendance</p>
+                                
                             </div>
                             <button
                                 type="button"
@@ -2112,7 +2108,7 @@ export default function HrIndex({
                         <div className="flex items-center justify-between pb-4 border-b border-slate-200">
                             <div>
                                 <h3 className="font-bold text-base text-slate-900">Apply for Leave</h3>
-                                <p className="text-xs text-slate-500">Submit a staff leave or time-off request</p>
+                                
                             </div>
                             <button
                                 type="button"

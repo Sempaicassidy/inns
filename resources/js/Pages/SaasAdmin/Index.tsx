@@ -14,6 +14,8 @@ import {
     Calendar,
     Check,
     CheckCircle2,
+    ChevronLeft,
+    ChevronRight,
     Clock,
     Coins,
     Copy,
@@ -377,6 +379,38 @@ export default function SaasAdminDashboard({
 
     const [searchTerm, setSearchTerm] = useState('');
     const [planFilter, setPlanFilter] = useState('all');
+    const [currentSlide, setCurrentSlide] = useState(0);
+
+    const slides = [
+        {
+            image: 'https://images.unsplash.com/photo-1566073741257-6a1056039daa?w=1200&h=400&fit=crop',
+            title: 'Luxury Hotel Management',
+            description: 'Experience premium hospitality with THE INNS'
+        },
+        {
+            image: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1200&h=400&fit=crop',
+            title: 'Safari Lodge Excellence',
+            description: 'Manage your safari lodge operations seamlessly'
+        },
+        {
+            image: 'https://images.unsplash.com/photo-1551882547-ff40c63fe524?w=1200&h=400&fit=crop',
+            title: 'Restaurant POS Integration',
+            description: 'Complete restaurant and bar management system'
+        },
+    ];
+
+    const nextSlide = () => {
+        setCurrentSlide((prev) => (prev + 1) % slides.length);
+    };
+
+    const prevSlide = () => {
+        setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+    };
+
+    React.useEffect(() => {
+        const interval = setInterval(nextSlide, 5000);
+        return () => clearInterval(interval);
+    }, []);
 
     // Sub-switchers for multi-view tabs
     const [userSubTab, setUserSubTab] = useState<'users' | 'roles'>(() => activeTab === 'roles' ? 'roles' : 'users');
@@ -518,7 +552,7 @@ export default function SaasAdminDashboard({
     });
 
     const testWaForm = useForm({
-        recipient_phone: '+255754000000',
+        recipient_phone: '+255779646632',
         recipient_name: 'Meneja wa Hoteli',
         message: 'Habari! Ujumbe huu ni uthibitisho rasmi wa WhatsApp Cloud Business API gateway inayofanya kazi kwenye THE INNS.',
     });
@@ -532,12 +566,12 @@ export default function SaasAdminDashboard({
         plan_code: 'pro',
         amount: 350000,
         valid_until: '',
-        description: 'Monthly SaaS PMS Software License & Cloud Support',
+        description: 'Monthly INNS Cloud PMS Software License & Support',
     });
 
     const invoiceForm = useForm({
         tenant_id: tenants[0]?.id || '',
-        description: 'Monthly Cloud PMS Subscription',
+        description: 'Monthly INNS Cloud PMS Software Subscription',
         amount: 350000,
         billing_reason: 'renewal',
         due_date: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
@@ -854,9 +888,58 @@ export default function SaasAdminDashboard({
                         <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2.5">
                             <span>THE INNS Centralized SaaS Ecosystem</span>
                         </h1>
-                        <p className="text-slate-500 text-xs sm:text-sm mt-1 max-w-2xl">
-                            Usimamizi kamili: Mahoteli, Mikataba ya Kisheria (E-Signatures), Bili & Risiti, SwalaSMS Tanzania, WhatsApp Cloud API, na Miundombinu.
-                        </p>
+                        
+
+                        {/* Image Slideshow */}
+                        <div className="mt-4 relative rounded-xl overflow-hidden">
+                            <div className="relative h-48 w-full">
+                                {slides.map((slide, index) => (
+                                    <div
+                                        key={index}
+                                        className={`absolute inset-0 transition-opacity duration-500 ${
+                                            index === currentSlide ? 'opacity-100' : 'opacity-0'
+                                        }`}
+                                    >
+                                        <img
+                                            src={slide.image}
+                                            alt={slide.title}
+                                            className="w-full h-full object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent">
+                                            <div className="absolute bottom-4 left-4 text-white">
+                                                <h3 className="text-lg font-bold">{slide.title}</h3>
+                                                <p className="text-sm opacity-90">{slide.description}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {/* Navigation Arrows */}
+                                <button
+                                    onClick={prevSlide}
+                                    className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full backdrop-blur-sm transition"
+                                >
+                                    <ChevronLeft className="w-5 h-5" />
+                                </button>
+                                <button
+                                    onClick={nextSlide}
+                                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full backdrop-blur-sm transition"
+                                >
+                                    <ChevronRight className="w-5 h-5" />
+                                </button>
+                                {/* Slide Indicators */}
+                                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-2">
+                                    {slides.map((_, index) => (
+                                        <button
+                                            key={index}
+                                            onClick={() => setCurrentSlide(index)}
+                                            className={`w-2 h-2 rounded-full transition-all ${
+                                                index === currentSlide ? 'bg-white' : 'bg-white/50'
+                                            }`}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Top Action Buttons */}
@@ -866,7 +949,7 @@ export default function SaasAdminDashboard({
                             onClick={() => setShowOnboardModal(true)}
                             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition cursor-pointer"
                         >
-                            <Plus className="w-4 h-4" />
+                            
                             <span>Onboard Hotel</span>
                         </button>
                         <button
@@ -1107,7 +1190,7 @@ export default function SaasAdminDashboard({
                                     onClick={() => setShowOnboardModal(true)}
                                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
                                 >
-                                    <Plus className="w-3.5 h-3.5" />
+                                    
                                     <span>Add Hotel</span>
                                 </button>
                             </div>
@@ -1194,7 +1277,7 @@ export default function SaasAdminDashboard({
                                                         onClick={() => handleOpenIssueSms(tenant.id)}
                                                         className="text-[10px] font-bold text-blue-600 hover:text-blue-800 mt-1 inline-flex items-center gap-0.5 cursor-pointer"
                                                     >
-                                                        <Plus className="w-2.5 h-2.5" />
+                                                        
                                                         Top-up SMS
                                                     </button>
                                                 </td>
@@ -1390,7 +1473,7 @@ export default function SaasAdminDashboard({
                                     onClick={() => setShowCreateQuotationModal(true)}
                                     className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
                                 >
-                                    <Plus className="w-3.5 h-3.5" />
+                                    
                                     <span>Create Quotation</span>
                                 </button>
                                 <button
@@ -1398,7 +1481,7 @@ export default function SaasAdminDashboard({
                                     onClick={() => setShowCreateInvoiceModal(true)}
                                     className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
                                 >
-                                    <Plus className="w-3.5 h-3.5" />
+                                    
                                     <span>Issue Invoice</span>
                                 </button>
                             </div>
@@ -1568,7 +1651,7 @@ export default function SaasAdminDashboard({
                                 onClick={() => setShowCreateContractModal(true)}
                                 className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
                             >
-                                <Plus className="w-3.5 h-3.5" />
+                                
                                 <span>Generate Contract</span>
                             </button>
                         </div>
@@ -1916,7 +1999,7 @@ export default function SaasAdminDashboard({
                                 onClick={() => setShowNoticeModal(true)}
                                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer"
                             >
-                                <Plus className="w-3.5 h-3.5" />
+                                
                                 <span>Create Notice</span>
                             </button>
                         </div>
@@ -2069,7 +2152,7 @@ export default function SaasAdminDashboard({
                                         onClick={() => setShowCreateUserModal(true)}
                                         className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer"
                                     >
-                                        <Plus className="w-3.5 h-3.5" />
+                                        
                                         <span>Create SaaS User</span>
                                     </button>
                                 </div>
@@ -2458,7 +2541,7 @@ export default function SaasAdminDashboard({
                                         onClick={() => setShowCreatePromoModal(true)}
                                         className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer"
                                     >
-                                        <Plus className="w-3.5 h-3.5" />
+                                        
                                         <span>Create Promo Code</span>
                                     </button>
                                 </div>

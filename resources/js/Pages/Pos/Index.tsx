@@ -201,7 +201,7 @@ export default function PosIndex({
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold text-[#1E293B]">Restaurant POS</h1>
-                        <p className="text-sm text-[#64748B] mt-1">Order management and payment processing</p>
+                        
                     </div>
                     <div className="flex items-center gap-3">
                         <div className="bg-white border border-[#E2E8F0] rounded-lg px-4 py-2">

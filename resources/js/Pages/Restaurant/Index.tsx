@@ -226,17 +226,9 @@ export default function RestaurantIndex({
                 {/* 1. TOP HEADER & QUICK ACTIONS */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/90 shadow-2xs">
                     <div>
-                        <div className="flex items-center gap-2">
-                            <div className="p-2 bg-amber-50 text-amber-700 rounded-xl">
-                                <Utensils className="w-5 h-5" />
-                            </div>
-                            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+                        <h1 className="text-xl font-bold text-slate-900 tracking-tight">
                                 Restaurant Overview Report
                             </h1>
-                        </div>
-                        <p className="text-xs text-slate-500 mt-1">
-                            Food & Beverage Operations • Independent Restaurant & Bar Portal
-                        </p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
@@ -245,21 +237,18 @@ export default function RestaurantIndex({
                             target="_blank"
                             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition"
                         >
-                            <ExternalLink className="w-3.5 h-3.5" />
                             <span>Waiter POS Terminal</span>
                         </Link>
                         <button
                             onClick={() => setIsAddCategoryOpen(true)}
                             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
                         >
-                            <Layers className="w-3.5 h-3.5" />
                             <span>New Category</span>
                         </button>
                         <button
                             onClick={() => setIsAddDishOpen(true)}
                             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-amber-600 text-white hover:bg-amber-700 transition shadow-xs"
                         >
-                            <Plus className="w-3.5 h-3.5" />
                             <span>Add Menu Item</span>
                         </button>
                     </div>
@@ -273,17 +262,13 @@ export default function RestaurantIndex({
                             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                                 Today F&B Sales
                             </span>
-                            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                                <TrendingUp className="w-4 h-4" />
-                            </div>
+                            
                         </div>
                         <div className="my-2">
                             <div className="text-2xl font-black text-slate-900">
                                 {formatTsh(metrics.today_sales_minor)}
                             </div>
-                            <span className="text-[11px] font-semibold text-slate-500">
-                                {metrics.today_orders_count} orders served today
-                            </span>
+                            
                         </div>
                     </div>
 
@@ -293,17 +278,13 @@ export default function RestaurantIndex({
                             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                                 Month-to-Date Revenue
                             </span>
-                            <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                                <DollarSign className="w-4 h-4" />
-                            </div>
+                            
                         </div>
                         <div className="my-2">
                             <div className="text-2xl font-black text-slate-900">
                                 {formatTsh(metrics.month_sales_minor)}
                             </div>
-                            <span className="text-[11px] font-semibold text-slate-500">
-                                Current billing month
-                            </span>
+                            
                         </div>
                     </div>
 
@@ -313,17 +294,13 @@ export default function RestaurantIndex({
                             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                                 Active Kitchen Orders
                             </span>
-                            <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                                <ChefHat className="w-4 h-4" />
-                            </div>
+                            
                         </div>
                         <div className="my-2">
                             <div className="text-2xl font-black text-amber-700">
                                 {metrics.active_orders_count}
                             </div>
-                            <span className="text-[11px] font-semibold text-amber-600">
-                                Preparing in kitchen / bar
-                            </span>
+                            
                         </div>
                     </div>
 
@@ -401,7 +378,6 @@ export default function RestaurantIndex({
                                 : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                         }`}
                     >
-                        <Layers className="w-3.5 h-3.5" />
                         <span>Menu Categories</span>
                     </button>
                 </div>

@@ -2,14 +2,14 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import {
     ArrowRight,
     Building2,
-    Cloud,
     Eye,
     EyeOff,
-    Home,
     Lock,
     Mail,
 } from 'lucide-react';
 import { FormEventHandler, useState } from 'react';
+import ApplicationLogo from '@/Components/ApplicationLogo';
+import PwaInstallButton from '@/Components/PwaInstallButton';
 
 export default function Login({
     status,
@@ -21,9 +21,9 @@ export default function Login({
     const [showPassword, setShowPassword] = useState(false);
 
     const { data, setData, post, processing, errors, reset } = useForm({
-        email: 'admin@inns.com',
-        password: 'password',
-        remember: true as boolean,
+        email: '',
+        password: '',
+        remember: false,
     });
 
     const submit: FormEventHandler = (e) => {
@@ -34,26 +34,23 @@ export default function Login({
     };
 
     return (
-        <div className="min-h-screen bg-slate-50/80 flex flex-col items-center justify-center p-4 sm:p-6 font-sans relative antialiased">
+        <div className="min-h-screen bg-gradient-to-br from-[#1E3A5F] via-[#1E3A5F]/90 to-[#1E3A5F]/80 flex flex-col items-center justify-center p-4 sm:p-6 font-sans relative antialiased overflow-x-hidden">
             {/* <Head title="THE INNS" /> */}
 
             {/* Soft subtle blurred background glow */}
-            <div className="absolute top-1/4 w-96 h-96 bg-blue-100/60 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-1/4 w-96 h-96 bg-amber-100/50 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute top-1/4 w-96 h-96 bg-[#D4AF37]/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-1/4 w-96 h-96 bg-[#1E3A5F]/10 rounded-full blur-3xl pointer-events-none" />
 
             {/* Main Login Card (Matching Screenshot 1) */}
-            <div className="relative z-10 w-full max-w-sm bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 sm:p-10 space-y-6">
+            <div className="relative z-10 w-full max-w-sm bg-white rounded-3xl shadow-xl shadow-[#D4AF37]/10 border-t-4 border-t-[#D4AF37] border border-slate-100 p-8 sm:p-10 space-y-6">
                 {/* Logo & Brand Header */}
                 <div className="text-center space-y-3">
                     <div className="flex justify-center">
-                        <div className="relative w-16 h-16 flex items-center justify-center">
-                            <Cloud className="w-16 h-16 text-sky-500 fill-sky-50 stroke-[1.5]" />
-                            <Home className="w-7 h-7 text-blue-600 absolute stroke-[2.2] fill-white" />
-                        </div>
+                        <ApplicationLogo className="w-20 h-20 shadow-lg" />
                     </div>
 
                     <div>
-                        <div className="font-black text-sm tracking-[0.2em] text-slate-800 uppercase">
+                        <div className="font-black text-sm tracking-[0.2em] text-[#D4AF37] uppercase">
                             THE INNS
                         </div>
                         <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight mt-3">
@@ -75,7 +72,7 @@ export default function Login({
                 )}
 
                 {/* Form */}
-                <form onSubmit={submit} className="space-y-4 pt-1">
+                <form onSubmit={submit} className="space-y-4 pt-1" autoComplete="off">
                     {/* Email Input */}
                     <div className="space-y-1.5">
                         <label className="block text-xs font-semibold text-slate-700">
@@ -89,7 +86,8 @@ export default function Login({
                                 value={data.email}
                                 onChange={(e) => setData('email', e.target.value)}
                                 placeholder="sample@theinns.com"
-                                className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition"
+                                autoComplete="off"
+                                className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:border-[#D4AF37] focus:ring-4 focus:ring-[#D4AF37]/20 transition"
                             />
                         </div>
                         {errors.email && (
@@ -110,7 +108,8 @@ export default function Login({
                                 value={data.password}
                                 onChange={(e) => setData('password', e.target.value)}
                                 placeholder="••••••••••"
-                                className="w-full pl-10 pr-10 py-3 bg-white border border-slate-200 rounded-2xl text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition tracking-wide"
+                                autoComplete="new-password"
+                                className="w-full pl-10 pr-10 py-3 bg-white border border-slate-200 rounded-2xl text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:border-[#D4AF37] focus:ring-4 focus:ring-[#D4AF37]/20 transition tracking-wide"
                             />
                             <button
                                 type="button"
@@ -137,14 +136,14 @@ export default function Login({
                                 type="checkbox"
                                 checked={data.remember}
                                 onChange={(e) => setData('remember', e.target.checked)}
-                                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500/20 border-slate-300"
+                                className="w-4 h-4 rounded text-[#D4AF37] focus:ring-[#D4AF37]/20 border-slate-300"
                             />
                             <span>Remember me</span>
                         </label>
                         {canResetPassword && (
                             <Link
                                 href={route('password.request')}
-                                className="text-blue-600 hover:text-blue-700 font-semibold hover:underline"
+                                className="text-[#D4AF37] hover:text-[#B8960C] font-semibold hover:underline"
                             >
                                 Forgot?
                             </Link>
@@ -155,12 +154,15 @@ export default function Login({
                     <button
                         type="submit"
                         disabled={processing}
-                        className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-sm shadow-md shadow-orange-500/25 active:scale-[0.99] transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="w-full py-3.5 px-4 rounded-2xl bg-[#D4AF37] hover:bg-[#B8960C] text-[#1E3A5F] font-bold text-sm shadow-md shadow-[#D4AF37]/30 active:scale-[0.99] transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                         <span>{processing ? 'Signing In...' : 'Sign In'}</span>
                         <ArrowRight className="w-4 h-4 stroke-[2.5]" />
                     </button>
                 </form>
+
+                {/* PWA App Install Action */}
+                <PwaInstallButton className="pt-2" />
 
                 {/* Footer */}
                 <div className="pt-2 text-center">

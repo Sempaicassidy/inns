@@ -154,14 +154,10 @@ export default function ReservationsIndex({
             {/* Header Toolbar */}
             <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs mb-4 sm:mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4">
                 <div className="flex items-center space-x-3">
-                    <div className="p-2 sm:p-2.5 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 shrink-0">
-                        <BedDouble className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
-                    </div>
+                    
                     <div>
                         <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">Reservations & Front Desk</h1>
-                        <p className="text-[11px] sm:text-xs text-slate-500">
-                            Bookings, room assignments, walk-ins and guest folios
-                        </p>
+                        
                     </div>
                 </div>
 

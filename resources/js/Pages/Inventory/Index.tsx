@@ -267,25 +267,12 @@ export default function InventoryIndex({
             <Head title="Store Overview Report - THE INNS" />
 
             <div className="space-y-6 max-w-7xl mx-auto pb-12">
-                {/* 1. Header Banner */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/90 shadow-2xs">
-                    <div className="space-y-1">
-                        <div className="flex items-center gap-2.5">
-                            <div className="p-2.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl">
-                                <Package className="w-5 h-5 text-blue-600" />
-                            </div>
-                            <div>
-                                <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
-                                    Store Overview Report
-                                </h1>
-                                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-100 text-[10px] font-bold uppercase tracking-wider">
-                                    Central Store & Warehouse Management
-                                </span>
-                            </div>
-                        </div>
-                        <p className="text-slate-500 text-xs sm:text-sm max-w-2xl leading-relaxed mt-1">
-                            Manager operations for receiving supplier deliveries, issuing departmental requisitions, asset valuation, and audit tracking.
-                        </p>
+                {/* 1. Header Banner (Slim & Clean) */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs">
+                    <div>
+                        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
+                            Store Overview Report
+                        </h1>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2.5">
@@ -310,7 +297,7 @@ export default function InventoryIndex({
                             onClick={() => setIsAddSkuModalOpen(true)}
                             className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 font-bold text-xs sm:text-sm rounded-xl transition cursor-pointer"
                         >
-                            <Plus className="w-4 h-4" />
+                            
                             <span>New Store SKU</span>
                         </button>
                     </div>
@@ -322,17 +309,13 @@ export default function InventoryIndex({
                     <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between">
                         <div className="flex items-center justify-between text-slate-500">
                             <span className="text-xs font-bold uppercase tracking-wider">Store Valuation</span>
-                            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-                                <DollarSign className="w-4 h-4" />
-                            </div>
+                            
                         </div>
                         <div className="mt-3">
                             <div className="text-xl sm:text-2xl font-black text-slate-900 truncate">
                                 {formatTsh(metrics.total_valuation_minor)}
                             </div>
-                            <span className="text-[11px] text-emerald-600 font-semibold mt-1 block">
-                                In Warehouse Asset Value
-                            </span>
+                            
                         </div>
                     </div>
 
@@ -340,17 +323,13 @@ export default function InventoryIndex({
                     <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between">
                         <div className="flex items-center justify-between text-slate-500">
                             <span className="text-xs font-bold uppercase tracking-wider">Tracked SKUs</span>
-                            <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center font-bold">
-                                <Package className="w-4 h-4" />
-                            </div>
+                            
                         </div>
                         <div className="mt-3">
                             <div className="text-xl sm:text-2xl font-black text-slate-900 truncate">
                                 {metrics.total_items_count} SKUs
                             </div>
-                            <span className="text-[11px] text-slate-500 font-medium mt-1 block">
-                                Across 6 Departments
-                            </span>
+                            
                         </div>
                     </div>
 
@@ -358,17 +337,13 @@ export default function InventoryIndex({
                     <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between">
                         <div className="flex items-center justify-between text-slate-500">
                             <span className="text-xs font-bold uppercase tracking-wider">Optimal Health</span>
-                            <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                                <CheckCircle2 className="w-4 h-4" />
-                            </div>
+                            
                         </div>
                         <div className="mt-3">
                             <div className="text-xl sm:text-2xl font-black text-blue-700 truncate">
                                 {metrics.optimal_count} Items
                             </div>
-                            <span className="text-[11px] text-slate-500 font-medium mt-1 block">
-                                Above Reorder Threshold
-                            </span>
+                            
                         </div>
                     </div>
 
@@ -652,9 +627,7 @@ export default function InventoryIndex({
                                 <h3 className="text-base font-extrabold text-slate-900">
                                     Central Store Requisition & Delivery Audit Trail
                                 </h3>
-                                <p className="text-xs text-slate-500">
-                                    Immutable historical ledger of every stock receipt, department issue, and damage adjustment
-                                </p>
+                                
                             </div>
                         </div>
 

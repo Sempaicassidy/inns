@@ -6,10 +6,12 @@ import {
     AlertCircle,
     AlertTriangle,
     ArrowDownRight,
+    ArrowRight,
     ArrowRightLeft,
     ArrowUpRight,
     Banknote,
     BarChart3,
+    Bed,
     BookOpen,
     Building2,
     Calendar,
@@ -33,6 +35,7 @@ import {
     Landmark,
     Layers,
     ListOrdered,
+    Package,
     Percent,
     PieChart,
     Plus,
@@ -44,10 +47,13 @@ import {
     Search,
     ShieldAlert,
     ShieldCheck,
+    ShoppingBag,
+    Store,
     TrendingDown,
     TrendingUp,
     Truck,
     Users,
+    Utensils,
     Wallet,
     X,
 } from 'lucide-react';
@@ -156,9 +162,15 @@ interface AccountingIndexProps extends PageProps {
         today_revenue_minor: number;
         month_revenue_minor: number;
         room_revenue_minor: number;
+        room_revenue_today_minor?: number;
         pos_restaurant_revenue_minor: number;
+        pos_restaurant_revenue_today_minor?: number;
         pos_grocery_revenue_minor: number;
+        pos_grocery_revenue_today_minor?: number;
         other_revenue_minor: number;
+        other_revenue_today_minor?: number;
+        cash_receipts_month_minor?: number;
+        cash_receipts_today_minor?: number;
         today_expenses_minor: number;
         month_expenses_minor: number;
         net_profit_month_minor: number;
@@ -169,6 +181,39 @@ interface AccountingIndexProps extends PageProps {
         cash_on_hand_minor: number;
         total_liquidity_minor: number;
         pending_approvals_count: number;
+        hotel?: {
+            revenue_month_minor: number;
+            revenue_today_minor: number;
+            total_rooms: number;
+            occupied_rooms: number;
+            occupancy_rate: number;
+            adr_minor: number;
+            revpar_minor: number;
+            expenses_month_minor: number;
+            operating_profit_minor: number;
+            operating_margin_pct: number;
+            open_folios_count: number;
+            receivables_minor: number;
+        };
+        supermarket?: {
+            revenue_month_minor: number;
+            revenue_today_minor: number;
+            cogs_month_minor: number;
+            gross_profit_minor: number;
+            gross_margin_pct: number;
+            cost_valuation_minor: number;
+            retail_valuation_minor: number;
+            total_skus: number;
+            low_stock_count: number;
+            out_of_stock_count: number;
+        };
+        restaurant?: {
+            revenue_month_minor: number;
+            revenue_today_minor: number;
+            supplies_cost_minor: number;
+            gross_profit_minor: number;
+            gross_margin_pct: number;
+        };
     };
     revenueExpenseTrend: RevenueExpenseTrendPoint[];
     departmentRevenueContribution: DepartmentRevenueShare[];
@@ -202,6 +247,7 @@ export default function AccountingIndex({
     shifts = [],
 }: AccountingIndexProps) {
     const [activeTab, setActiveTab] = useState<string>(initialTab);
+    const [departmentFilter, setDepartmentFilter] = useState<'consolidated' | 'hotel' | 'supermarket' | 'restaurant'>('consolidated');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
@@ -211,9 +257,15 @@ export default function AccountingIndex({
         today_revenue_minor: 0,
         month_revenue_minor: 0,
         room_revenue_minor: 0,
+        room_revenue_today_minor: 0,
         pos_restaurant_revenue_minor: 0,
+        pos_restaurant_revenue_today_minor: 0,
         pos_grocery_revenue_minor: 0,
+        pos_grocery_revenue_today_minor: 0,
         other_revenue_minor: 0,
+        other_revenue_today_minor: 0,
+        cash_receipts_month_minor: 0,
+        cash_receipts_today_minor: 0,
         today_expenses_minor: 0,
         month_expenses_minor: 0,
         net_profit_month_minor: 0,
@@ -301,21 +353,12 @@ export default function AccountingIndex({
             <Head title="Accountant Financial Analytics Dashboard - THE INNS" />
 
             <div className="w-full max-w-[1600px] mx-auto space-y-5 pb-16 font-sans">
-                {/* 1. FINANCIAL EXECUTIVE HEADER & FAST ACTIONS */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/90 shadow-2xs">
+                {/* 1. FINANCIAL EXECUTIVE HEADER & FAST ACTIONS (Slim & Clean) */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs">
                     <div>
-                        <div className="flex items-center gap-2 text-xs font-black text-blue-600 uppercase tracking-wider">
-                            <Landmark className="w-4 h-4" />
-                            <span>Financial Accounting & Control Subsystem</span>
-                            <span>•</span>
-                            <span className="text-slate-500 font-bold">{financialYear}</span>
-                        </div>
-                        <h1 className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
+                        <h1 className="text-xl sm:text-2xl font-black text-slate-900">
                             Accountant Financial Analytics Dashboard
                         </h1>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                            Accrual accounting basis • Dual WAC/FIFO perpetual inventory costing • Immutable audit log
-                        </p>
                     </div>
 
                     {/* Fast Action Buttons */}
@@ -325,7 +368,6 @@ export default function AccountingIndex({
                             onClick={() => setIsExpenseModalOpen(true)}
                             className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-xs transition"
                         >
-                            <Plus className="w-3.5 h-3.5 stroke-[3]" />
                             <span>Record Expense</span>
                         </button>
 
@@ -334,7 +376,6 @@ export default function AccountingIndex({
                             onClick={() => setIsJournalModalOpen(true)}
                             className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition"
                         >
-                            <FileEdit className="w-3.5 h-3.5" />
                             <span>Post Journal</span>
                         </button>
 
@@ -343,139 +384,100 @@ export default function AccountingIndex({
                             onClick={() => window.print()}
                             className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition"
                         >
-                            <Printer className="w-3.5 h-3.5 text-slate-500" />
                             <span>Export Statements</span>
                         </button>
+
+                        <Link
+                            href={route('data-entry.index')}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-xs rounded-xl transition"
+                            title="Bulk import or export expenses using CSV spreadsheet"
+                        >
+                            <span>CSV Import / Export</span>
+                        </Link>
                     </div>
                 </div>
 
-                {/* 2. TOP 8 FINANCIAL KPI ANALYTICS CARDS */}
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2.5 sm:gap-3">
-                    {/* 1. Total Revenue MTD */}
-                    <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
+                {/* 2. TOP EXECUTIVE FINANCIAL KPI CARDS (CLEAN 5-CARD GRID) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+                    {/* 1. Total Turnover (MTD Revenue) */}
+                    <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between hover:border-blue-300 transition">
                         <div className="flex items-center justify-between text-blue-600">
-                            <span className="text-[10px] font-black uppercase tracking-wider">Revenue MTD</span>
-                            <DollarSign className="w-3.5 h-3.5" />
+                            <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">Gross Turnover (MTD)</span>
+                            
                         </div>
-                        <div className="mt-2">
-                            <div className="text-base sm:text-lg font-black text-slate-900 truncate" title={formatTsh(safeMetrics.month_revenue_minor)}>
+                        <div className="mt-3">
+                            <div className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight truncate" title={formatTsh(safeMetrics.month_revenue_minor)}>
                                 {formatTsh(safeMetrics.month_revenue_minor)}
                             </div>
-                            <span className="text-[10px] text-emerald-600 font-bold block mt-0.5">
-                                Today: {formatTsh(safeMetrics.today_revenue_minor)}
-                            </span>
+                            <div className="flex items-center gap-1.5 mt-1 text-xs text-emerald-600 font-bold">
+                                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                <span>Today: {formatTsh(safeMetrics.today_revenue_minor)}</span>
+                            </div>
                         </div>
                     </div>
 
-                    {/* 2. Total Expenses MTD */}
-                    <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
+                    {/* 2. Operating Expenses MTD */}
+                    <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between hover:border-rose-300 transition">
                         <div className="flex items-center justify-between text-rose-600">
-                            <span className="text-[10px] font-black uppercase tracking-wider">Expenses MTD</span>
-                            <ArrowUpRight className="w-3.5 h-3.5" />
+                            <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">Operating Expenses</span>
+                            
                         </div>
-                        <div className="mt-2">
-                            <div className="text-base sm:text-lg font-black text-rose-700 truncate" title={formatTsh(safeMetrics.month_expenses_minor)}>
+                        <div className="mt-3">
+                            <div className="text-xl sm:text-2xl font-black text-rose-700 tracking-tight truncate" title={formatTsh(safeMetrics.month_expenses_minor)}>
                                 {formatTsh(safeMetrics.month_expenses_minor)}
                             </div>
-                            <span className="text-[10px] text-slate-400 font-medium block mt-0.5">
-                                Cost/Income: {safeMetrics.cost_to_income_ratio}%
-                            </span>
+                            <div className="flex items-center justify-between mt-1 text-xs text-slate-500 font-medium">
+                                <span>Cost/Income:</span>
+                                <span className="font-bold text-rose-600">{safeMetrics.cost_to_income_ratio}%</span>
+                            </div>
                         </div>
                     </div>
 
                     {/* 3. Net Operating Profit */}
-                    <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
+                    <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between hover:border-emerald-300 transition">
                         <div className="flex items-center justify-between text-emerald-600">
-                            <span className="text-[10px] font-black uppercase tracking-wider">Net Profit</span>
-                            <TrendingUp className="w-3.5 h-3.5" />
+                            <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">Net Operating Profit</span>
+                            
                         </div>
-                        <div className="mt-2">
-                            <div className={`text-base sm:text-lg font-black truncate ${safeMetrics.net_profit_month_minor >= 0 ? 'text-emerald-700' : 'text-rose-600'}`} title={formatTsh(safeMetrics.net_profit_month_minor)}>
+                        <div className="mt-3">
+                            <div className={`text-xl sm:text-2xl font-black tracking-tight truncate ${safeMetrics.net_profit_month_minor >= 0 ? 'text-emerald-700' : 'text-rose-600'}`} title={formatTsh(safeMetrics.net_profit_month_minor)}>
                                 {formatTsh(safeMetrics.net_profit_month_minor)}
                             </div>
-                            <span className="text-[10px] text-emerald-600 font-bold block mt-0.5">
-                                {safeMetrics.net_margin_pct}% Net Margin
-                            </span>
+                            <div className="flex items-center justify-between mt-1 text-xs text-slate-500 font-medium">
+                                <span>Net Margin:</span>
+                                <span className="font-bold text-emerald-600">{safeMetrics.net_margin_pct}%</span>
+                            </div>
                         </div>
                     </div>
 
-                    {/* 4. Total Cash & Bank Liquidity */}
-                    <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
+                    {/* 4. Liquid Cash & Bank Reserves */}
+                    <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between hover:border-sky-300 transition">
                         <div className="flex items-center justify-between text-sky-600">
-                            <span className="text-[10px] font-black uppercase tracking-wider">Total Liquidity</span>
-                            <Wallet className="w-3.5 h-3.5" />
+                            <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">Liquid Cash & Bank</span>
+                            
                         </div>
-                        <div className="mt-2">
-                            <div className="text-base sm:text-lg font-black text-slate-900 truncate" title={formatTsh(safeMetrics.total_liquidity_minor)}>
+                        <div className="mt-3">
+                            <div className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight truncate" title={formatTsh(safeMetrics.total_liquidity_minor)}>
                                 {formatTsh(safeMetrics.total_liquidity_minor)}
                             </div>
-                            <span className="text-[10px] text-sky-600 font-semibold block mt-0.5">
-                                Cash + Bank Balances
-                            </span>
+                            
                         </div>
                     </div>
 
-                    {/* 5. Accounts Receivable (AR) */}
-                    <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
+                    {/* 5. Working Capital (AR vs AP) */}
+                    <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between hover:border-amber-300 transition">
                         <div className="flex items-center justify-between text-amber-600">
-                            <span className="text-[10px] font-black uppercase tracking-wider">AR (Owed)</span>
-                            <FileText className="w-3.5 h-3.5" />
+                            <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">Working Ledger (AR - AP)</span>
+                            
                         </div>
-                        <div className="mt-2">
-                            <div className="text-base sm:text-lg font-black text-amber-700 truncate" title={formatTsh(safeMetrics.accounts_receivable_minor)}>
-                                {formatTsh(safeMetrics.accounts_receivable_minor)}
+                        <div className="mt-3">
+                            <div className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight truncate" title={formatTsh(safeMetrics.accounts_receivable_minor - safeMetrics.accounts_payable_minor)}>
+                                {formatTsh(safeMetrics.accounts_receivable_minor - safeMetrics.accounts_payable_minor)}
                             </div>
-                            <span className="text-[10px] text-amber-600 font-bold block mt-0.5">
-                                {customerInvoices.length} Open Folios
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* 6. Accounts Payable (AP) */}
-                    <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
-                        <div className="flex items-center justify-between text-indigo-600">
-                            <span className="text-[10px] font-black uppercase tracking-wider">AP (Payables)</span>
-                            <Truck className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="mt-2">
-                            <div className="text-base sm:text-lg font-black text-indigo-700 truncate" title={formatTsh(safeMetrics.accounts_payable_minor)}>
-                                {formatTsh(safeMetrics.accounts_payable_minor)}
+                            <div className="flex items-center justify-between mt-1 text-[11px] text-slate-500">
+                                <span className="text-amber-700 font-bold">AR: {formatTsh(safeMetrics.accounts_receivable_minor)}</span>
+                                <span className="text-slate-400 font-medium">AP: {formatTsh(safeMetrics.accounts_payable_minor)}</span>
                             </div>
-                            <span className="text-[10px] text-slate-400 font-medium block mt-0.5">
-                                Pending Trade Bills
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* 7. Accommodation Share */}
-                    <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
-                        <div className="flex items-center justify-between text-blue-600">
-                            <span className="text-[10px] font-black uppercase tracking-wider">Room Sales</span>
-                            <Building2 className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="mt-2">
-                            <div className="text-base sm:text-lg font-black text-slate-900 truncate" title={formatTsh(safeMetrics.room_revenue_minor)}>
-                                {formatTsh(safeMetrics.room_revenue_minor)}
-                            </div>
-                            <span className="text-[10px] text-blue-600 font-semibold block mt-0.5">
-                                Primary Core Inflow
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* 8. Pending Approvals Queue */}
-                    <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-slate-200/90 shadow-2xs flex flex-col justify-between">
-                        <div className="flex items-center justify-between text-rose-600">
-                            <span className="text-[10px] font-black uppercase tracking-wider">Approvals</span>
-                            <ShieldAlert className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="mt-2">
-                            <div className="text-base sm:text-lg font-black text-rose-700">
-                                {safeMetrics.pending_approvals_count}
-                            </div>
-                            <span className="text-[10px] text-slate-400 font-medium block mt-0.5">
-                                Awaiting Sign-Off
-                            </span>
                         </div>
                     </div>
                 </div>
@@ -491,7 +493,6 @@ export default function AccountingIndex({
                                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                         }`}
                     >
-                        <BarChart3 className="w-4 h-4" />
                         <span>Financial Analytics & Trends</span>
                     </button>
 
@@ -504,7 +505,6 @@ export default function AccountingIndex({
                                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                         }`}
                     >
-                        <DollarSign className="w-4 h-4" />
                         <span>Transactions & Cashbook ({expenses.length})</span>
                     </button>
 
@@ -517,7 +517,6 @@ export default function AccountingIndex({
                                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                         }`}
                     >
-                        <Receipt className="w-4 h-4" />
                         <span>Invoices & AR Aging ({customerInvoices.length})</span>
                     </button>
 
@@ -530,7 +529,6 @@ export default function AccountingIndex({
                                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                         }`}
                     >
-                        <Layers className="w-4 h-4" />
                         <span>Chart of Accounts & GL ({accounts.length})</span>
                     </button>
 
@@ -543,7 +541,7 @@ export default function AccountingIndex({
                                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                         }`}
                     >
-                        <Landmark className="w-4 h-4" />
+                        
                         <span>Banking & Reconciliation</span>
                     </button>
 
@@ -556,7 +554,6 @@ export default function AccountingIndex({
                                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                         }`}
                     >
-                        <PieChart className="w-4 h-4" />
                         <span>Financial Statements (P&L / Balance Sheet)</span>
                     </button>
 
@@ -569,7 +566,6 @@ export default function AccountingIndex({
                                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                         }`}
                     >
-                        <ShieldCheck className="w-4 h-4" />
                         <span>Pending Approvals ({pendingExpenses.length})</span>
                     </button>
                 </div>
@@ -581,218 +577,611 @@ export default function AccountingIndex({
                 {/* ========================================================================= */}
                 {activeTab === 'analytics' && (
                     <div className="space-y-6">
-                        {/* Row 1: Revenue vs Expense Trend Chart (8 cols) + Department Share (4 cols) */}
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-                            {/* Monthly Trend Chart */}
-                            <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 sm:p-6 space-y-4">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                                    <div>
-                                        <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
-                                            Revenue, Operating Expenses & Profitability Trend
-                                        </h3>
-                                        <p className="text-xs text-slate-500">
-                                            Multi-month comparative financial performance tracking
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center gap-3 text-xs">
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="w-3 h-3 rounded-md bg-blue-600" />
-                                            <span className="text-slate-600 font-semibold">Revenue</span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="w-3 h-3 rounded-md bg-rose-500" />
-                                            <span className="text-slate-600 font-semibold">Expenses</span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="w-3 h-3 rounded-md bg-emerald-500" />
-                                            <span className="text-slate-600 font-semibold">Net Profit</span>
-                                        </div>
-                                    </div>
-                                </div>
+                        {/* DEPARTMENT ISOLATOR / SEGMENT SWITCHER */}
+                        <div className="bg-white p-2 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between flex-wrap gap-2">
+                            <div className="flex items-center gap-1.5 overflow-x-auto">
+                                <button
+                                    type="button"
+                                    onClick={() => setDepartmentFilter('consolidated')}
+                                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
+                                        departmentFilter === 'consolidated'
+                                            ? 'bg-slate-900 text-white shadow-xs'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                                    }`}
+                                >
+                                    <span>Consolidated Overview</span>
+                                </button>
 
-                                {/* Visual Bar Chart */}
-                                <div className="pt-4 space-y-5">
-                                    <div className="grid grid-cols-6 gap-3 sm:gap-4 h-60 items-end border-b border-slate-200 pb-2">
-                                        {revenueExpenseTrend.map((t) => {
-                                            const revHeight = maxTrendAmount > 0 ? (t.revenue_minor / maxTrendAmount) * 100 : 0;
-                                            const expHeight = maxTrendAmount > 0 ? (t.expenses_minor / maxTrendAmount) * 100 : 0;
-                                            const profHeight = maxTrendAmount > 0 ? Math.max(0, (t.net_profit_minor / maxTrendAmount) * 100) : 0;
+                                <button
+                                    type="button"
+                                    onClick={() => setDepartmentFilter('hotel')}
+                                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
+                                        departmentFilter === 'hotel'
+                                            ? 'bg-blue-600 text-white shadow-xs'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                                    }`}
+                                >
+                                    <span>Hotel Accommodations (Isolated)</span>
+                                </button>
 
-                                            return (
-                                                <div key={t.month} className="flex flex-col items-center gap-2 h-full justify-end group">
-                                                    <div className="flex items-end gap-1 sm:gap-1.5 w-full justify-center h-48">
-                                                        {/* Revenue Bar */}
-                                                        <div
-                                                            className="w-3 sm:w-4 bg-blue-600 rounded-t-md transition-all group-hover:bg-blue-700"
-                                                            style={{ height: `${Math.max(6, revHeight)}%` }}
-                                                            title={`Revenue: ${formatTsh(t.revenue_minor)}`}
-                                                        />
-                                                        {/* Expense Bar */}
-                                                        <div
-                                                            className="w-3 sm:w-4 bg-rose-500 rounded-t-md transition-all group-hover:bg-rose-600"
-                                                            style={{ height: `${Math.max(6, expHeight)}%` }}
-                                                            title={`Expenses: ${formatTsh(t.expenses_minor)}`}
-                                                        />
-                                                        {/* Net Profit Bar */}
-                                                        <div
-                                                            className="w-3 sm:w-4 bg-emerald-500 rounded-t-md transition-all group-hover:bg-emerald-600"
-                                                            style={{ height: `${Math.max(6, profHeight)}%` }}
-                                                            title={`Net Profit: ${formatTsh(t.net_profit_minor)} (${t.margin_pct}%)`}
-                                                        />
-                                                    </div>
-                                                    <div className="text-[11px] font-bold text-slate-700 truncate text-center">
-                                                        {t.short_month}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setDepartmentFilter('supermarket')}
+                                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
+                                        departmentFilter === 'supermarket'
+                                            ? 'bg-indigo-600 text-white shadow-xs'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                                    }`}
+                                >
+                                    <span>Super / Mini Market (Isolated)</span>
+                                </button>
 
-                                    {/* Monthly Summary Table */}
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-left text-xs">
-                                            <thead>
-                                                <tr className="text-slate-400 font-bold uppercase text-[10px]">
-                                                    <th className="py-2">Month</th>
-                                                    <th className="py-2 text-right">Revenue</th>
-                                                    <th className="py-2 text-right">Expenses</th>
-                                                    <th className="py-2 text-right">Net Profit</th>
-                                                    <th className="py-2 text-right">Margin %</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-100">
-                                                {revenueExpenseTrend.map((row) => (
-                                                    <tr key={row.month} className="hover:bg-slate-50 transition">
-                                                        <td className="py-2 font-bold text-slate-800">{row.month}</td>
-                                                        <td className="py-2 text-right font-mono font-bold text-blue-700">{formatTsh(row.revenue_minor)}</td>
-                                                        <td className="py-2 text-right font-mono text-rose-600">{formatTsh(row.expenses_minor)}</td>
-                                                        <td className="py-2 text-right font-mono font-bold text-emerald-600">{formatTsh(row.net_profit_minor)}</td>
-                                                        <td className="py-2 text-right font-bold text-slate-700">{row.margin_pct}%</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setDepartmentFilter('restaurant')}
+                                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black transition cursor-pointer ${
+                                        departmentFilter === 'restaurant'
+                                            ? 'bg-amber-600 text-white shadow-xs'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                                    }`}
+                                >
+                                    <span>Restaurant & Bar (F&B)</span>
+                                </button>
                             </div>
 
-                            {/* Departmental Revenue Share */}
-                            <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 sm:p-6 space-y-4">
-                                <div className="border-b border-slate-100 pb-3">
-                                    <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
-                                        Department Revenue Contribution
+                            <div className="flex items-center gap-2">
+                                {departmentFilter === 'supermarket' && (
+                                    <Link
+                                        href={route('grocery.index')}
+                                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition"
+                                    >
+                                        <span>Open Supermarket System</span>
+                                        </Link>
+                                )}
+
+                                {departmentFilter === 'hotel' && (
+                                    <Link
+                                        href={route('reservations.index')}
+                                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition"
+                                    >
+                                        <span>Room Bookings & Front Desk</span>
+                                        </Link>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* ================================================================= */}
+                        {/* VIEW A: ISOLATED HOTEL ACCOMMODATIONS                             */}
+                        {/* ================================================================= */}
+                        {departmentFilter === 'hotel' && (
+                            <div className="space-y-6">
+                                {/* Hotel Banner (Slim & Clean) */}
+                                <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                    <h3 className="text-lg sm:text-xl font-black text-slate-900">
+                                        Hotel Accommodations Financial Performance
                                     </h3>
-                                    <p className="text-xs text-slate-500">
-                                        Income stream distribution for current period
-                                    </p>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <Link
+                                            href={route('housekeeping.index')}
+                                            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition"
+                                        >
+                                            Room Status
+                                        </Link>
+                                        <Link
+                                            href={route('reservations.index')}
+                                            className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition"
+                                        >
+                                            Guest Bookings
+                                        </Link>
+                                    </div>
                                 </div>
 
-                                <div className="space-y-4 pt-2">
-                                    {departmentRevenueContribution.map((dept) => (
-                                        <div key={dept.name} className="space-y-1.5">
-                                            <div className="flex items-center justify-between text-xs">
-                                                <span className="font-bold text-slate-800">{dept.name}</span>
-                                                <span className="font-mono font-bold text-slate-900">{formatTsh(dept.amount_minor)}</span>
+                                {/* 4 Hotel Operational KPIs */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
+                                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 block">Room Revenue MTD</span>
+                                        <div className="mt-2">
+                                            <div className="text-xl sm:text-2xl font-black text-slate-900 font-mono">
+                                                {formatTsh(safeMetrics.hotel?.revenue_month_minor || safeMetrics.room_revenue_minor)}
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                                                    <div
-                                                        className={`h-full ${dept.color} transition-all duration-500`}
-                                                        style={{ width: `${dept.percent}%` }}
-                                                    />
-                                                </div>
-                                                <span className={`text-[11px] font-black w-10 text-right ${dept.textColor}`}>
-                                                    {dept.percent}%
-                                                </span>
+                                            <span className="text-xs text-emerald-600 font-bold block mt-0.5">
+                                                Today: {formatTsh(safeMetrics.hotel?.revenue_today_minor || safeMetrics.room_revenue_today_minor || 0)}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
+                                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 block">Occupancy Rate</span>
+                                        <div className="mt-2">
+                                            <div className="text-xl sm:text-2xl font-black text-indigo-700">
+                                                {safeMetrics.hotel?.occupancy_rate || 0}%
+                                            </div>
+                                            <span className="text-xs text-slate-500 font-medium block mt-0.5">
+                                                {safeMetrics.hotel?.occupied_rooms || 0} / {safeMetrics.hotel?.total_rooms || 0} Rooms In-House
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
+                                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 block">Average Daily Rate (ADR)</span>
+                                        <div className="mt-2">
+                                            <div className="text-xl sm:text-2xl font-black text-slate-900 font-mono">
+                                                {formatTsh(safeMetrics.hotel?.adr_minor || 0)}
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
+                                    </div>
 
-                                <div className="pt-4 border-t border-slate-100">
-                                    <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 space-y-1">
-                                        <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Combined Revenue</div>
-                                        <div className="text-xl font-black text-slate-900">{formatTsh(safeMetrics.month_revenue_minor)}</div>
-                                        <p className="text-[10px] text-slate-400">All property divisions consolidated</p>
+                                    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
+                                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 block">RevPAR</span>
+                                        <div className="mt-2">
+                                            <div className="text-xl sm:text-2xl font-black text-slate-900 font-mono">
+                                                {formatTsh(safeMetrics.hotel?.revpar_minor || 0)}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        {/* Row 2: Accounts Receivable Aging (6 cols) + Expense Distribution (6 cols) */}
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-                            {/* AR Aging Schedule */}
-                            <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 sm:p-6 space-y-4">
-                                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                                    <div>
-                                        <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
-                                            Accounts Receivable (AR) Aging Analysis
-                                        </h3>
-                                        <p className="text-xs text-slate-500">
-                                            Outstanding customer balances categorized by age of debt
-                                        </p>
-                                    </div>
-                                    <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-amber-100 text-amber-800">
-                                        Total: {formatTsh(safeMetrics.accounts_receivable_minor)}
-                                    </span>
-                                </div>
-
-                                <div className="space-y-3 pt-1">
-                                    {arAging.map((bracket) => (
-                                        <div key={bracket.bracket} className="p-3 rounded-xl border border-slate-100 bg-slate-50/70 flex items-center justify-between">
+                                {/* Hotel Detailed Operating Breakdown */}
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                                    <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 sm:p-6 space-y-4">
+                                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                                             <div>
-                                                <div className="text-xs font-bold text-slate-800">{bracket.bracket}</div>
-                                                <div className="text-[10px] text-slate-400">{bracket.count} active accounts</div>
+                                                <h4 className="text-base font-extrabold text-slate-900">Lodging Operating Statement</h4>
+                                                <p className="text-xs text-slate-500">Room nights turnover vs lodging overheads</p>
                                             </div>
-                                            <div className="text-right">
-                                                <div className="text-xs font-mono font-black text-slate-900">{formatTsh(bracket.amount_minor)}</div>
-                                                <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider mt-0.5 ${bracket.badge}`}>
-                                                    {bracket.risk} Risk
-                                                </span>
+                                            <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700">
+                                                Margin: {safeMetrics.hotel?.operating_margin_pct || 0}%
+                                            </span>
+                                        </div>
+
+                                        <div className="space-y-3 text-xs">
+                                            <div className="flex justify-between py-2 border-b border-slate-100">
+                                                <span className="font-bold text-slate-700">Room Accommodation Turnover</span>
+                                                <span className="font-mono font-bold text-blue-700">{formatTsh(safeMetrics.hotel?.revenue_month_minor || safeMetrics.room_revenue_minor)}</span>
+                                            </div>
+                                            <div className="flex justify-between py-2 border-b border-slate-100">
+                                                <span className="font-bold text-slate-700">Other Lodging Ancillary (Laundry & Tours)</span>
+                                                <span className="font-mono font-bold text-slate-800">{formatTsh(safeMetrics.other_revenue_minor)}</span>
+                                            </div>
+                                            <div className="flex justify-between py-2 border-b border-slate-100 text-rose-600">
+                                                <span className="font-bold">Lodging Overhead (Housekeeping, Utilities, Maintenance)</span>
+                                                <span className="font-mono font-bold">({formatTsh(safeMetrics.hotel?.expenses_month_minor || 0)})</span>
+                                            </div>
+                                            <div className="flex justify-between py-2.5 bg-slate-50 px-3 rounded-xl font-black text-sm">
+                                                <span className="text-slate-900">Net Lodging Operating Profit</span>
+                                                <span className="font-mono text-emerald-700">{formatTsh(safeMetrics.hotel?.operating_profit_minor || 0)}</span>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Expense Category Breakdown */}
-                            <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 sm:p-6 space-y-4">
-                                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                                    <div>
-                                        <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
-                                            Operating Expenses by Category
-                                        </h3>
-                                        <p className="text-xs text-slate-500">
-                                            Cost allocation across property operational cost centers
-                                        </p>
                                     </div>
-                                    <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-rose-100 text-rose-800">
-                                        Total: {formatTsh(safeMetrics.month_expenses_minor)}
-                                    </span>
-                                </div>
 
-                                <div className="space-y-3 pt-1">
-                                    {expenseCategories.length === 0 ? (
-                                        <div className="py-8 text-center text-slate-400 text-xs">
-                                            No recorded operating expenses for this period.
+                                    <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 sm:p-6 space-y-4">
+                                        <div className="border-b border-slate-100 pb-3">
+                                            <h4 className="text-base font-extrabold text-slate-900">Guest Ledger & Open Folios</h4>
+                                            <p className="text-xs text-slate-500">In-house customer balances awaiting checkout settlement</p>
                                         </div>
-                                    ) : (
-                                        expenseCategories.map((cat) => (
-                                            <div key={cat.category} className="p-3 rounded-xl border border-slate-100 bg-slate-50/70 flex items-center justify-between">
-                                                <div>
-                                                    <div className="text-xs font-bold text-slate-800">{cat.category}</div>
-                                                    <div className="text-[10px] text-slate-400">{cat.count} vouchers posted</div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="text-xs font-mono font-black text-rose-700">{formatTsh(cat.amount_minor)}</div>
-                                                    <span className="text-[10px] font-bold text-slate-500">{cat.percent}% of total</span>
-                                                </div>
+
+                                        <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-1">
+                                            <div className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Unsettled Guest Ledger (AR)</div>
+                                            <div className="text-2xl font-black text-amber-900 font-mono">
+                                                {formatTsh(safeMetrics.hotel?.receivables_minor || safeMetrics.accounts_receivable_minor)}
                                             </div>
-                                        ))
-                                    )}
+                                            <p className="text-xs text-amber-700 mt-1">
+                                                Accrued across {safeMetrics.hotel?.open_folios_count || customerInvoices.length} active room folios
+                                            </p>
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveTab('invoices')}
+                                            className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition text-center"
+                                        >
+                                            View Customer Open Folios Table
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
+
+                        {/* ================================================================= */}
+                        {/* VIEW B: ISOLATED SUPERMARKET & MINI MARKET                         */}
+                        {/* ================================================================= */}
+                        {departmentFilter === 'supermarket' && (
+                            <div className="space-y-6">
+                                {/* Supermarket Banner (Slim & Clean) */}
+                                <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                    <h3 className="text-lg sm:text-xl font-black text-slate-900">
+                                        Supermarket & Mini Market Financial Analytics
+                                    </h3>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <Link
+                                            href={route('grocery.index')}
+                                            className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5"
+                                        >
+                                            <span>Open Super / Mini Market System</span>
+                                        </Link>
+                                    </div>
+                                </div>
+
+                                {/* 4 Supermarket KPIs */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
+                                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 block">Retail Sales (MTD)</span>
+                                        <div className="mt-2">
+                                            <div className="text-xl sm:text-2xl font-black text-slate-900 font-mono">
+                                                {formatTsh(safeMetrics.supermarket?.revenue_month_minor || safeMetrics.pos_grocery_revenue_minor)}
+                                            </div>
+                                            <span className="text-xs text-emerald-600 font-bold block mt-0.5">
+                                                Today: {formatTsh(safeMetrics.supermarket?.revenue_today_minor || safeMetrics.pos_grocery_revenue_today_minor || 0)}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
+                                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 block">Cost of Goods Sold (COGS)</span>
+                                        <div className="mt-2">
+                                            <div className="text-xl sm:text-2xl font-black text-rose-700 font-mono">
+                                                {formatTsh(safeMetrics.supermarket?.cogs_month_minor || 0)}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
+                                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 block">Gross Retail Profit</span>
+                                        <div className="mt-2">
+                                            <div className="text-xl sm:text-2xl font-black text-emerald-700 font-mono">
+                                                {formatTsh(safeMetrics.supermarket?.gross_profit_minor || 0)}
+                                            </div>
+                                            <span className="text-xs text-emerald-600 font-bold block mt-0.5">
+                                                {safeMetrics.supermarket?.gross_margin_pct || 0}% Gross Retail Margin
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
+                                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 block">Inventory Valuation</span>
+                                        <div className="mt-2">
+                                            <div className="text-xl sm:text-2xl font-black text-slate-900 font-mono">
+                                                {formatTsh(safeMetrics.supermarket?.retail_valuation_minor || 0)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Supermarket Operational Breakdown */}
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                                    <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 sm:p-6 space-y-4">
+                                        <div className="border-b border-slate-100 pb-3">
+                                            <h4 className="text-base font-extrabold text-slate-900">Inventory Catalog Health</h4>
+                                            <p className="text-xs text-slate-500">Active retail products and shelf replenishment alerts</p>
+                                        </div>
+
+                                        <div className="grid grid-cols-3 gap-3">
+                                            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 text-center">
+                                                <div className="text-xl font-black text-slate-900">{safeMetrics.supermarket?.total_skus || 0}</div>
+                                                <div className="text-[10px] font-bold text-slate-500 uppercase mt-0.5">Total SKUs</div>
+                                            </div>
+                                            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-center">
+                                                <div className="text-xl font-black text-amber-800">{safeMetrics.supermarket?.low_stock_count || 0}</div>
+                                                <div className="text-[10px] font-bold text-amber-700 uppercase mt-0.5">Low Stock</div>
+                                            </div>
+                                            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-center">
+                                                <div className="text-xl font-black text-rose-800">{safeMetrics.supermarket?.out_of_stock_count || 0}</div>
+                                                <div className="text-[10px] font-bold text-rose-700 uppercase mt-0.5">Out of Stock</div>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-2">
+                                            <Link
+                                                href={route('grocery.index')}
+                                                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold text-xs rounded-xl transition"
+                                            >
+                                                <span>Manage Inventory & Restock Catalog</span>
+                                                </Link>
+                                        </div>
+                                    </div>
+
+                                    <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 sm:p-6 space-y-4">
+                                        <div className="border-b border-slate-100 pb-3">
+                                            <h4 className="text-base font-extrabold text-slate-900">Minimart POS & Counter Sales</h4>
+                                            <p className="text-xs text-slate-500">Point of sale cashier till and customer order settlements</p>
+                                        </div>
+
+                                        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2 text-xs">
+                                            <div className="flex justify-between">
+                                                <span className="font-bold text-slate-600">POS Outlet Type:</span>
+                                                <span className="font-semibold text-slate-900">Grocery / Minimart Counter</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="font-bold text-slate-600">Payment Modes Accepted:</span>
+                                                <span className="font-semibold text-slate-900">Cash, M-Pesa, Room Charge Folio</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="font-bold text-slate-600">Thermal Receipt Size:</span>
+                                                <span className="font-semibold text-slate-900">80mm ESC/POS Standard</span>
+                                            </div>
+                                        </div>
+
+                                        <Link
+                                            href={route('grocery.index')}
+                                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition"
+                                        >
+                                            
+                                            <span>Launch Supermarket POS Register</span>
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ================================================================= */}
+                        {/* VIEW C: ISOLATED RESTAURANT & BAR (F&B)                           */}
+                        {/* ================================================================= */}
+                        {departmentFilter === 'restaurant' && (
+                            <div className="space-y-6">
+                                {/* Restaurant Banner (Slim & Clean) */}
+                                <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                    <h3 className="text-lg sm:text-xl font-black text-slate-900">
+                                        Restaurant & Bar Financial Analytics
+                                    </h3>
+                                    <Link
+                                        href={route('restaurant.index')}
+                                        className="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5"
+                                    >
+                                        <span>Launch Restaurant POS</span>
+                                    </Link>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
+                                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 block">Dining Revenue MTD</span>
+                                        <div className="mt-2">
+                                            <div className="text-2xl font-black text-slate-900 font-mono">
+                                                {formatTsh(safeMetrics.restaurant?.revenue_month_minor || safeMetrics.pos_restaurant_revenue_minor)}
+                                            </div>
+                                            <span className="text-xs text-emerald-600 font-bold block mt-0.5">
+                                                Today: {formatTsh(safeMetrics.restaurant?.revenue_today_minor || safeMetrics.pos_restaurant_revenue_today_minor || 0)}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
+                                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 block">Kitchen Food Supplies Cost</span>
+                                        <div className="mt-2">
+                                            <div className="text-2xl font-black text-rose-700 font-mono">
+                                                {formatTsh(safeMetrics.restaurant?.supplies_cost_minor || 0)}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs">
+                                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 block">F&B Gross Margin</span>
+                                        <div className="mt-2">
+                                            <div className="text-2xl font-black text-emerald-700 font-mono">
+                                                {formatTsh(safeMetrics.restaurant?.gross_profit_minor || 0)}
+                                            </div>
+                                            <span className="text-xs text-emerald-600 font-bold block mt-0.5">
+                                                {safeMetrics.restaurant?.gross_margin_pct || 0}% Culinary Margin
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ================================================================= */}
+                        {/* VIEW D: CONSOLIDATED EXECUTIVE OVERVIEW                           */}
+                        {/* ================================================================= */}
+                        {departmentFilter === 'consolidated' && (
+                            <>
+                                {/* Row 1: Revenue vs Expense Trend Chart (8 cols) + Department Share (4 cols) */}
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                                    {/* Monthly Trend Chart */}
+                                    <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-4 sm:p-5 space-y-4">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                                            <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
+                                                Revenue, Operating Expenses & Profitability Trend
+                                            </h3>
+                                            <div className="flex items-center gap-3 text-xs">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="w-3 h-3 rounded-md bg-blue-600" />
+                                                    <span className="text-slate-600 font-semibold">Revenue</span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="w-3 h-3 rounded-md bg-rose-500" />
+                                                    <span className="text-slate-600 font-semibold">Expenses</span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="w-3 h-3 rounded-md bg-emerald-500" />
+                                                    <span className="text-slate-600 font-semibold">Net Profit</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Visual Bar Chart */}
+                                        <div className="pt-4 space-y-5">
+                                            <div className="grid grid-cols-6 gap-3 sm:gap-4 h-60 items-end border-b border-slate-200 pb-2">
+                                                {revenueExpenseTrend.map((t) => {
+                                                    const revHeight = maxTrendAmount > 0 ? (t.revenue_minor / maxTrendAmount) * 100 : 0;
+                                                    const expHeight = maxTrendAmount > 0 ? (t.expenses_minor / maxTrendAmount) * 100 : 0;
+                                                    const profHeight = maxTrendAmount > 0 ? Math.max(0, (t.net_profit_minor / maxTrendAmount) * 100) : 0;
+
+                                                    return (
+                                                        <div key={t.month} className="flex flex-col items-center gap-2 h-full justify-end group">
+                                                            <div className="flex items-end gap-1 sm:gap-1.5 w-full justify-center h-48">
+                                                                {/* Revenue Bar */}
+                                                                <div
+                                                                    className="w-3 sm:w-4 bg-blue-600 rounded-t-md transition-all group-hover:bg-blue-700"
+                                                                    style={{ height: `${Math.max(6, revHeight)}%` }}
+                                                                    title={`Revenue: ${formatTsh(t.revenue_minor)}`}
+                                                                />
+                                                                {/* Expense Bar */}
+                                                                <div
+                                                                    className="w-3 sm:w-4 bg-rose-500 rounded-t-md transition-all group-hover:bg-rose-600"
+                                                                    style={{ height: `${Math.max(6, expHeight)}%` }}
+                                                                    title={`Expenses: ${formatTsh(t.expenses_minor)}`}
+                                                                />
+                                                                {/* Net Profit Bar */}
+                                                                <div
+                                                                    className="w-3 sm:w-4 bg-emerald-500 rounded-t-md transition-all group-hover:bg-emerald-600"
+                                                                    style={{ height: `${Math.max(6, profHeight)}%` }}
+                                                                    title={`Net Profit: ${formatTsh(t.net_profit_minor)} (${t.margin_pct}%)`}
+                                                                />
+                                                            </div>
+                                                            <div className="text-[11px] font-bold text-slate-700 truncate text-center">
+                                                                {t.short_month}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            {/* Monthly Summary Table */}
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-left text-xs">
+                                                    <thead>
+                                                        <tr className="text-slate-400 font-bold uppercase text-[10px]">
+                                                            <th className="py-2">Month</th>
+                                                            <th className="py-2 text-right">Revenue</th>
+                                                            <th className="py-2 text-right">Expenses</th>
+                                                            <th className="py-2 text-right">Net Profit</th>
+                                                            <th className="py-2 text-right">Margin %</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-100">
+                                                        {revenueExpenseTrend.map((row) => (
+                                                            <tr key={row.month} className="hover:bg-slate-50 transition">
+                                                                <td className="py-2 font-bold text-slate-800">{row.month}</td>
+                                                                <td className="py-2 text-right font-mono font-bold text-blue-700">{formatTsh(row.revenue_minor)}</td>
+                                                                <td className="py-2 text-right font-mono text-rose-600">{formatTsh(row.expenses_minor)}</td>
+                                                                <td className="py-2 text-right font-mono font-bold text-emerald-600">{formatTsh(row.net_profit_minor)}</td>
+                                                                <td className="py-2 text-right font-bold text-slate-700">{row.margin_pct}%</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Departmental Revenue Share */}
+                                    <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 sm:p-6 space-y-4">
+                                        <div className="border-b border-slate-100 pb-3">
+                                            <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
+                                                Department Revenue Contribution
+                                            </h3>
+                                            <p className="text-xs text-slate-500">
+                                                Income stream distribution across hotel divisions
+                                            </p>
+                                        </div>
+
+                                        <div className="space-y-4 pt-2">
+                                            {departmentRevenueContribution.map((dept) => (
+                                                <div key={dept.name} className="space-y-1.5">
+                                                    <div className="flex items-center justify-between text-xs">
+                                                        <span className="font-bold text-slate-800">{dept.name}</span>
+                                                        <span className="font-mono font-bold text-slate-900">{formatTsh(dept.amount_minor)}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                                                            <div
+                                                                className={`h-full ${dept.color} transition-all duration-500`}
+                                                                style={{ width: `${dept.percent}%` }}
+                                                            />
+                                                        </div>
+                                                        <span className={`text-[11px] font-black w-10 text-right ${dept.textColor}`}>
+                                                            {dept.percent}%
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <div className="pt-4 border-t border-slate-100">
+                                            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 space-y-1">
+                                                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Combined Revenue</div>
+                                                <div className="text-xl font-black text-slate-900">{formatTsh(safeMetrics.month_revenue_minor)}</div>
+                                                <p className="text-[10px] text-slate-400">All property divisions consolidated</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Row 2: Accounts Receivable Aging (6 cols) + Expense Distribution (6 cols) */}
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                                    {/* AR Aging Schedule */}
+                                    <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 sm:p-6 space-y-4">
+                                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                                            <div>
+                                                <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
+                                                    Accounts Receivable (AR) Aging Analysis
+                                                </h3>
+                                                <p className="text-xs text-slate-500">
+                                                    Outstanding customer balances categorized by age of debt
+                                                </p>
+                                            </div>
+                                            <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-amber-100 text-amber-800">
+                                                Total: {formatTsh(safeMetrics.accounts_receivable_minor)}
+                                            </span>
+                                        </div>
+
+                                        <div className="space-y-3 pt-1">
+                                            {arAging.map((bracket) => (
+                                                <div key={bracket.bracket} className="p-3 rounded-xl border border-slate-100 bg-slate-50/70 flex items-center justify-between">
+                                                    <div>
+                                                        <div className="text-xs font-bold text-slate-800">{bracket.bracket}</div>
+                                                        <div className="text-[10px] text-slate-400">{bracket.count} active accounts</div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="text-xs font-mono font-black text-slate-900">{formatTsh(bracket.amount_minor)}</div>
+                                                        <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider mt-0.5 ${bracket.badge}`}>
+                                                            {bracket.risk} Risk
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Expense Category Breakdown */}
+                                    <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 sm:p-6 space-y-4">
+                                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                                            <div>
+                                                <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
+                                                    Operating Expenses by Category
+                                                </h3>
+                                                <p className="text-xs text-slate-500">
+                                                    Cost allocation across property operational cost centers
+                                                </p>
+                                            </div>
+                                            <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-rose-100 text-rose-800">
+                                                Total: {formatTsh(safeMetrics.month_expenses_minor)}
+                                            </span>
+                                        </div>
+
+                                        <div className="space-y-3 pt-1">
+                                            {expenseCategories.length === 0 ? (
+                                                <div className="py-8 text-center text-slate-400 text-xs">
+                                                    No recorded operating expenses for this period.
+                                                </div>
+                                            ) : (
+                                                expenseCategories.map((cat) => (
+                                                    <div key={cat.category} className="p-3 rounded-xl border border-slate-100 bg-slate-50/70 flex items-center justify-between">
+                                                        <div>
+                                                            <div className="text-xs font-bold text-slate-800">{cat.category}</div>
+                                                            <div className="text-[10px] text-slate-400">{cat.count} vouchers posted</div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className="text-xs font-mono font-black text-rose-700">{formatTsh(cat.amount_minor)}</div>
+                                                            <span className="text-[10px] font-bold text-slate-500">{cat.percent}% of total</span>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
                 )}
 
@@ -1049,9 +1438,7 @@ export default function AccountingIndex({
                             {bankAccounts.map((b) => (
                                 <div key={b.id} className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                                            <Landmark className="w-5 h-5" />
-                                        </div>
+                                        
                                         <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold flex items-center gap-1">
                                             <CheckCheck className="w-3 h-3" /> Reconciled
                                         </span>

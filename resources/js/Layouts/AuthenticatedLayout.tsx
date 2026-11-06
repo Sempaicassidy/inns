@@ -1,5 +1,8 @@
 import { PageProps } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
+import ApplicationLogo from '@/Components/ApplicationLogo';
+import PwaInstallButton from '@/Components/PwaInstallButton';
+import PwaNotificationManager from '@/Components/PwaNotificationManager';
 import {
     Activity,
     ArrowDownRight,
@@ -8,6 +11,7 @@ import {
     BarChart3,
     Bed,
     Bell,
+    BellRing,
     BookOpen,
     Building2,
     Calendar,
@@ -192,6 +196,15 @@ export default function AuthenticatedLayout({
     );
 
     const currentTab = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('tab') || 'overview' : 'overview';
+
+    // Dynamic Tenant & System Identity
+    const systemName = (auth as any)?.is_impersonating
+        ? ((auth as any).impersonated_tenant_name)
+        : ((auth as any)?.tenant?.system_name || user?.tenant?.name || 'THE INNS');
+    const hotelDisplayName = (auth as any)?.is_impersonating
+        ? ((auth as any).impersonated_tenant_name)
+        : ((auth as any)?.tenant?.name || user?.tenant?.name || 'THE INNS Hospitality Platform');
+    const hotelTagline = (auth as any)?.tenant?.tagline || (isSuperAdmin ? 'Centralized SaaS Ecosystem' : 'Hotel Property Workspace');
 
     // SaaS Super Admin Navigation Items (Centralized Ecosystem)
     const superAdminNavItems = [
@@ -820,12 +833,15 @@ export default function AuthenticatedLayout({
         { name: 'Reservations', href: route('reservations.index'), icon: Calendar, active: route().current('reservations.*') },
         { name: 'Room Overview', href: route('housekeeping.index'), icon: Bed, active: route().current('housekeeping.*') },
         { name: 'Hotel Report', href: route('reports.index'), icon: BarChart3, active: route().current('reports.*') },
+        { name: 'Manager Alerts (SMS/WhatsApp)', href: route('manager.notifications.index'), icon: BellRing, active: route().current('manager.notifications.*') },
         { name: 'POS Restaurant Report', href: route('restaurant.index'), icon: Utensils, active: route().current('restaurant.*') },
-        { name: 'POS Grocery', href: route('grocery.index'), icon: ShoppingBag, active: route().current('grocery.*') },
+        { name: 'Super / Mini Market', href: route('grocery.index'), icon: ShoppingBag, active: route().current('grocery.*') },
         { name: 'Store Report', href: route('inventory.index'), icon: Package, active: route().current('inventory.*') },
         { name: 'Staff & HR System', href: route('hr.index'), icon: UserCheck, active: route().current('hr.*') },
         { name: 'Billing', href: route('accounting.index'), icon: DollarSign, active: route().current('accounting.*') },
         { name: 'Notifications', href: route('whatsapp.index'), icon: MessageSquare, active: route().current('whatsapp.*') },
+        { name: 'Hotel & Receipt Branding', href: route('tenant.settings'), icon: Building2, active: route().current('tenant.settings*') },
+        { name: 'CSV Data Entry Hub', href: route('data-entry.index'), icon: FileSpreadsheet, active: route().current('data-entry.*') },
         { name: 'Settings', href: route('profile.edit'), icon: Settings, active: route().current('profile.*') },
         { name: 'Sign Out', icon: LogOut, isLogout: true },
     ];
@@ -875,16 +891,16 @@ export default function AuthenticatedLayout({
                         onClick={() => toggleSection(item.name)}
                         className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                             item.active
-                                ? 'bg-slate-100 text-slate-900 font-extrabold'
-                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                                ? 'bg-[#D4AF37]/20 text-[#D4AF37] font-extrabold'
+                                : 'text-white/70 hover:text-white hover:bg-white/10'
                         }`}
                     >
-                        <Icon className={`w-4 h-4 ${item.active ? 'text-blue-600' : 'text-slate-400'}`} />
+                        <Icon className={`w-4 h-4 ${item.active ? 'text-[#D4AF37]' : 'text-white/40'}`} />
                         <span className="flex-1 text-left">{item.name}</span>
                         <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
                     </button>
                     {isExpanded && (
-                        <div className="pl-3.5 space-y-1 border-l border-slate-200 ml-4 my-1">
+                        <div className="pl-3.5 space-y-1 border-l border-[#D4AF37]/30 ml-4 my-1">
                             {item.items.map((subItem: any) => renderNavItem(subItem, depth + 1))}
                         </div>
                     )}
@@ -903,20 +919,20 @@ export default function AuthenticatedLayout({
                     isChild
                         ? `px-3 py-2 text-xs ${
                             item.active
-                                ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200/50 shadow-2xs'
-                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'
+                                ? 'bg-[#D4AF37]/20 text-[#D4AF37] font-bold border border-[#D4AF37]/30 shadow-2xs'
+                                : 'text-white/60 hover:text-white hover:bg-white/10 font-medium'
                         }`
                         : `px-3.5 py-2.5 text-xs ${
                             item.active
-                                ? 'bg-blue-600 text-white shadow-xs font-bold'
-                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold'
+                                ? 'bg-[#D4AF37] text-[#1E3A5F] shadow-xs font-bold'
+                                : 'text-white/70 hover:text-white hover:bg-white/10 font-semibold'
                         }`
                 }`}
             >
-                <Icon className={`w-4 h-4 ${item.active ? (isChild ? 'text-blue-600' : 'text-white') : 'text-slate-400'}`} />
+                <Icon className={`w-4 h-4 ${item.active ? (isChild ? 'text-[#D4AF37]' : 'text-[#1E3A5F]') : 'text-white/40'}`} />
                 <span className="flex-1">{item.name}</span>
                 {item.badge && (
-                    <span className="px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold">
+                    <span className="px-1.5 py-0.5 rounded-full bg-[#D4AF37]/20 text-[#D4AF37] text-[10px] font-bold">
                         {item.badge}
                     </span>
                 )}
@@ -926,24 +942,25 @@ export default function AuthenticatedLayout({
 
     return (
         <div className="min-h-screen bg-slate-50/70 text-slate-900 flex flex-col md:flex-row font-sans antialiased">
+            <PwaNotificationManager />
             {/* MOBILE TOP BAR */}
-            <div className="md:hidden sticky top-0 z-50 bg-white border-b border-slate-200 px-4 h-14 flex items-center justify-between shadow-xs">
+            <div className="md:hidden sticky top-0 z-50 bg-[#1E3A5F] border-b border-[#D4AF37]/30 px-4 h-14 flex items-center justify-between shadow-xs">
                 <button
                     onClick={() => setSidebarOpen(true)}
-                    className="p-2 rounded-lg text-slate-700 hover:bg-slate-100 transition"
+                    className="p-2 rounded-lg text-[#D4AF37] hover:bg-white/10 transition"
                     aria-label="Open Navigation"
                 >
                     <Menu className="w-5 h-5" />
                 </button>
 
-                <div className="flex items-center space-x-2">
-                    <Building2 className="w-6 h-6 text-blue-600" />
-                    <span className="font-bold text-lg text-slate-900">THE INNS</span>
+                <div className="flex items-center space-x-2.5">
+                    <ApplicationLogo className="w-7 h-7 shadow-xs" />
+                    <span className="font-bold text-lg text-[#D4AF37] truncate max-w-[170px]">{systemName}</span>
                 </div>
 
                 <button
                     onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                    className="w-9 h-9 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-sm shadow-xs"
+                    className="w-9 h-9 rounded-full bg-[#D4AF37] text-[#1E3A5F] font-bold flex items-center justify-center text-sm shadow-xs"
                 >
                     {user?.name?.charAt(0) || 'U'}
                 </button>
@@ -959,93 +976,24 @@ export default function AuthenticatedLayout({
 
             {/* SIDEBAR */}
             <aside
-                className={`fixed md:sticky top-0 bottom-0 left-0 z-50 w-64 bg-white border-r border-slate-200/90 flex flex-col shrink-0 transition-transform duration-300 ease-in-out md:translate-x-0 shadow-xl md:shadow-none ${
+                className={`fixed md:sticky top-0 bottom-0 left-0 z-50 w-64 bg-[#1E3A5F] border-r border-[#D4AF37]/20 flex flex-col shrink-0 transition-transform duration-300 ease-in-out md:translate-x-0 shadow-xl md:shadow-none ${
                     sidebarOpen ? 'translate-x-0' : '-translate-x-full'
                 }`}
             >
                 {/* Logo Header */}
-                <div className="px-5 py-4 flex items-center justify-between border-b border-slate-100">
-                    <Link href={route('dashboard')} className="flex items-center space-x-2" onClick={() => setSidebarOpen(false)}>
-                        <Building2 className="w-6 h-6 text-blue-600" />
-                        <span className="font-bold text-lg text-slate-900">
-                            THE INNS
-                        </span>
+                <div className="px-5 py-4 flex items-center justify-between border-b border-[#D4AF37]/20">
+                    <Link href={route('dashboard')} className="flex items-center space-x-2.5 group" onClick={() => setSidebarOpen(false)}>
+                        <ApplicationLogo className="w-8 h-8 shadow-xs group-hover:scale-105 transition-transform" />
+                        <span className="font-bold text-lg text-[#D4AF37] truncate max-w-[170px] tracking-wide">{systemName}</span>
                     </Link>
 
                     <button
                         onClick={() => setSidebarOpen(false)}
-                        className="md:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition"
+                        className="md:hidden p-2 rounded-lg text-white/60 hover:bg-white/10 transition"
                     >
                         <X className="w-5 h-5" />
                     </button>
                 </div>
-
-                {/* Role Badge */}
-                <div className="px-4 py-2">
-                    <div className={`px-3 py-1 rounded-lg text-xs font-bold text-center border ${
-                        isSuperAdmin
-                            ? 'bg-blue-50 text-blue-700 border-blue-200'
-                            : isReceptionist
-                            ? 'bg-blue-50 text-blue-700 border-blue-200'
-                            : isAccountant
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : 'bg-slate-50 text-slate-600 border-slate-200/80'
-                    }`}>
-                        {isSuperAdmin ? 'SUPER ADMIN PORTAL' : (isReceptionist ? 'FRONT DESK PORTAL' : (isAccountant ? 'ACCOUNTANT PORTAL' : 'GENERAL MANAGER PORTAL'))}
-                    </div>
-                </div>
-
-                {/* Quick Actions (Super Admin Only) */}
-                {isSuperAdmin && (
-                    <div className="px-4 py-2.5 space-y-2">
-                        <Link
-                            href={route('saas-admin.index')}
-                            className="flex items-center gap-2 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition"
-                        >
-                            <ShieldCheck className="w-4 h-4" />
-                            <span>SaaS Overview</span>
-                        </Link>
-                    </div>
-                )}
-
-                {/* Quick Actions (Front Desk / Receptionist) */}
-                {isReceptionist && (
-                    <div className="px-4 py-2.5 space-y-2">
-                        <Link
-                            href={route('reservations.create')}
-                            className="flex items-center gap-2 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition"
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span>New Booking / Walk-In</span>
-                        </Link>
-                    </div>
-                )}
-
-                {/* Quick Actions (Admin/Manager Only) */}
-                {!isSuperAdmin && !isReceptionist && !isAccountant && (
-                    <div className="px-4 py-2.5 space-y-2">
-                        <Link
-                            href={route('reservations.create')}
-                            className="flex items-center gap-2 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition"
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span>New Booking</span>
-                        </Link>
-                    </div>
-                )}
-
-                {/* Quick Actions (Accountant) */}
-                {isAccountant && !isSuperAdmin && (
-                    <div className="px-4 py-2.5 space-y-2">
-                        <Link
-                            href={route('accounting.index')}
-                            className="flex items-center gap-2 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition"
-                        >
-                            <DollarSign className="w-4 h-4" />
-                            <span>Financial Analytics</span>
-                        </Link>
-                    </div>
-                )}
 
                 {/* Nav Items */}
                 <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
@@ -1057,8 +1005,8 @@ export default function AuthenticatedLayout({
                                     return (
                                         <div key={itemOrSection.section || idx} className="mb-3">
                                             <div className="px-3 py-1 mb-1">
-                                                <div className="flex items-center gap-2 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
-                                                    <itemOrSection.icon className="w-3.5 h-3.5 text-blue-600" />
+                                                <div className="flex items-center gap-2 text-[11px] font-extrabold text-[#D4AF37]/60 uppercase tracking-wider">
+                                                    <itemOrSection.icon className="w-3.5 h-3.5 text-[#D4AF37]" />
                                                     <span>{itemOrSection.title}</span>
                                                 </div>
                                             </div>
@@ -1084,11 +1032,11 @@ export default function AuthenticatedLayout({
                                     onClick={() => setSidebarOpen(false)}
                                     className={`flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition ${
                                         route().current('dashboard')
-                                            ? 'bg-blue-600 text-white shadow-xs'
-                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                                            ? 'bg-[#D4AF37] text-[#1E3A5F] shadow-xs'
+                                            : 'text-white/70 hover:text-white hover:bg-white/10'
                                     }`}
                                 >
-                                    <Home className={`w-4 h-4 ${route().current('dashboard') ? 'text-white' : 'text-slate-400'}`} />
+                                    <Home className={`w-4 h-4 ${route().current('dashboard') ? 'text-[#1E3A5F]' : 'text-white/40'}`} />
                                     <span className="flex-1">Dashboard</span>
                                 </Link>
                             </div>
@@ -1097,8 +1045,8 @@ export default function AuthenticatedLayout({
                             {receptionistNavItems.map((section) => (
                                 <div key={section.section} className="mb-3">
                                     <div className="px-3 py-1 mb-1">
-                                        <div className="flex items-center gap-2 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
-                                            <section.icon className="w-3.5 h-3.5 text-blue-600" />
+                                        <div className="flex items-center gap-2 text-[11px] font-extrabold text-[#D4AF37]/60 uppercase tracking-wider">
+                                            <section.icon className="w-3.5 h-3.5 text-[#D4AF37]" />
                                             <span>{section.title}</span>
                                         </div>
                                     </div>
@@ -1116,8 +1064,8 @@ export default function AuthenticatedLayout({
                                     return (
                                         <div key={itemOrSection.section || idx} className="mb-3">
                                             <div className="px-3 py-1 mb-1">
-                                                <div className="flex items-center gap-2 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
-                                                    <itemOrSection.icon className="w-3.5 h-3.5 text-blue-600" />
+                                                <div className="flex items-center gap-2 text-[11px] font-extrabold text-[#D4AF37]/60 uppercase tracking-wider">
+                                                    <itemOrSection.icon className="w-3.5 h-3.5 text-[#D4AF37]" />
                                                     <span>{itemOrSection.title}</span>
                                                 </div>
                                             </div>
@@ -1140,15 +1088,20 @@ export default function AuthenticatedLayout({
                     )}
                 </nav>
 
+                {/* PWA App Install in Sidebar */}
+                <div className="px-4 py-2 border-t border-[#D4AF37]/20">
+                    <PwaInstallButton className="w-full" />
+                </div>
+
                 {/* User Info (Bottom) */}
-                <div className="px-4 py-3.5 border-t border-slate-100 bg-slate-50/60">
+                <div className="px-4 py-3.5 border-t border-[#D4AF37]/20 bg-[#D4AF37]/5">
                     <div className="flex items-center space-x-3">
-                        <div className="w-9 h-9 rounded-xl bg-blue-600 text-white font-bold flex items-center justify-center text-sm shadow-xs">
+                        <div className="w-9 h-9 rounded-xl bg-[#D4AF37] text-[#1E3A5F] font-bold flex items-center justify-center text-sm shadow-xs">
                             {user?.name?.charAt(0) || 'U'}
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold text-slate-900 truncate">{user?.name || 'User'}</p>
-                            <p className="text-[11px] text-slate-500 truncate">{getRoleTitle(user?.role)}</p>
+                            <p className="text-xs font-bold text-white truncate">{user?.name || 'User'}</p>
+                            <p className="text-[11px] text-white/50 truncate">{getRoleTitle(user?.role)}</p>
                         </div>
                     </div>
                 </div>
@@ -1179,7 +1132,7 @@ export default function AuthenticatedLayout({
                     </div>
                 )}
                 {/* TOP HEADER */}
-                <header className="px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between bg-white border-b border-slate-200/80 shadow-2xs">
+                <header className="px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between bg-white border-b border-slate-100 shadow-2xs">
                     {/* Left: Mobile hamburger & Workspace Context */}
                     <div className="flex items-center space-x-3">
                         <button
@@ -1191,12 +1144,12 @@ export default function AuthenticatedLayout({
                         </button>
 
                         <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                            <div className="w-8 h-8 rounded-xl bg-[#D4AF37]/10 text-[#D4AF37] flex items-center justify-center shrink-0">
                                 <Building2 className="w-4 h-4" />
                             </div>
                             <div>
                                 <h2 className="text-xs sm:text-sm font-extrabold text-slate-900 leading-tight flex items-center gap-2">
-                                    <span>{(auth as any)?.is_impersonating ? `${(auth as any).impersonated_tenant_name}` : (user?.tenant?.name || 'THE INNS Hospitality Platform')}</span>
+                                    <span>{hotelDisplayName}</span>
                                     {(auth as any)?.is_impersonating && (
                                         <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-300">
                                             Support View
@@ -1204,7 +1157,7 @@ export default function AuthenticatedLayout({
                                     )}
                                 </h2>
                                 <p className="text-[10px] text-slate-400 font-medium leading-none mt-0.5">
-                                    {isSuperAdmin ? 'Centralized SaaS Ecosystem' : 'Hotel Property Workspace'}
+                                    {hotelTagline}
                                 </p>
                             </div>
                         </div>
@@ -1239,7 +1192,7 @@ export default function AuthenticatedLayout({
                         {isSuperAdmin && (
                             <Link
                                 href={route('saas-admin.index')}
-                                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3.5 py-1.5 rounded-xl font-bold text-xs hover:shadow-xs transition-all flex items-center gap-1.5"
+                                className="bg-[#D4AF37] hover:bg-[#B8960C] text-[#1E3A5F] px-3.5 py-1.5 rounded-xl font-bold text-xs hover:shadow-xs transition-all flex items-center gap-1.5"
                             >
                                 <ShieldCheck className="w-3.5 h-3.5" />
                                 <span className="hidden sm:inline">SaaS Portal</span>
@@ -1253,7 +1206,7 @@ export default function AuthenticatedLayout({
                                 onClick={() => setNotificationsOpen(!notificationsOpen)}
                                 className={`w-10 h-10 rounded-xl flex items-center justify-center transition relative cursor-pointer ${
                                     notificationsOpen
-                                        ? 'bg-blue-50 text-blue-600 ring-2 ring-blue-500/20'
+                                        ? 'bg-[#D4AF37]/10 text-[#D4AF37] ring-2 ring-[#D4AF37]/20'
                                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
                                 }`}
                                 title="Notifications & Operational Alerts"
@@ -1278,7 +1231,7 @@ export default function AuthenticatedLayout({
                                             <div className="flex items-center gap-2">
                                                 <span className="font-extrabold text-slate-900 text-sm">Notifications</span>
                                                 {unreadCount > 0 && (
-                                                    <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold text-[10px]">
+                                                    <span className="px-2 py-0.5 rounded-full bg-[#D4AF37]/20 text-[#B8960C] font-bold text-[10px]">
                                                         {unreadCount} new
                                                     </span>
                                                 )}
@@ -1291,7 +1244,7 @@ export default function AuthenticatedLayout({
                                                         router.post(route('notifications.mark-all-read'), {}, { preserveScroll: true });
                                                         setNotificationsOpen(false);
                                                     }}
-                                                    className="text-[11px] font-bold text-blue-600 hover:text-blue-800 transition cursor-pointer"
+                                                    className="text-[11px] font-bold text-[#D4AF37] hover:text-[#B8960C] transition cursor-pointer"
                                                 >
                                                     Mark all read
                                                 </button>
@@ -1318,7 +1271,7 @@ export default function AuthenticatedLayout({
                                                         >
                                                             <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
                                                                 item.type === 'check_in' || item.type === 'reservation'
-                                                                    ? 'bg-blue-100 text-blue-600'
+                                                                    ? 'bg-[#D4AF37]/15 text-[#B8960C]'
                                                                     : item.type === 'housekeeping'
                                                                     ? 'bg-rose-100 text-rose-600'
                                                                     : item.type === 'finance'
@@ -1341,7 +1294,7 @@ export default function AuthenticatedLayout({
                                                             </div>
                                                             <div className="flex-1 min-w-0">
                                                                 <div className="flex items-center justify-between gap-1">
-                                                                    <p className="font-bold text-slate-900 truncate text-xs group-hover:text-blue-600 transition">
+                                                                    <p className="font-bold text-slate-900 truncate text-xs group-hover:text-[#D4AF37] transition">
                                                                         {item.title}
                                                                     </p>
                                                                     <span className="text-[10px] text-slate-400 whitespace-nowrap">
@@ -1359,13 +1312,22 @@ export default function AuthenticatedLayout({
                                         </div>
 
                                         {/* Dropdown Footer */}
-                                        <div className="p-2.5 bg-slate-50/80 border-t border-slate-100 text-center">
+                                        <div className="p-2.5 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between px-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => (window as any).triggerPwaNotificationPopup?.()}
+                                                className="text-[11px] font-bold text-[#1E3A5F] hover:text-[#B8960C] transition cursor-pointer flex items-center gap-1"
+                                                title="Trigger instant PWA notification popup"
+                                            >
+                                                <BellRing className="w-3.5 h-3.5 text-[#D4AF37]" />
+                                                <span>Test PWA Popup</span>
+                                            </button>
                                             <Link
                                                 href={route('notifications.index')}
                                                 onClick={() => setNotificationsOpen(false)}
-                                                className="text-xs font-bold text-blue-600 hover:text-blue-800 transition block py-1"
+                                                className="text-xs font-bold text-[#D4AF37] hover:text-[#B8960C] transition block py-1"
                                             >
-                                                View all notifications inbox →
+                                                View all notifications inbox â†’
                                             </Link>
                                         </div>
                                     </div>
@@ -1379,7 +1341,7 @@ export default function AuthenticatedLayout({
                                 onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                                 className="hidden md:flex items-center space-x-2 p-1 rounded-lg hover:bg-gray-100 transition text-left cursor-pointer"
                             >
-                                <div className="w-9 h-9 rounded-lg bg-blue-600 text-white font-bold flex items-center justify-center text-sm">
+                                <div className="w-9 h-9 rounded-lg bg-[#D4AF37] text-[#1E3A5F] font-bold flex items-center justify-center text-sm">
                                     {user?.name?.charAt(0) || 'U'}
                                 </div>
                                 <div>
@@ -1404,6 +1366,12 @@ export default function AuthenticatedLayout({
                                             <p className="font-bold text-gray-900">{user?.name}</p>
                                             <p className="text-gray-500 truncate text-xs">{user?.email}</p>
                                         </div>
+                                        <Link
+                                            href={route('tenant.settings')}
+                                            className="block px-4 py-2 text-gray-900 hover:bg-gray-100 font-semibold"
+                                        >
+                                            Hotel & Receipt Branding
+                                        </Link>
                                         <Link
                                             href={route('profile.edit')}
                                             className="block px-4 py-2 text-gray-900 hover:bg-gray-100 font-semibold"
@@ -1433,11 +1401,11 @@ export default function AuthenticatedLayout({
                         <div className="fixed top-20 right-6 z-50 animate-in fade-in slide-in-from-top-3 duration-250">
                             <div className="flex items-center gap-2.5 px-4 py-2.5 bg-slate-900/95 backdrop-blur-md text-white rounded-2xl shadow-2xl shadow-blue-900/30 text-xs font-bold border border-slate-700">
                                 <span className="relative flex h-2.5 w-2.5">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#D4AF37] opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#D4AF37]"></span>
                                 </span>
                                 <span>
-                                    Focusing: <span className="text-blue-300 font-extrabold">{highlightBanner}</span>
+                                    Focusing: <span className="text-[#D4AF37] font-extrabold">{highlightBanner}</span>
                                 </span>
                                 <button
                                     type="button"

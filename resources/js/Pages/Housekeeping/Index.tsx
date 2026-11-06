@@ -478,21 +478,9 @@ export default function HousekeepingIndex({
                 {/* 1. TOP HEADER */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                                 Room Status Overview
                             </h1>
-                            <span className="px-3 py-1 bg-sky-50 text-sky-800 border border-sky-200 text-xs font-bold rounded-full">
-                                Housekeeping & Occupancy
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-500 font-medium">
-                            <span>Room Inventory</span>
-                            <span>•</span>
-                            <span>Housekeeping Status</span>
-                            <span>•</span>
-                            <span>In-House Guests</span>
-                        </div>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
@@ -501,7 +489,6 @@ export default function HousekeepingIndex({
                             onClick={() => setIsRoomTypesModalOpen(true)}
                             className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 rounded-xl text-xs font-bold shadow-2xs transition active:scale-95 cursor-pointer"
                         >
-                            <BedDouble className="w-4 h-4 text-blue-600" />
                             <span>Room Types</span>
                             <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 font-bold rounded-full text-[10px] border border-blue-200/60">
                                 {localRoomTypes.length}
@@ -513,7 +500,6 @@ export default function HousekeepingIndex({
                             onClick={() => setIsRatePlansModalOpen(true)}
                             className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 rounded-xl text-xs font-bold shadow-2xs transition active:scale-95 cursor-pointer"
                         >
-                            <Utensils className="w-4 h-4 text-emerald-600" />
                             <span>Rate Plans & Meal Basis</span>
                             <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 font-bold rounded-full text-[10px] border border-emerald-200/60">
                                 {localRatePlans.length}
@@ -532,7 +518,6 @@ export default function HousekeepingIndex({
                             onClick={() => setIsAddRoomModalOpen(true)}
                             className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold shadow-xs transition active:scale-95"
                         >
-                            <Plus className="w-4 h-4" />
                             <span>Add Room</span>
                         </button>
                     </div>
@@ -549,12 +534,8 @@ export default function HousekeepingIndex({
                                 : 'bg-white border-slate-200 hover:border-slate-300'
                         }`}
                     >
-                        <div className="flex items-center justify-between text-slate-500 mb-1">
-                            <span className="font-bold uppercase tracking-wider text-[10px]">All Rooms</span>
-                            <BedDouble className="w-4 h-4 text-sky-600" />
-                        </div>
+                        <span className="font-bold uppercase tracking-wider text-[10px] text-slate-500 block mb-1">All Rooms</span>
                         <div className="text-xl sm:text-2xl font-black text-slate-900">{stats.total}</div>
-                        <div className="text-[10px] text-slate-500 font-semibold mt-0.5">Total Inventory</div>
                     </button>
 
                     {/* Vacant Clean */}
@@ -566,12 +547,8 @@ export default function HousekeepingIndex({
                                 : 'bg-white border-slate-200 hover:border-slate-300'
                         }`}
                     >
-                        <div className="flex items-center justify-between text-emerald-700 mb-1">
-                            <span className="font-bold uppercase tracking-wider text-[10px]">Vacant Clean</span>
-                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                        </div>
+                        <span className="font-bold uppercase tracking-wider text-[10px] text-emerald-700 block mb-1">Vacant Clean</span>
                         <div className="text-xl sm:text-2xl font-black text-emerald-700">{stats.vacant_clean}</div>
-                        <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">Ready for Check-In</div>
                     </button>
 
                     {/* Occupied */}
@@ -583,14 +560,8 @@ export default function HousekeepingIndex({
                                 : 'bg-white border-slate-200 hover:border-slate-300'
                         }`}
                     >
-                        <div className="flex items-center justify-between text-blue-700 mb-1">
-                            <span className="font-bold uppercase tracking-wider text-[10px]">Occupied</span>
-                            <Users className="w-4 h-4 text-blue-600" />
-                        </div>
+                        <span className="font-bold uppercase tracking-wider text-[10px] text-blue-700 block mb-1">Occupied</span>
                         <div className="text-xl sm:text-2xl font-black text-blue-800">{stats.occupied}</div>
-                        <div className="text-[10px] text-blue-600 font-semibold mt-0.5">
-                            {stats.total > 0 ? Math.round((stats.occupied / stats.total) * 100) : 0}% Occupancy
-                        </div>
                     </button>
 
                     {/* Dirty */}
@@ -602,12 +573,8 @@ export default function HousekeepingIndex({
                                 : 'bg-white border-slate-200 hover:border-slate-300'
                         }`}
                     >
-                        <div className="flex items-center justify-between text-amber-800 mb-1">
-                            <span className="font-bold uppercase tracking-wider text-[10px]">Dirty</span>
-                            <AlertCircle className="w-4 h-4 text-amber-600" />
-                        </div>
+                        <span className="font-bold uppercase tracking-wider text-[10px] text-amber-800 block mb-1">Dirty</span>
                         <div className="text-xl sm:text-2xl font-black text-amber-700">{stats.dirty}</div>
-                        <div className="text-[10px] text-amber-700 font-semibold mt-0.5">Cleaning Queue</div>
                     </button>
 
                     {/* Inspected */}
@@ -619,12 +586,8 @@ export default function HousekeepingIndex({
                                 : 'bg-white border-slate-200 hover:border-slate-300'
                         }`}
                     >
-                        <div className="flex items-center justify-between text-indigo-700 mb-1">
-                            <span className="font-bold uppercase tracking-wider text-[10px]">Inspected</span>
-                            <Shield className="w-4 h-4 text-indigo-600" />
-                        </div>
+                        <span className="font-bold uppercase tracking-wider text-[10px] text-indigo-700 block mb-1">Inspected</span>
                         <div className="text-xl sm:text-2xl font-black text-indigo-800">{stats.inspected}</div>
-                        <div className="text-[10px] text-indigo-700 font-semibold mt-0.5">Supervisor Verified</div>
                     </button>
 
                     {/* Out of Order */}
@@ -636,12 +599,8 @@ export default function HousekeepingIndex({
                                 : 'bg-white border-slate-200 hover:border-slate-300'
                         }`}
                     >
-                        <div className="flex items-center justify-between text-rose-700 mb-1">
-                            <span className="font-bold uppercase tracking-wider text-[10px]">Out of Order</span>
-                            <Wrench className="w-4 h-4 text-rose-600" />
-                        </div>
+                        <span className="font-bold uppercase tracking-wider text-[10px] text-rose-700 block mb-1">Out of Order</span>
                         <div className="text-xl sm:text-2xl font-black text-rose-700">{stats.out_of_service}</div>
-                        <div className="text-[10px] text-rose-600 font-semibold mt-0.5">Under Maintenance</div>
                     </button>
                 </div>
 
@@ -1513,7 +1472,7 @@ export default function HousekeepingIndex({
                                 </div>
                                 <div>
                                     <h3 className="text-base font-bold text-slate-900">Hotel Rate Plans & Meal Basis</h3>
-                                    <p className="text-xs text-slate-500">Manage accommodation pricing models and food service packages</p>
+                                    
                                 </div>
                             </div>
                             <button
@@ -1532,7 +1491,7 @@ export default function HousekeepingIndex({
                             <div className="flex items-center justify-between">
                                 <div>
                                     <h4 className="font-bold text-slate-800 text-sm">Active Pricing Plans ({localRatePlans.length})</h4>
-                                    <p className="text-[11px] text-slate-400">These plans appear in the reservation form and booking channels</p>
+                                    
                                 </div>
                                 <button
                                     type="button"
@@ -1687,7 +1646,7 @@ export default function HousekeepingIndex({
                                 </div>
                                 <div>
                                     <h3 className="text-base font-bold text-slate-900">Hotel Room Types & Pricing</h3>
-                                    <p className="text-xs text-slate-500">Configure room categories, standard night rates, max occupants & room amenities</p>
+                                    
                                 </div>
                             </div>
                             <button
@@ -1707,7 +1666,7 @@ export default function HousekeepingIndex({
                             <div className="flex items-center justify-between">
                                 <div>
                                     <h4 className="font-bold text-slate-800 text-sm">Active Room Types ({localRoomTypes.length})</h4>
-                                    <p className="text-[11px] text-slate-400">Categories used for inventory assignments, rates, and guest bookings</p>
+                                    
                                 </div>
                                 <button
                                     type="button"

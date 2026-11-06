@@ -17,10 +17,11 @@
     RewriteRule ^images/(.*)$ public/images/$1 [L]
     RewriteRule ^favicon\.(.*)$ public/favicon.$1 [L]
     RewriteRule ^manifest\.json$ public/manifest.json [L]
-    RewriteRule ^manifest\.webmanifest$ public/manifest.json [L]
+    RewriteRule ^manifest\.webmanifest$ public/manifest.webmanifest [L]
     RewriteRule ^sw\.js$ public/sw.js [L]
     RewriteRule ^offline\.html$ public/offline.html [L]
     RewriteRule ^icons/(.*)$ public/icons/$1 [L]
+    RewriteRule ^pwa-icons/(.*)$ public/pwa-icons/$1 [L]
     RewriteRule ^apple-touch-icon\.png$ public/apple-touch-icon.png [L]
     RewriteRule ^assets/(.*)$ public/assets/$1 [L]
 

@@ -25,6 +25,25 @@ export interface Tenant {
     max_branches?: number;
     subscription_status?: string;
     is_active: boolean;
+    settings?: Record<string, any>;
+    system_name?: string;
+    tagline?: string | null;
+    tin?: string | null;
+    vrn?: string | null;
+    business_license?: string | null;
+    address?: string | null;
+    city?: string | null;
+    country?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    website?: string | null;
+    receipt_header?: string | null;
+    receipt_footer?: string | null;
+    currency?: string | null;
+    currency_symbol?: string | null;
+    sender_id?: string | null;
+    wifi_ssid?: string | null;
+    wifi_password?: string | null;
 }
 
 export interface Property {
@@ -43,6 +62,7 @@ export interface Property {
     country: string;
     phone?: string;
     email?: string;
+    tax_config?: any;
     is_active?: boolean;
 }
 
@@ -250,6 +270,7 @@ export type PageProps<
 > = T & {
     auth: {
         user: User;
+        tenant?: Tenant | null;
         property?: Property;
         branches?: Array<{
             id: string;

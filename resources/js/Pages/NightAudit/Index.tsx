@@ -66,14 +66,10 @@ export default function NightAuditIndex({
             {/* Header Toolbar */}
             <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs mb-4 sm:mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4">
                 <div className="flex items-center space-x-3">
-                    <div className="p-2 sm:p-2.5 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 shrink-0">
-                        <Moon className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
-                    </div>
+                    
                     <div>
                         <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">End-of-Day Night Audit Wizard</h1>
-                        <p className="text-[11px] sm:text-xs text-slate-500">
-                            Automatic room charge posting, revenue reconciliation and rollover
-                        </p>
+                        
                     </div>
                 </div>
 
@@ -100,50 +96,36 @@ export default function NightAuditIndex({
                 <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-xs font-bold uppercase tracking-wider text-slate-500">In-House Stays</span>
-                        <div className="p-2 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <Bed className="w-4 h-4" />
-                        </div>
+                        
                     </div>
                     <span className="text-3xl font-black text-emerald-600 font-mono block">
                         {inHouseStays.length} Rooms
                     </span>
-                    <p className="text-xs text-slate-500 mt-2">
-                        Nightly room accommodation charges will be posted to active folios with idempotency locking.
-                    </p>
+                    
                 </div>
 
                 {/* 2. Pending Departures */}
                 <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Overdue Departures</span>
-                        <div className={`p-2 rounded-lg border ${pendingDepartures.length > 0 ? 'bg-sky-50 text-sky-700 border-sky-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
-                            {pendingDepartures.length > 0 ? <AlertTriangle className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
-                        </div>
+                        
                     </div>
                     <span className={`text-3xl font-black font-mono block ${pendingDepartures.length > 0 ? 'text-sky-600' : 'text-emerald-600'}`}>
                         {pendingDepartures.length} Pending
                     </span>
-                    <p className="text-xs text-slate-500 mt-2">
-                        {pendingDepartures.length > 0
-                            ? 'Warning: Some guests scheduled to depart have not checked out yet. Check them out or extend stay.'
-                            : 'All departures for today have settled their folios and checked out.'}
-                    </p>
+                    
                 </div>
 
                 {/* 3. Audit Status */}
                 <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Date Status</span>
-                        <div className="p-2 rounded-lg bg-sky-50 text-sky-700 border border-sky-200">
-                            <Clock className="w-4 h-4" />
-                        </div>
+                        
                     </div>
                     <span className="text-xl font-black text-slate-900 font-mono block">
                         {alreadyAuditedToday ? 'Audit Executed' : 'Ready to Close'}
                     </span>
-                    <p className="text-xs text-slate-500 mt-2">
-                        Executing audit advances business date from <strong className="text-sky-700 font-mono">{businessDate}</strong> to next day.
-                    </p>
+                    
                 </div>
             </div>
 

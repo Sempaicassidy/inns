@@ -103,10 +103,10 @@ class DashboardController extends Controller
             ->where('status', 'open')
             ->sum('balance_minor');
 
-        // ─── 7. ADR & RevPAR ─────────────────────────────────────────────────
+        // ─── 7. ADR & RevPAR (stored in minor currency units) ──────────────
         $paidStaysCount = max(1, Stay::whereDate('checked_in_at', '>=', $startDate)->count());
-        $adr = round(($roomRevenue / 100) / $paidStaysCount, 0);
-        $revpar = $sellable > 0 ? round(($roomRevenue / 100) / $sellable, 0) : 0;
+        $adr = round($roomRevenue / $paidStaysCount, 0);
+        $revpar = $sellable > 0 ? round($roomRevenue / $sellable, 0) : 0;
 
         // ─── 8. Today's arrivals & departures ────────────────────────────────
         $arrivals = Reservation::with(['guest', 'reservationRooms.roomType', 'reservationRooms.room'])

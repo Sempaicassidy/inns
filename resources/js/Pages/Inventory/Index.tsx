@@ -281,7 +281,6 @@ export default function InventoryIndex({
                             onClick={() => openReceiveModal()}
                             className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
                         >
-                            <Truck className="w-4 h-4" />
                             <span>Receive Stock In</span>
                         </button>
                         <button
@@ -289,7 +288,6 @@ export default function InventoryIndex({
                             onClick={() => openIssueModal()}
                             className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
                         >
-                            <ArrowUpRight className="w-4 h-4 stroke-[3]" />
                             <span>Issue Requisition</span>
                         </button>
                         <button

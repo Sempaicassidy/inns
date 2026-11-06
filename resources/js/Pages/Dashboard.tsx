@@ -231,10 +231,7 @@ export default function Dashboard({
                     {/* 1. Reception Header & Fast Action Console */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs">
                         <div>
-                            <div className="flex items-center gap-2 text-[11px] font-extrabold text-blue-600 uppercase tracking-wider"><span>Front Desk & Reception Portal</span>
-                                <span>•</span>
-                                <span className="text-slate-400 font-medium">Business Date: {safeStats.current_business_date}</span>
-                            </div>
+                            
                             <h1 className="text-lg sm:text-2xl font-black text-slate-900 mt-1">
                                 Receptionist Operational Console
                             </h1>
@@ -247,7 +244,6 @@ export default function Dashboard({
                                 href={route('reservations.create')}
                                 className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition"
                             >
-                                <Plus className="w-3.5 h-3.5 stroke-[3]" />
                                 <span>New Booking</span>
                             </Link>
 
@@ -255,7 +251,6 @@ export default function Dashboard({
                                 href={route('reservations.checkin')}
                                 className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition"
                             >
-                                <UserCheck className="w-3.5 h-3.5" />
                                 <span>Check-In ({safeStats.arrivals_count})</span>
                             </Link>
 
@@ -263,7 +258,6 @@ export default function Dashboard({
                                 href={route('reservations.checkout')}
                                 className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-xs transition"
                             >
-                                <DoorOpen className="w-3.5 h-3.5" />
                                 <span>Check-Out ({safeStats.departures_count})</span>
                             </Link>
 
@@ -271,7 +265,6 @@ export default function Dashboard({
                                 href={route('guests.index')}
                                 className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition"
                             >
-                                <Users className="w-3.5 h-3.5 text-slate-500" />
                                 <span>Guest Directory</span>
                             </Link>
                         </div>
@@ -598,9 +591,7 @@ export default function Dashboard({
                                 <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
                                     Front Desk Room Rack & Availability
                                 </h3>
-                                <p className="text-xs text-slate-500">
-                                    Live room status for walk-in assignment and occupancy inspection
-                                </p>
+                                
                             </div>
 
                             {/* Filter Pills */}

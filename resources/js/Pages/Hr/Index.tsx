@@ -489,7 +489,6 @@ export default function HrIndex({
                             onClick={() => setIsAssignShiftOpen(true)}
                             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition cursor-pointer"
                         >
-                            <Calendar className="w-4 h-4 text-slate-500" />
                             <span>Assign Shift</span>
                         </button>
                         <button
@@ -497,7 +496,6 @@ export default function HrIndex({
                             onClick={() => setIsAddStaffOpen(true)}
                             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition shadow-xs cursor-pointer"
                         >
-                            <UserPlus className="w-4 h-4" />
                             <span>Add Employee</span>
                         </button>
                     </div>

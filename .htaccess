@@ -10,6 +10,7 @@
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
     # Serve public static assets directly from public/
+    RewriteRule ^uploads/(.*)$ public/uploads/$1 [L]
     RewriteRule ^build/(.*)$ public/build/$1 [L]
     RewriteRule ^storage/(.*)$ public/storage/$1 [L]
     RewriteRule ^js/(.*)$ public/js/$1 [L]

@@ -412,6 +412,25 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                         {cms_content?.hero_subtitle || 'Replace fragmented software with THE INNS. Unify front-desk Gantt reservations, housekeeping, independent Restaurant & Grocery POS, store inventory, and full double-entry General Ledger—crafted for boutique lodges and multi-property hotel chains.'}
                     </p>
 
+                    {/* HERO SECTION IMAGE (Configured by Super Admin) */}
+                    {cms_content?.hero_image && (
+                        <div className="mt-8 mb-4 max-w-3xl mx-auto">
+                            <div className="p-2 sm:p-3 bg-white rounded-3xl shadow-xl border border-slate-200/90 transition-all">
+                                <img
+                                    src={cms_content.hero_image}
+                                    onError={(e) => {
+                                        const target = e.currentTarget;
+                                        if (!target.src.includes('/inns/')) {
+                                            target.src = '/inns' + (cms_content.hero_image?.startsWith('/') ? cms_content.hero_image : '/' + cms_content.hero_image);
+                                        }
+                                    }}
+                                    alt="THE INNS Hero Visual"
+                                    className="w-full h-auto rounded-2xl object-cover max-h-[460px] mx-auto shadow-xs"
+                                />
+                            </div>
+                        </div>
+                    )}
+
                     {/* CTA Group */}
                     <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
                         <Link
@@ -460,33 +479,8 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                     </div>
                 </div>
 
-                {/* 4. MULTI-DEVICE 3D ANIMATED SHOWCASE (Computer, Tablet & Smartphone) OR CUSTOM HERO IMAGE */}
+                {/* 4. MULTI-DEVICE 3D ANIMATED SHOWCASE (Computer, Tablet & Smartphone) */}
                 <div id="preview" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-16">
-                    {cms_content?.hero_image ? (
-                        <div className="bg-gradient-to-b from-white via-slate-50 to-[#D4AF37]/5 rounded-3xl p-3 sm:p-5 shadow-2xl border border-slate-200/90 relative overflow-hidden group">
-                            <div className="rounded-2xl overflow-hidden border border-slate-200/90 shadow-xl bg-slate-950">
-                                <div className="bg-slate-900 px-4 py-3 flex items-center justify-between border-b border-slate-800 text-xs">
-                                    <div className="flex items-center gap-2">
-                                        <span className="w-3 h-3 rounded-full bg-rose-500 inline-block" />
-                                        <span className="w-3 h-3 rounded-full bg-amber-500 inline-block" />
-                                        <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" />
-                                        <span className="ml-2 font-mono text-slate-400 text-xs hidden sm:inline">
-                                            app.theinns.com • Live Hospitality Management System
-                                        </span>
-                                    </div>
-                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                                        Cloud Active
-                                    </span>
-                                </div>
-                                <img
-                                    src={cms_content.hero_image}
-                                    alt="THE INNS Enterprise Hospitality System"
-                                    className="w-full h-auto object-cover max-h-[720px] transition-transform duration-700 group-hover:scale-[1.01]"
-                                />
-                            </div>
-                        </div>
-                    ) : (
-                        <>
                     <style>{`
                         @keyframes floatLaptop {
                             0%, 100% { transform: translateY(0px) rotate(-0.5deg); }
@@ -807,8 +801,6 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                             </Link>
                         </div>
                     </div>
-                    </>
-                    )}
                 </div>
             </section>
 

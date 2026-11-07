@@ -75,6 +75,13 @@ interface WelcomeProps {
         hero_cta_text?: string;
         demo_cta_text?: string;
         hero_image?: string | null;
+        hero_slides?: Array<{
+            id?: string | number;
+            badge?: string;
+            title?: string;
+            subtitle?: string;
+            image?: string;
+        }>;
     };
 }
 
@@ -88,49 +95,67 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
     const [activeDeviceFocus, setActiveDeviceFocus] = useState<'all' | 'laptop' | 'tablet' | 'phone'>('all');
     const [syncedOrderActive, setSyncedOrderActive] = useState(false);
 
-    // Hero Background Slideshow with Dynamic Synchronized Texts
-    const heroSlides = useMemo(() => {
-        const customImage = cms_content?.hero_image || null;
-        const customTitle = cms_content?.hero_title || 'Mfumo Kamilifu wa Kisasa wa Kusimamia Mahoteli, Lodges & Restaurants';
-        const customSubtitle = cms_content?.hero_subtitle || 'Dhibiti vyumba, mapokezi, mikataba ya kisheria, ankara na risiti za malipo, POS ya mgahawa, na ripoti za mapato kidijitali katika mfumo mmoja unaoaminika.';
-        const customBadge = cms_content?.hero_badge || 'THE INNS • Centralized Hospitality OS 2026';
+    // Hero Background Slideshow with Dynamic Synchronized Texts (Configured dynamically by Super Admin)
+    const defaultSlides = useMemo(() => [
+        {
+            id: 'slide_1',
+            badge: cms_content?.hero_badge || 'THE INNS • Centralized Hospitality OS 2026',
+            title: cms_content?.hero_title || 'Mfumo Kamilifu wa Kisasa wa Kusimamia Mahoteli, Lodges & Restaurants',
+            subtitle: cms_content?.hero_subtitle || 'Dhibiti vyumba, mapokezi, mikataba ya kisheria, ankara na risiti za malipo, POS ya mgahawa, na ripoti za mapato kidijitali katika mfumo mmoja unaoaminika.',
+            image: cms_content?.hero_image || '/uploads/cms/hero_1794042362.png',
+        },
+        {
+            id: 'slide_2',
+            badge: 'SAFARI & BOUTIQUE LODGES',
+            title: 'Usimamizi wa Kisasa wa Safari Lodges, Camps & Luxury Resorts',
+            subtitle: 'Fuatilia wageni wa kitalii, uhifadhi wa vyumba (Gantt Rack), stakabadhi za malipo, na ripoti za flash za kila siku za meneja kupitia SMS na WhatsApp.',
+            image: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1920&q=80&fit=crop',
+        },
+        {
+            id: 'slide_3',
+            badge: 'RESTAURANT & BAR TOUCHSCREEN POS',
+            title: 'Touchscreen POS ya Mgahawa, Grocery Minimart na Night Audit ya Haraka',
+            subtitle: 'Mfumo wa mauzo wa haraka wa wateja wa ndani na nje, jikoni KOT, usimamizi wa stoo na ripoti kamili za faida na hasara (Double-Entry GL).',
+            image: 'https://images.unsplash.com/photo-1551882547-ff40c63fe524?w=1920&q=80&fit=crop',
+        },
+        {
+            id: 'slide_4',
+            badge: 'MULTI-PROPERTY CENTRALIZED CLOUD',
+            title: 'Dhibiti Hoteli Nyingi na Matawi Yote Kutoka Dashboard Moja Kuu',
+            subtitle: 'Unganisha matawi yote ya mikoani, linganisha mapato ya kila tawi kwa sekunde, dhibiti watumiaji kwa viwango vya madaraka, na zuia upotevu wa mapato.',
+            image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=1920&q=80&fit=crop',
+        },
+    ], [cms_content]);
 
-        return [
-            {
-                image: customImage || 'https://images.unsplash.com/photo-1566073741257-6a1056039daa?w=1920&q=80&fit=crop',
-                badge: customBadge,
-                title: customTitle,
-                subtitle: customSubtitle,
-            },
-            {
-                image: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1920&q=80&fit=crop',
-                badge: 'SAFARI & BOUTIQUE LODGES',
-                title: 'Usimamizi wa Kisasa wa Safari Lodges, Camps & Luxury Resorts',
-                subtitle: 'Fuatilia wageni wa kitalii, uhifadhi wa vyumba (Gantt Rack), stakabadhi za malipo, na ripoti za flash za kila siku za meneja kupitia SMS na WhatsApp.',
-            },
-            {
-                image: 'https://images.unsplash.com/photo-1551882547-ff40c63fe524?w=1920&q=80&fit=crop',
-                badge: 'RESTAURANT & BAR TOUCHSCREEN POS',
-                title: 'Touchscreen POS ya Mgahawa, Grocery Minimart na Night Audit ya Haraka',
-                subtitle: 'Mfumo wa mauzo wa haraka wa wateja wa ndani na nje, jikoni KOT, usimamizi wa stoo na ripoti kamili za faida na hasara (Double-Entry GL).',
-            },
-            {
-                image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=1920&q=80&fit=crop',
-                badge: 'MULTI-PROPERTY CENTRALIZED CLOUD',
-                title: 'Dhibiti Hoteli Nyingi na Matawi Yote Kutoka Dashboard Moja Kuu',
-                subtitle: 'Unganisha matawi yote ya mikoani, linganisha mapato ya kila tawi kwa sekunde, dhibiti watumiaji kwa viwango vya madaraka, na zuia upotevu wa mapato.',
-            },
-        ];
-    }, [cms_content]);
+    const heroSlides = useMemo(() => {
+        if (cms_content?.hero_slides && Array.isArray(cms_content.hero_slides) && cms_content.hero_slides.length > 0) {
+            return cms_content.hero_slides;
+        }
+        return defaultSlides;
+    }, [cms_content, defaultSlides]);
 
     const [heroSlideIndex, setHeroSlideIndex] = useState(0);
 
+    // Keep active slide index safe if total slides count changes
     useEffect(() => {
+        if (heroSlideIndex >= heroSlides.length) {
+            setHeroSlideIndex(0);
+        }
+    }, [heroSlides.length, heroSlideIndex]);
+
+    useEffect(() => {
+        if (heroSlides.length <= 1) return;
         const timer = setInterval(() => {
             setHeroSlideIndex((prev) => (prev + 1) % heroSlides.length);
         }, 6000);
         return () => clearInterval(timer);
     }, [heroSlides.length]);
+
+    const currentSlide = heroSlides[heroSlideIndex] || heroSlides[0] || {
+        badge: 'THE INNS • Centralized Hospitality OS 2026',
+        title: 'Mfumo Kamilifu wa Kisasa wa Kusimamia Mahoteli, Lodges & Restaurants',
+        subtitle: 'Dhibiti vyumba, mapokezi, mikataba ya kisheria, ankara na risiti za malipo, POS ya mgahawa, na ripoti za mapato kidijitali katika mfumo mmoja unaoaminika.',
+    };
 
     const triggerSyncDemo = () => {
         setSyncedOrderActive(true);
@@ -426,7 +451,7 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
             <section className="relative overflow-hidden pt-10 pb-20 lg:pt-16 lg:pb-28">
                 {/* Background Slideshow (Nyuma ya Maandishi) */}
                 <div className="absolute inset-0 -z-10 overflow-hidden">
-                    {heroSlides.map((slide, idx) => (
+                    {heroSlides.map((slide: any, idx: number) => (
                         <div
                             key={idx}
                             className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
@@ -457,17 +482,17 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                     {/* Badge (Dynamic per slide) */}
                     <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#D4AF37]/20 text-[#8c7003] font-extrabold text-xs mb-4 border border-[#D4AF37]/40 shadow-xs transition-all duration-500">
                         <Sparkles className="w-3.5 h-3.5" />
-                        <span>{heroSlides[heroSlideIndex].badge}</span>
+                        <span>{currentSlide.badge}</span>
                     </div>
 
                     {/* Headline (Dynamic per slide) */}
                     <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight max-w-5xl mx-auto leading-[1.14] transition-all duration-500 min-h-[120px] sm:min-h-[140px] flex items-center justify-center">
-                        <span>{heroSlides[heroSlideIndex].title}</span>
+                        <span>{currentSlide.title}</span>
                     </h1>
 
                     {/* Subheadline (Dynamic per slide) */}
                     <p className="mt-6 text-base sm:text-lg lg:text-xl text-slate-700 font-medium max-w-3xl mx-auto leading-relaxed transition-all duration-500 min-h-[60px] flex items-center justify-center">
-                        <span>{heroSlides[heroSlideIndex].subtitle}</span>
+                        <span>{currentSlide.subtitle}</span>
                     </p>
 
                     {/* CTA Group */}
@@ -489,22 +514,24 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                         </a>
                     </div>
 
-                    {/* Slide Navigation Indicators & Controls */}
-                    <div className="mt-8 flex items-center justify-center gap-2">
-                        {heroSlides.map((_, idx) => (
-                            <button
-                                key={idx}
-                                type="button"
-                                onClick={() => setHeroSlideIndex(idx)}
-                                className={`transition-all duration-300 rounded-full cursor-pointer ${
-                                    idx === heroSlideIndex
-                                        ? 'w-8 h-2.5 bg-[#D4AF37]'
-                                        : 'w-2.5 h-2.5 bg-slate-300 hover:bg-slate-400'
-                                }`}
-                                aria-label={`Go to slide ${idx + 1}`}
-                            />
-                        ))}
-                    </div>
+                    {/* Slide Navigation Indicators & Controls (Matches exact number of slides) */}
+                    {heroSlides.length > 1 && (
+                        <div className="mt-8 flex items-center justify-center gap-2">
+                            {heroSlides.map((_: any, idx: number) => (
+                                <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => setHeroSlideIndex(idx)}
+                                    className={`transition-all duration-300 rounded-full cursor-pointer ${
+                                        idx === heroSlideIndex
+                                            ? 'w-8 h-2.5 bg-[#D4AF37]'
+                                            : 'w-2.5 h-2.5 bg-slate-300 hover:bg-slate-400'
+                                    }`}
+                                    aria-label={`Go to slide ${idx + 1}`}
+                                />
+                            ))}
+                        </div>
+                    )}
 
                     {/* Value highlights checklist */}
                     <div className="mt-10 flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-xs font-bold text-slate-600">

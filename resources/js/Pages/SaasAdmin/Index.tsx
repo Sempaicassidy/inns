@@ -14,8 +14,10 @@ import {
     Calendar,
     Check,
     CheckCircle2,
+    ChevronDown,
     ChevronLeft,
     ChevronRight,
+    ChevronUp,
     Clock,
     Coins,
     Copy,
@@ -29,6 +31,7 @@ import {
     Globe,
     HelpCircle,
     Home,
+    Image as ImageIcon,
     Inbox,
     Layers,
     Lock,
@@ -60,6 +63,7 @@ import {
     TrendingDown,
     TrendingUp,
     Truck,
+    Upload,
     User,
     UserCheck,
     Users,
@@ -430,6 +434,132 @@ export default function SaasAdminDashboard({
         max_uses: 50,
         expires_at: '2026-12-31',
     });
+
+    interface HeroSlideItem {
+        id: string | number;
+        badge: string;
+        title: string;
+        subtitle: string;
+        image: string;
+        file?: File | null;
+        previewUrl?: string | null;
+    }
+
+    const defaultHeroSlides: HeroSlideItem[] = [
+        {
+            id: 'slide_1',
+            badge: cms_content?.hero_badge || 'THE INNS • Centralized Hospitality OS 2026',
+            title: cms_content?.hero_title || 'Mfumo Kamilifu wa Kisasa wa Kusimamia Mahoteli, Lodges & Restaurants',
+            subtitle: cms_content?.hero_subtitle || 'Dhibiti vyumba, mapokezi, mikataba ya kisheria, ankara na risiti za malipo, POS ya mgahawa, na ripoti za mapato kidijitali katika mfumo mmoja unaoaminika.',
+            image: cms_content?.hero_image || '/uploads/cms/hero_1794042362.png',
+            previewUrl: cms_content?.hero_image || '/uploads/cms/hero_1794042362.png',
+        },
+        {
+            id: 'slide_2',
+            badge: 'SAFARI & BOUTIQUE LODGES',
+            title: 'Usimamizi wa Kisasa wa Safari Lodges, Camps & Luxury Resorts',
+            subtitle: 'Fuatilia wageni wa kitalii, uhifadhi wa vyumba (Gantt Rack), stakabadhi za malipo, na ripoti za flash za kila siku za meneja kupitia SMS na WhatsApp.',
+            image: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1920&q=80&fit=crop',
+            previewUrl: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1920&q=80&fit=crop',
+        },
+        {
+            id: 'slide_3',
+            badge: 'RESTAURANT & BAR TOUCHSCREEN POS',
+            title: 'Touchscreen POS ya Mgahawa, Grocery Minimart na Night Audit ya Haraka',
+            subtitle: 'Mfumo wa mauzo wa haraka wa wateja wa ndani na nje, jikoni KOT, usimamizi wa stoo na ripoti kamili za faida na hasara (Double-Entry GL).',
+            image: 'https://images.unsplash.com/photo-1551882547-ff40c63fe524?w=1920&q=80&fit=crop',
+            previewUrl: 'https://images.unsplash.com/photo-1551882547-ff40c63fe524?w=1920&q=80&fit=crop',
+        },
+        {
+            id: 'slide_4',
+            badge: 'MULTI-PROPERTY CENTRALIZED CLOUD',
+            title: 'Dhibiti Hoteli Nyingi na Matawi Yote Kutoka Dashboard Moja Kuu',
+            subtitle: 'Unganisha matawi yote ya mikoani, linganisha mapato ya kila tawi kwa sekunde, dhibiti watumiaji kwa viwango vya madaraka, na zuia upotevu wa mapato.',
+            image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=1920&q=80&fit=crop',
+            previewUrl: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=1920&q=80&fit=crop',
+        },
+    ];
+
+    const initialSlides: HeroSlideItem[] = (cms_content?.hero_slides && Array.isArray(cms_content.hero_slides) && cms_content.hero_slides.length > 0)
+        ? cms_content.hero_slides.map((s: any, idx: number) => ({
+            id: s.id || `slide_${idx + 1}`,
+            badge: s.badge || 'THE INNS • Hospitality OS',
+            title: s.title || '',
+            subtitle: s.subtitle || '',
+            image: s.image || '',
+            previewUrl: s.image || '',
+        }))
+        : defaultHeroSlides;
+
+    const [heroSlidesList, setHeroSlidesList] = useState<HeroSlideItem[]>(initialSlides);
+    const [activePreviewIndex, setActivePreviewIndex] = useState(0);
+    const [isSavingCms, setIsSavingCms] = useState(false);
+
+    const handleUpdateSlideField = (index: number, field: keyof HeroSlideItem, value: any) => {
+        setHeroSlidesList((prev) => {
+            const next = [...prev];
+            next[index] = { ...next[index], [field]: value };
+            if (field === 'image') {
+                next[index].previewUrl = value;
+            }
+            return next;
+        });
+    };
+
+    const handleSlideFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const preview = URL.createObjectURL(file);
+            setHeroSlidesList((prev) => {
+                const next = [...prev];
+                next[index] = {
+                    ...next[index],
+                    file: file,
+                    previewUrl: preview,
+                };
+                return next;
+            });
+        }
+    };
+
+    const handleAddSlide = () => {
+        const newId = `slide_${Date.now()}`;
+        const newIndex = heroSlidesList.length + 1;
+        const newSlide: HeroSlideItem = {
+            id: newId,
+            badge: `NEW HOSPITALITY MODULE • SLIDE ${newIndex}`,
+            title: `Huduma ya Kisasa ya Mahoteli na Wageni #${newIndex}`,
+            subtitle: 'Weka maelezo mafupi kuhusu faida, urahisi, au vipengele vya kipekee vya mfumo hapa ili kuwavutia wageni na wamiliki wa mahoteli.',
+            image: 'https://images.unsplash.com/photo-1566073741257-6a1056039daa?w=1920&q=80&fit=crop',
+            previewUrl: 'https://images.unsplash.com/photo-1566073741257-6a1056039daa?w=1920&q=80&fit=crop',
+        };
+        setHeroSlidesList((prev) => [...prev, newSlide]);
+        setActivePreviewIndex(heroSlidesList.length);
+    };
+
+    const handleRemoveSlide = (index: number) => {
+        if (heroSlidesList.length <= 1) {
+            alert('Huwezi kufuta slide hii. Mfumo unahitaji angalau slide 1 ili kuonyesha Hero section.');
+            return;
+        }
+        if (window.confirm(`Una uhakika unataka kufuta Slide #${index + 1}?`)) {
+            setHeroSlidesList((prev) => prev.filter((_, i) => i !== index));
+            setActivePreviewIndex(0);
+        }
+    };
+
+    const handleMoveSlide = (index: number, direction: 'up' | 'down') => {
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= heroSlidesList.length) return;
+        setHeroSlidesList((prev) => {
+            const next = [...prev];
+            const item = next[index];
+            next[index] = next[targetIndex];
+            next[targetIndex] = item;
+            return next;
+        });
+        setActivePreviewIndex(targetIndex);
+    };
 
     const [heroImagePreview, setHeroImagePreview] = useState<string | null>(cms_content?.hero_image || null);
 
@@ -808,9 +938,41 @@ export default function SaasAdminDashboard({
 
     const submitCmsUpdate = (e: React.FormEvent) => {
         e.preventDefault();
-        liveCmsForm.post(route('saas-admin.cms.update'), {
+        setIsSavingCms(true);
+
+        const formData = new FormData();
+        formData.append('hero_cta_text', liveCmsForm.data.hero_cta_text);
+        formData.append('demo_cta_text', liveCmsForm.data.demo_cta_text);
+        formData.append('demo_cta_phone', liveCmsForm.data.demo_cta_phone);
+
+        // Slides metadata without non-serializable properties
+        const sanitizedSlides = heroSlidesList.map((s, idx) => ({
+            id: s.id || `slide_${idx + 1}`,
+            badge: s.badge,
+            title: s.title,
+            subtitle: s.subtitle,
+            image: s.image,
+        }));
+        formData.append('hero_slides', JSON.stringify(sanitizedSlides));
+
+        // Sync first slide as top-level hero for compatibility
+        if (heroSlidesList[0]) {
+            formData.append('hero_title', heroSlidesList[0].title);
+            formData.append('hero_subtitle', heroSlidesList[0].subtitle);
+            formData.append('hero_badge', heroSlidesList[0].badge);
+        }
+
+        // Attach slide image files
+        heroSlidesList.forEach((s, idx) => {
+            if (s.file) {
+                formData.append(`slide_file_${idx}`, s.file);
+            }
+        });
+
+        router.post(route('saas-admin.cms.update'), formData, {
             preserveScroll: true,
             forceFormData: true,
+            onFinish: () => setIsSavingCms(false),
         });
     };
 
@@ -2579,162 +2741,405 @@ export default function SaasAdminDashboard({
                         </div>
 
                         {cmsSubTab === 'landing' && (
-                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                                <form onSubmit={submitCmsUpdate} className="lg:col-span-7 bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4 text-xs">
-                                    <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
-                                        <div>
-                                            <h3 className="font-extrabold text-sm text-slate-900">Landing Page Hero & CTA Settings</h3>
-                                            <p className="text-[11px] text-slate-500">Live customization of the SaaS public landing page seen by prospective hotel owners.</p>
+                            <div className="space-y-6">
+                                {/* Top Control Bar */}
+                                <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="font-black text-base text-slate-900 tracking-tight">Hero Slideshow & Landing Page Manager</h3>
+                                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-blue-50 text-blue-700 border border-blue-200">
+                                                {heroSlidesList.length} Active Slides
+                                            </span>
                                         </div>
-                                        <a href="/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-blue-600 hover:underline font-bold text-xs">
-                                            <span>View Live</span>
+                                        <p className="text-xs text-slate-500 mt-1 max-w-2xl leading-relaxed">
+                                            Dhibiti picha na maandishi ya slides za Hero section (nyuma ya maandishi). Idadi ya slides zitakazoonekana kwenye ukurasa wa mbele (Landing Page) inalingana moja kwa moja na idadi ya slides ulizoweka hapa.
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2.5 shrink-0">
+                                        <button
+                                            type="button"
+                                            onClick={handleAddSlide}
+                                            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+                                        >
+                                            <Plus className="w-4 h-4 stroke-[2.5]" />
+                                            <span>Ongeza Slide Mpya</span>
+                                        </button>
+                                        <a
+                                            href="/"
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
+                                        >
+                                            <span>Tazama Live</span>
                                             <ExternalLink className="w-3.5 h-3.5" />
                                         </a>
                                     </div>
-                                    <div>
-                                        <label className="font-bold text-slate-700 block mb-1">Main Hero Headline *</label>
-                                        <input
-                                            type="text"
-                                            required
-                                            value={liveCmsForm.data.hero_title}
-                                            onChange={(e) => liveCmsForm.setData('hero_title', e.target.value)}
-                                            className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-blue-500"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="font-bold text-slate-700 block mb-1">Hero Subheadline & Value Proposition *</label>
-                                        <textarea
-                                            rows={3}
-                                            required
-                                            value={liveCmsForm.data.hero_subtitle}
-                                            onChange={(e) => liveCmsForm.setData('hero_subtitle', e.target.value)}
-                                            className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500"
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="font-bold text-slate-700 block mb-1">Primary CTA Button Label</label>
-                                            <input
-                                                type="text"
-                                                required
-                                                value={liveCmsForm.data.hero_cta_text}
-                                                onChange={(e) => liveCmsForm.setData('hero_cta_text', e.target.value)}
-                                                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="font-bold text-slate-700 block mb-1">Demo Request Button Label</label>
-                                            <input
-                                                type="text"
-                                                required
-                                                value={liveCmsForm.data.demo_cta_text}
-                                                onChange={(e) => liveCmsForm.setData('demo_cta_text', e.target.value)}
-                                                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold"
-                                            />
-                                        </div>
-                                    </div>
+                                </div>
 
-                                    {/* HERO IMAGE UPLOAD SECTION */}
-                                    <div className="pt-2 border-t border-slate-100">
-                                        <label className="font-bold text-slate-900 block mb-1">Hero Section Showcase Image / Screenshot</label>
-                                        <p className="text-[11px] text-slate-500 mb-2.5">Upload an official screenshot or banner image to be displayed in the Hero section of the landing page.</p>
-
-                                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
-                                            {heroImagePreview ? (
-                                                <div className="relative w-28 h-20 rounded-xl overflow-hidden border border-slate-300 shadow-xs shrink-0 group bg-slate-900">
-                                                    <img src={heroImagePreview} alt="Hero Preview" className="w-full h-full object-cover" />
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleRemoveHeroImage}
-                                                        className="absolute inset-0 bg-black/70 text-white font-bold text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                                    {/* Left: Slides Editor Form */}
+                                    <form onSubmit={submitCmsUpdate} className="lg:col-span-7 space-y-4">
+                                        <div className="space-y-4">
+                                            {heroSlidesList.map((slide, idx) => {
+                                                const isActivePreview = activePreviewIndex === idx;
+                                                return (
+                                                    <div
+                                                        key={slide.id || idx}
+                                                        className={`bg-white rounded-2xl border transition-all duration-200 shadow-xs overflow-hidden ${
+                                                            isActivePreview ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-slate-200'
+                                                        }`}
                                                     >
-                                                        Remove
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <div className="w-28 h-20 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 text-[10px] shrink-0 bg-white">
-                                                    <span className="font-bold text-slate-500">No Image</span>
-                                                    <span className="text-[9px] text-slate-400">Using 3D Mockup</span>
-                                                </div>
-                                            )}
+                                                        {/* Slide Header Toolbar */}
+                                                        <div className="bg-slate-50/80 px-4 py-3 border-b border-slate-200/80 flex items-center justify-between gap-3">
+                                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                                <span className="w-6 h-6 rounded-lg bg-blue-600 text-white text-[11px] font-black flex items-center justify-center shrink-0 shadow-2xs">
+                                                                    {idx + 1}
+                                                                </span>
+                                                                <div className="min-w-0">
+                                                                    <span className="font-bold text-xs text-slate-900 block truncate">
+                                                                        {slide.title || `Slide #${idx + 1}`}
+                                                                    </span>
+                                                                    <span className="text-[10px] text-slate-500 font-medium truncate block">
+                                                                        {slide.badge || 'THE INNS • Slide'}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
 
-                                            <div className="flex-1 space-y-1">
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    onChange={handleHeroImageChange}
-                                                    className="block w-full text-xs text-slate-500 file:mr-2.5 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
-                                                />
-                                                <div className="flex items-center justify-between text-[10px] text-slate-500 pt-0.5">
-                                                    <span>Supports PNG, JPG, WebP up to 5MB</span>
-                                                    {heroImagePreview && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={handleRemoveHeroImage}
-                                                            className="text-rose-600 font-bold hover:underline cursor-pointer"
-                                                        >
-                                                            Reset to 3D Stage
-                                                        </button>
-                                                    )}
+                                                            {/* Slide Ordering & Actions */}
+                                                            <div className="flex items-center gap-1 shrink-0">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleMoveSlide(idx, 'up')}
+                                                                    disabled={idx === 0}
+                                                                    title="Sogeza Juu (Move Up)"
+                                                                    className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer"
+                                                                >
+                                                                    <ChevronUp className="w-4 h-4" />
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleMoveSlide(idx, 'down')}
+                                                                    disabled={idx === heroSlidesList.length - 1}
+                                                                    title="Sogeza Chini (Move Down)"
+                                                                    className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer"
+                                                                >
+                                                                    <ChevronDown className="w-4 h-4" />
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setActivePreviewIndex(idx)}
+                                                                    title="Tazama Kwenye Simulation"
+                                                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 transition cursor-pointer ${
+                                                                        isActivePreview ? 'bg-blue-600 text-white shadow-2xs' : 'bg-slate-200/80 text-slate-700 hover:bg-slate-300'
+                                                                    }`}
+                                                                >
+                                                                    <Eye className="w-3.5 h-3.5" />
+                                                                    <span>Preview</span>
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleRemoveSlide(idx)}
+                                                                    disabled={heroSlidesList.length <= 1}
+                                                                    title="Futa Slide"
+                                                                    className="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Slide Edit Fields */}
+                                                        <div className="p-4 space-y-3.5 text-xs">
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                                <div className="sm:col-span-2">
+                                                                    <label className="font-bold text-slate-700 block mb-1">
+                                                                        Slide Badge / Tagline (Lebo ya Juu) *
+                                                                    </label>
+                                                                    <input
+                                                                        type="text"
+                                                                        required
+                                                                        value={slide.badge}
+                                                                        onChange={(e) => handleUpdateSlideField(idx, 'badge', e.target.value)}
+                                                                        placeholder="Mfano: THE INNS • Centralized Hospitality OS 2026"
+                                                                        className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-blue-500"
+                                                                    />
+                                                                </div>
+
+                                                                <div className="sm:col-span-2">
+                                                                    <label className="font-bold text-slate-700 block mb-1">
+                                                                        Slide Headline (Kichwa Kikuu cha Habari) *
+                                                                    </label>
+                                                                    <input
+                                                                        type="text"
+                                                                        required
+                                                                        value={slide.title}
+                                                                        onChange={(e) => handleUpdateSlideField(idx, 'title', e.target.value)}
+                                                                        placeholder="Mfano: Mfumo Kamilifu wa Kisasa wa Kusimamia Mahoteli..."
+                                                                        className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-blue-500"
+                                                                    />
+                                                                </div>
+
+                                                                <div className="sm:col-span-2">
+                                                                    <label className="font-bold text-slate-700 block mb-1">
+                                                                        Slide Subheadline (Maelezo ya Kina) *
+                                                                    </label>
+                                                                    <textarea
+                                                                        rows={2}
+                                                                        required
+                                                                        value={slide.subtitle}
+                                                                        onChange={(e) => handleUpdateSlideField(idx, 'subtitle', e.target.value)}
+                                                                        placeholder="Dhibiti vyumba, mapokezi, mikataba, ankara na risiti..."
+                                                                        className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500 leading-relaxed"
+                                                                    />
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Slide Background Image Control */}
+                                                            <div className="pt-2 border-t border-slate-100">
+                                                                <label className="font-bold text-slate-800 block mb-1.5 flex items-center justify-between">
+                                                                    <span>Picha ya Slide (Background Image)</span>
+                                                                    <span className="text-[10px] text-slate-400 font-normal">PNG, JPG, WebP</span>
+                                                                </label>
+
+                                                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                                                                    {/* Thumbnail */}
+                                                                    <div className="relative w-28 h-20 rounded-lg overflow-hidden border border-slate-300 shadow-2xs shrink-0 bg-slate-900 group">
+                                                                        <img
+                                                                            src={slide.previewUrl || slide.image}
+                                                                            onError={(e) => {
+                                                                                const target = e.currentTarget;
+                                                                                if (slide.image && slide.image.startsWith('/uploads/') && !target.src.includes('/inns/')) {
+                                                                                    target.src = '/inns' + slide.image;
+                                                                                }
+                                                                            }}
+                                                                            alt=""
+                                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                                                        />
+                                                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-[9px] text-white font-bold">
+                                                                            Slide #{idx + 1}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="flex-1 space-y-2 w-full">
+                                                                        <div>
+                                                                            <span className="text-[10px] text-slate-500 block mb-1 font-semibold">1. Pakia kutoka kwenye kompyuta:</span>
+                                                                            <input
+                                                                                type="file"
+                                                                                accept="image/*"
+                                                                                onChange={(e) => handleSlideFileChange(idx, e)}
+                                                                                className="block w-full text-xs text-slate-500 file:mr-2.5 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
+                                                                            />
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="text-[10px] text-slate-500 block mb-1 font-semibold">2. Au weka Link / URL ya picha moja kwa moja:</span>
+                                                                            <input
+                                                                                type="text"
+                                                                                value={slide.image}
+                                                                                onChange={(e) => handleUpdateSlideField(idx, 'image', e.target.value)}
+                                                                                placeholder="https://... au /uploads/cms/..."
+                                                                                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-[11px] font-mono focus:ring-1 focus:ring-blue-500"
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* Global CTA Buttons Settings */}
+                                        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-3.5 text-xs">
+                                            <h4 className="font-extrabold text-slate-900 border-b border-slate-100 pb-2 flex items-center gap-2">
+                                                <Sparkles className="w-4 h-4 text-[#D4AF37]" />
+                                                <span>Global CTA Buttons (Vitufe vya Chini ya Hero Section)</span>
+                                            </h4>
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                                <div>
+                                                    <label className="font-bold text-slate-700 block mb-1">Primary CTA Label</label>
+                                                    <input
+                                                        type="text"
+                                                        required
+                                                        value={liveCmsForm.data.hero_cta_text}
+                                                        onChange={(e) => liveCmsForm.setData('hero_cta_text', e.target.value)}
+                                                        className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="font-bold text-slate-700 block mb-1">Demo Request Label</label>
+                                                    <input
+                                                        type="text"
+                                                        required
+                                                        value={liveCmsForm.data.demo_cta_text}
+                                                        onChange={(e) => liveCmsForm.setData('demo_cta_text', e.target.value)}
+                                                        className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="font-bold text-slate-700 block mb-1">Demo Request Phone</label>
+                                                    <input
+                                                        type="text"
+                                                        value={liveCmsForm.data.demo_cta_phone}
+                                                        onChange={(e) => liveCmsForm.setData('demo_cta_phone', e.target.value)}
+                                                        className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold"
+                                                    />
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div className="pt-2 flex justify-end">
-                                        <button
-                                            type="submit"
-                                            disabled={liveCmsForm.processing}
-                                            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
-                                        >
-                                            <Check className="w-4 h-4 stroke-[3]" />
-                                            <span>Save & Publish Live</span>
-                                        </button>
-                                    </div>
-                                </form>
 
-                                <div className="lg:col-span-5 bg-gradient-to-br from-slate-900 to-slate-950 text-white rounded-2xl p-6 shadow-xl flex flex-col justify-between">
-                                    <div className="space-y-4">
-                                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 font-extrabold text-[10px] tracking-wider uppercase">
-                                            <Sparkles className="w-3 h-3" />
-                                            <span>{cms_content?.hero_badge || 'THE INNS • PMS'}</span>
-                                        </div>
-                                        <h2 className="text-xl font-black text-white leading-tight">
-                                            {liveCmsForm.data.hero_title}
-                                        </h2>
-                                        <p className="text-xs text-slate-300 leading-relaxed">
-                                            {liveCmsForm.data.hero_subtitle}
-                                        </p>
-                                        <div className="flex flex-wrap gap-2 pt-2">
-                                            <span className="px-4 py-2 bg-blue-600 text-white font-bold rounded-xl text-xs shadow-md">
-                                                {liveCmsForm.data.hero_cta_text}
-                                            </span>
-                                            <span className="px-4 py-2 bg-white/10 text-white font-bold rounded-xl text-xs border border-white/20">
-                                                {liveCmsForm.data.demo_cta_text}
-                                            </span>
-                                        </div>
+                                        {/* Bottom Action Buttons */}
+                                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+                                            <button
+                                                type="button"
+                                                onClick={handleAddSlide}
+                                                className="w-full sm:w-auto px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                                <span>+ Ongeza Slide Nyingine ({heroSlidesList.length + 1})</span>
+                                            </button>
 
-                                        {/* Dynamic Image Preview */}
-                                        <div className="mt-4 pt-3 border-t border-slate-800">
-                                            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1.5">Hero Media Status</span>
-                                            {heroImagePreview ? (
-                                                <div className="rounded-xl overflow-hidden border border-slate-700 bg-slate-900 shadow-md">
-                                                    <div className="bg-slate-800 px-2.5 py-1 flex items-center justify-between text-[9px] text-slate-400">
-                                                        <span>Custom Uploaded Hero Image</span>
-                                                        <span className="text-emerald-400 font-bold">Active</span>
+                                            <button
+                                                type="submit"
+                                                disabled={isSavingCms}
+                                                className="w-full sm:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-xs flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 transition cursor-pointer disabled:opacity-50"
+                                            >
+                                                {isSavingCms ? (
+                                                    <>
+                                                        <RefreshCw className="w-4 h-4 animate-spin" />
+                                                        <span>Inahifadhi Slides Zote...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Check className="w-4 h-4 stroke-[3]" />
+                                                        <span>Hifadhi Slides Zote ({heroSlidesList.length}) & Publish Live</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </form>
+
+                                    {/* Right: Live WYSIWYG Simulation */}
+                                    <div className="lg:col-span-5 sticky top-6 space-y-4">
+                                        <div className="bg-slate-900 text-white rounded-2xl border border-slate-800 shadow-xl overflow-hidden">
+                                            {/* Simulation Header */}
+                                            <div className="p-4 bg-slate-950/70 border-b border-slate-800/80 flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                    <span className="text-xs font-extrabold tracking-tight">Live Hero Simulation</span>
+                                                </div>
+                                                <span className="text-[10px] text-slate-400 font-mono">
+                                                    Slide {activePreviewIndex + 1} of {heroSlidesList.length}
+                                                </span>
+                                            </div>
+
+                                            {/* Slide Selector Tabs */}
+                                            <div className="flex items-center gap-1.5 p-2 bg-slate-950/40 border-b border-slate-800 overflow-x-auto">
+                                                {heroSlidesList.map((_, sIdx) => (
+                                                    <button
+                                                        key={sIdx}
+                                                        type="button"
+                                                        onClick={() => setActivePreviewIndex(sIdx)}
+                                                        className={`px-3 py-1 rounded-lg text-[10px] font-bold transition shrink-0 cursor-pointer ${
+                                                            activePreviewIndex === sIdx
+                                                                ? 'bg-[#D4AF37] text-slate-950 shadow-xs'
+                                                                : 'bg-slate-800/80 text-slate-400 hover:bg-slate-800 hover:text-white'
+                                                        }`}
+                                                    >
+                                                        Slide {sIdx + 1}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            {/* Simulated Hero Section Stage */}
+                                            {(() => {
+                                                const currentPreview = heroSlidesList[activePreviewIndex] || heroSlidesList[0] || {};
+                                                return (
+                                                    <div className="relative p-6 sm:p-7 min-h-[360px] flex flex-col justify-between overflow-hidden">
+                                                        {/* Simulated Background Image */}
+                                                        <div className="absolute inset-0 -z-10">
+                                                            <img
+                                                                src={currentPreview.previewUrl || currentPreview.image}
+                                                                onError={(e) => {
+                                                                    const target = e.currentTarget;
+                                                                    if (currentPreview.image && currentPreview.image.startsWith('/uploads/') && !target.src.includes('/inns/')) {
+                                                                        target.src = '/inns' + currentPreview.image;
+                                                                    }
+                                                                }}
+                                                                alt=""
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                            {/* Exact Soft Overlay Gradient from Welcome.tsx */}
+                                                            <div className="absolute inset-0 bg-gradient-to-b from-white/95 via-white/88 to-white" />
+                                                        </div>
+
+                                                        {/* Simulated Live Content */}
+                                                        <div className="space-y-3.5 text-center relative z-10 my-auto">
+                                                            {/* Badge */}
+                                                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#D4AF37]/20 text-[#8c7003] font-black text-[10px] border border-[#D4AF37]/40 shadow-xs">
+                                                                <Sparkles className="w-3 h-3" />
+                                                                <span>{currentPreview.badge || 'THE INNS • OS'}</span>
+                                                            </div>
+
+                                                            {/* Headline */}
+                                                            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-snug">
+                                                                {currentPreview.title || 'Slide Headline'}
+                                                            </h2>
+
+                                                            {/* Subtitle */}
+                                                            <p className="text-xs text-slate-700 font-medium leading-relaxed max-w-sm mx-auto">
+                                                                {currentPreview.subtitle || 'Slide Subtitle'}
+                                                            </p>
+
+                                                            {/* CTA Buttons */}
+                                                            <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                                                                <span className="px-4 py-2 bg-[#D4AF37] text-[#1E3A5F] font-black text-[11px] rounded-xl shadow-xs">
+                                                                    {liveCmsForm.data.hero_cta_text}
+                                                                </span>
+                                                                <span className="px-4 py-2 bg-[#1E3A5F] text-white font-bold text-[11px] rounded-xl shadow-xs">
+                                                                    {liveCmsForm.data.demo_cta_text}
+                                                                </span>
+                                                            </div>
+
+                                                            {/* Simulated Indicator Dots matching total count */}
+                                                            <div className="flex items-center justify-center gap-1.5 pt-3">
+                                                                {heroSlidesList.map((_, dIdx) => (
+                                                                    <span
+                                                                        key={dIdx}
+                                                                        onClick={() => setActivePreviewIndex(dIdx)}
+                                                                        className={`transition-all rounded-full cursor-pointer ${
+                                                                            dIdx === activePreviewIndex
+                                                                                ? 'w-6 h-2 bg-[#D4AF37]'
+                                                                                : 'w-2 h-2 bg-slate-300 hover:bg-slate-400'
+                                                                        }`}
+                                                                    />
+                                                                ))}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Simulation Footer */}
+                                                        <div className="pt-4 border-t border-slate-200/60 flex items-center justify-between text-[10px] text-slate-500 font-medium">
+                                                            <span className="flex items-center gap-1">
+                                                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                                                <span>{heroSlidesList.length} Slides zitazunguka kiotomatiki</span>
+                                                            </span>
+                                                            <span className="font-bold text-slate-700">100% Dynamic</span>
+                                                        </div>
                                                     </div>
-                                                    <img src={heroImagePreview} alt="Hero Banner Preview" className="w-full h-auto max-h-36 object-cover" />
-                                                </div>
-                                            ) : (
-                                                <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-[10px] text-slate-400 flex items-center justify-between">
-                                                    <span>Dynamic 3D Multi-Device Animated Mockup</span>
-                                                    <span className="text-blue-400 font-bold">Default</span>
-                                                </div>
-                                            )}
+                                                );
+                                            })()}
                                         </div>
-                                    </div>
-                                    <div className="mt-8 pt-4 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
-                                        <span>Preview Mode (Real-Time Synchronized)</span>
-                                        <span className="text-emerald-400 font-bold">100% Mobile Ready</span>
+
+                                        {/* Helper Tips Card */}
+                                        <div className="bg-blue-50/60 border border-blue-200/70 rounded-2xl p-4 text-xs text-blue-900 space-y-1.5">
+                                            <span className="font-extrabold flex items-center gap-1.5 text-blue-800">
+                                                <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                                                <span>Ufafanuzi wa Hero Slides:</span>
+                                            </span>
+                                            <p className="text-[11px] text-blue-700 leading-relaxed">
+                                                Kila slide unayoongeza au kubadilisha hapa itakuwa na picha yake nyuma ya maandishi na maandishi yake yanayobadilika kwa pamoja kwenye Landing Page. Idadi ya vidoti (dots) chini itaongezeka au kupungua kulingana na idadi ya slides ulizoweka.
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

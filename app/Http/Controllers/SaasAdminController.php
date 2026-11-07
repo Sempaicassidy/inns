@@ -496,6 +496,37 @@ class SaasAdminController extends Controller
 
         // 16. Live Website & CMS Content Data
         $cachedCms = cache('cms_landing_settings', []);
+        $defaultHeroSlides = [
+            [
+                'id' => 'slide_1',
+                'badge' => 'THE INNS • Centralized Hospitality OS 2026',
+                'title' => 'Mfumo Kamilifu wa Kisasa wa Kusimamia Mahoteli, Lodges & Restaurants',
+                'subtitle' => 'Dhibiti vyumba, mapokezi, mikataba ya kisheria, ankara na risiti za malipo, POS ya mgahawa, na ripoti za mapato kidijitali katika mfumo mmoja unaoaminika.',
+                'image' => '/uploads/cms/hero_1794042362.png',
+            ],
+            [
+                'id' => 'slide_2',
+                'badge' => 'SAFARI & BOUTIQUE LODGES',
+                'title' => 'Usimamizi wa Kisasa wa Safari Lodges, Camps & Luxury Resorts',
+                'subtitle' => 'Fuatilia wageni wa kitalii, uhifadhi wa vyumba (Gantt Rack), stakabadhi za malipo, na ripoti za flash za kila siku za meneja kupitia SMS na WhatsApp.',
+                'image' => 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1920&q=80&fit=crop',
+            ],
+            [
+                'id' => 'slide_3',
+                'badge' => 'RESTAURANT & BAR TOUCHSCREEN POS',
+                'title' => 'Touchscreen POS ya Mgahawa, Grocery Minimart na Night Audit ya Haraka',
+                'subtitle' => 'Mfumo wa mauzo wa haraka wa wateja wa ndani na nje, jikoni KOT, usimamizi wa stoo na ripoti kamili za faida na hasara (Double-Entry GL).',
+                'image' => 'https://images.unsplash.com/photo-1551882547-ff40c63fe524?w=1920&q=80&fit=crop',
+            ],
+            [
+                'id' => 'slide_4',
+                'badge' => 'MULTI-PROPERTY CENTRALIZED CLOUD',
+                'title' => 'Dhibiti Hoteli Nyingi na Matawi Yote Kutoka Dashboard Moja Kuu',
+                'subtitle' => 'Unganisha matawi yote ya mikoani, linganisha mapato ya kila tawi kwa sekunde, dhibiti watumiaji kwa viwango vya madaraka, na zuia upotevu wa mapato.',
+                'image' => 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=1920&q=80&fit=crop',
+            ],
+        ];
+
         $cmsContent = array_merge([
             'hero_badge' => 'THE INNS • Centralized Hospitality OS 2026',
             'hero_title' => 'Mfumo Kamilifu wa Kisasa wa Kusimamia Mahoteli, Lodges & Restaurants',
@@ -506,6 +537,7 @@ class SaasAdminController extends Controller
             'demo_cta_phone' => '+255 744 396 220',
             'display_annual_discount' => 'Pata punguzo la 20% kwa kulipa mwaka mzima',
             'hero_image' => null,
+            'hero_slides' => $defaultHeroSlides,
             'features' => [
                 ['title' => 'Front Desk & Room Rack', 'description' => 'Real-time check-ins, check-outs, and Gantt availability view.'],
                 ['title' => 'POS Restaurant & Grocery', 'description' => 'Full touchscreen ordering, kitchen tickets, and retail grocery barcode.'],
@@ -548,6 +580,10 @@ class SaasAdminController extends Controller
                 ],
             ],
         ], is_array($cachedCms) ? $cachedCms : []);
+
+        if (empty($cmsContent['hero_slides']) || !is_array($cmsContent['hero_slides'])) {
+            $cmsContent['hero_slides'] = $defaultHeroSlides;
+        }
 
         // 17. Marketing Campaigns, Promo Codes & Funnel Analytics
         $marketingData = [
@@ -1396,18 +1432,53 @@ class SaasAdminController extends Controller
     public function updateCmsSettings(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'hero_title' => 'required|string|max:255',
-            'hero_subtitle' => 'required|string|max:500',
+            'hero_title' => 'nullable|string|max:255',
+            'hero_subtitle' => 'nullable|string|max:500',
             'hero_cta_text' => 'required|string|max:100',
             'demo_cta_text' => 'required|string|max:100',
             'hero_badge' => 'nullable|string|max:100',
             'demo_cta_phone' => 'nullable|string|max:50',
             'hero_image' => 'nullable',
+            'hero_slides' => 'nullable',
         ]);
 
         $currentSettings = cache('cms_landing_settings', []);
+        if (!is_array($currentSettings)) {
+            $currentSettings = [];
+        }
 
-        if ($request->hasFile('hero_image')) {
+        // Process dynamic Hero Slides
+        $rawSlides = $request->input('hero_slides');
+        $slides = [];
+        if (is_string($rawSlides)) {
+            $slides = json_decode($rawSlides, true) ?: [];
+        } elseif (is_array($rawSlides)) {
+            $slides = $rawSlides;
+        }
+
+        if (!empty($slides)) {
+            foreach ($slides as $idx => &$slide) {
+                // Check if a new file was uploaded for this slide index
+                $fileKey = "slide_file_{$idx}";
+                if ($request->hasFile($fileKey)) {
+                    $file = $request->file($fileKey);
+                    $filename = 'hero_slide_' . ($idx + 1) . '_' . time() . '.' . $file->getClientOriginalExtension();
+                    $file->move(public_path('uploads/cms'), $filename);
+                    $slide['image'] = '/uploads/cms/' . $filename;
+                }
+            }
+            unset($slide);
+
+            $validated['hero_slides'] = $slides;
+
+            // Harmonize top-level fields with the first slide for fallback/legacy compatibility
+            if (isset($slides[0])) {
+                $validated['hero_title'] = $slides[0]['title'] ?? ($validated['hero_title'] ?? '');
+                $validated['hero_subtitle'] = $slides[0]['subtitle'] ?? ($validated['hero_subtitle'] ?? '');
+                $validated['hero_badge'] = $slides[0]['badge'] ?? ($validated['hero_badge'] ?? '');
+                $validated['hero_image'] = $slides[0]['image'] ?? ($currentSettings['hero_image'] ?? null);
+            }
+        } elseif ($request->hasFile('hero_image')) {
             $file = $request->file('hero_image');
             $filename = 'hero_' . time() . '.' . $file->getClientOriginalExtension();
             $file->move(public_path('uploads/cms'), $filename);
@@ -1423,7 +1494,7 @@ class SaasAdminController extends Controller
         $allSettings = array_merge($currentSettings, $validated);
         cache()->put('cms_landing_settings', $allSettings, now()->addMonths(6));
 
-        return redirect()->back()->with('success', 'Website & CMS landing page content updated successfully.');
+        return redirect()->back()->with('success', 'Hero Slides na mipangilio ya Website CMS vimehifadhiwa kikamilifu na viko hewani sasa.');
     }
 
     /**

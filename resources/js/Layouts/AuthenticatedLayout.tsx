@@ -782,33 +782,36 @@ export default function AuthenticatedLayout({
                 { 
                     name: 'Reservations', 
                     icon: Calendar, 
+                    feature: 'reservations',
                     active: route().current('reservations.*'),
                     items: [
-                        { name: 'All Reservations', href: route('reservations.index'), icon: ClipboardList, active: route().current('reservations.index') },
-                        { name: 'New Booking', href: route('reservations.create'), icon: Plus, active: route().current('reservations.create') },
-                        { name: 'Check-in', href: route('reservations.checkin'), icon: KeyRound, active: route().current('reservations.checkin') },
-                        { name: 'Check-out', href: route('reservations.checkout'), icon: LogOutIcon, active: route().current('reservations.checkout') },
+                        { name: 'All Reservations', href: route('reservations.index'), icon: ClipboardList, active: route().current('reservations.index'), feature: 'reservations' },
+                        { name: 'New Booking', href: route('reservations.create'), icon: Plus, active: route().current('reservations.create'), feature: 'reservations' },
+                        { name: 'Check-in', href: route('reservations.checkin'), icon: KeyRound, active: route().current('reservations.checkin'), feature: 'reservations' },
+                        { name: 'Check-out', href: route('reservations.checkout'), icon: LogOutIcon, active: route().current('reservations.checkout'), feature: 'reservations' },
                     ]
                 },
                 { 
                     name: 'Guests & Services', 
                     icon: Users,
+                    feature: 'guests',
                     active: route().current('guests.*') || route().current('guest.*') || route().current('folios.*'),
                     items: [
-                        { name: 'Guest Directory', href: route('guests.index'), icon: Users, active: route().current('guests.index') },
-                        { name: 'Guest Requests', href: route('guest.requests.index'), icon: Phone, active: route().current('guest.requests.*') },
-                        { name: 'Guest Communications', href: route('whatsapp.index'), icon: MessageSquareText, active: route().current('whatsapp.*') },
-                        { name: 'Guest Folios', href: route('folios.index'), icon: FileTextIcon, active: route().current('folios.*') },
+                        { name: 'Guest Directory', href: route('guests.index'), icon: Users, active: route().current('guests.index'), feature: 'guests' },
+                        { name: 'Guest Requests', href: route('guest.requests.index'), icon: Phone, active: route().current('guest.requests.*'), feature: 'guests' },
+                        { name: 'Guest Communications', href: route('whatsapp.index'), icon: MessageSquareText, active: route().current('whatsapp.*'), feature: 'whatsapp_sms' },
+                        { name: 'Guest Folios', href: route('folios.index'), icon: FileTextIcon, active: route().current('folios.*'), feature: 'folios' },
                     ]
                 },
                 { 
                     name: 'Room Management', 
                     icon: Bed, 
+                    feature: 'housekeeping',
                     active: Boolean(route().current('housekeeping.*') || route().current('maintenance.*')),
                     items: [
-                        { name: 'Rooms & Availability', href: route('housekeeping.index'), icon: Bed, active: route().current('housekeeping.index') },
-                        { name: 'Housekeeping Status', href: route('housekeeping.status'), icon: Activity, active: route().current('housekeeping.status') },
-                        { name: 'Maintenance Requests', href: route('maintenance.index'), icon: Wrench, active: route().current('maintenance.*') },
+                        { name: 'Rooms & Availability', href: route('housekeeping.index'), icon: Bed, active: route().current('housekeeping.index'), feature: 'housekeeping' },
+                        { name: 'Housekeeping Status', href: route('housekeeping.status'), icon: Activity, active: route().current('housekeeping.status'), feature: 'housekeeping' },
+                        { name: 'Maintenance Requests', href: route('maintenance.index'), icon: Wrench, active: route().current('maintenance.*'), feature: 'maintenance' },
                     ]
                 },
             ]
@@ -818,7 +821,7 @@ export default function AuthenticatedLayout({
             title: 'SHIFT REPORTS & ACCOUNT',
             icon: FileText,
             items: [
-                { name: 'Shift Progress Reports', href: route('front-office.reports.index'), icon: FileText, active: route().current('front-office.reports.*') },
+                { name: 'Shift Progress Reports', href: route('front-office.reports.index'), icon: FileText, active: route().current('front-office.reports.*'), feature: 'front_office_reports' },
                 { name: 'Notifications', href: route('notifications.index'), icon: Bell, active: route().current('notifications.*') },
                 { name: 'My Account', href: route('profile.edit'), icon: User, active: route().current('profile.*') },
                 { name: 'Sign Out', icon: LogOut, isLogout: true },
@@ -829,34 +832,62 @@ export default function AuthenticatedLayout({
     // Admin/Manager Navigation Items
     const adminNavItems = [
         { name: 'Dashboard', href: route('dashboard'), icon: Home, active: route().current('dashboard') },
-        { name: 'Calendar View', href: route('calendar.index'), icon: Calendar, active: route().current('calendar.*') },
-        { name: 'Reservations', href: route('reservations.index'), icon: Calendar, active: route().current('reservations.*') },
+        { name: 'Calendar View', href: route('calendar.index'), icon: Calendar, active: route().current('calendar.*'), feature: 'calendar' },
+        { name: 'Reservations', href: route('reservations.index'), icon: Calendar, active: route().current('reservations.*'), feature: 'reservations' },
         { 
             name: 'Room Management', 
             icon: Bed, 
+            feature: 'housekeeping',
             active: Boolean(route().current('housekeeping.*') || route().current('maintenance.*')),
             items: [
-                { name: 'Rooms & Availability', href: route('housekeeping.index'), icon: Bed, active: route().current('housekeeping.index') },
-                { name: 'Housekeeping Status', href: route('housekeeping.status'), icon: Activity, active: route().current('housekeeping.status') },
-                { name: 'Maintenance Requests', href: route('maintenance.index'), icon: Wrench, active: route().current('maintenance.*') },
+                { name: 'Rooms & Availability', href: route('housekeeping.index'), icon: Bed, active: route().current('housekeeping.index'), feature: 'housekeeping' },
+                { name: 'Housekeeping Status', href: route('housekeeping.status'), icon: Activity, active: route().current('housekeeping.status'), feature: 'housekeeping' },
+                { name: 'Maintenance Requests', href: route('maintenance.index'), icon: Wrench, active: route().current('maintenance.*'), feature: 'maintenance' },
             ]
         },
-        { name: 'Hotel Report', href: route('reports.index'), icon: BarChart3, active: route().current('reports.*') },
-        { name: 'Front Office Shift Reports', href: route('front-office.reports.index'), icon: FileText, active: route().current('front-office.reports.*') },
-        { name: 'Manager Alerts (SMS/WhatsApp)', href: route('manager.notifications.index'), icon: BellRing, active: route().current('manager.notifications.*') },
-        { name: 'POS Restaurant Report', href: route('restaurant.index'), icon: Utensils, active: route().current('restaurant.*') },
-        { name: 'Super / Mini Market', href: route('grocery.index'), icon: ShoppingBag, active: route().current('grocery.*') },
-        { name: 'Store Report', href: route('inventory.index'), icon: Package, active: route().current('inventory.*') },
-        { name: 'Staff & HR System', href: route('hr.index'), icon: UserCheck, active: route().current('hr.*') },
-        { name: 'Accounting & Reports', href: route('accounting.index'), icon: DollarSign, active: route().current('accounting.*') },
-        { name: 'Notifications', href: route('whatsapp.index'), icon: MessageSquare, active: route().current('whatsapp.*') },
-        { name: 'Hotel & Receipt Branding', href: route('tenant.settings'), icon: Building2, active: route().current('tenant.settings*') },
-        { name: 'CSV Data Entry Hub', href: route('data-entry.index'), icon: FileSpreadsheet, active: route().current('data-entry.*') },
+        { name: 'Hotel Report', href: route('reports.index'), icon: BarChart3, active: route().current('reports.*'), feature: 'hotel_reports' },
+        { name: 'Front Office Shift Reports', href: route('front-office.reports.index'), icon: FileText, active: route().current('front-office.reports.*'), feature: 'front_office_reports' },
+        { name: 'Manager Alerts (SMS/WhatsApp)', href: route('manager.notifications.index'), icon: BellRing, active: route().current('manager.notifications.*'), feature: 'manager_alerts' },
+        { name: 'POS Restaurant Report', href: route('restaurant.index'), icon: Utensils, active: route().current('restaurant.*'), feature: 'restaurant_pos' },
+        { name: 'Super / Mini Market', href: route('grocery.index'), icon: ShoppingBag, active: route().current('grocery.*'), feature: 'grocery_pos' },
+        { name: 'Store Report', href: route('inventory.index'), icon: Package, active: route().current('inventory.*'), feature: 'inventory' },
+        { name: 'Staff & HR System', href: route('hr.index'), icon: UserCheck, active: route().current('hr.*'), feature: 'hr_payroll' },
+        { name: 'Accounting & Reports', href: route('accounting.index'), icon: DollarSign, active: route().current('accounting.*'), feature: 'accounting' },
+        { name: 'Notifications', href: route('whatsapp.index'), icon: MessageSquare, active: route().current('whatsapp.*'), feature: 'whatsapp_sms' },
+        { name: 'Hotel & Receipt Branding', href: route('tenant.settings'), icon: Building2, active: route().current('tenant.settings*'), feature: 'branding_settings' },
+        { name: 'CSV Data Entry Hub', href: route('data-entry.index'), icon: FileSpreadsheet, active: route().current('data-entry.*'), feature: 'data_entry_hub' },
         { name: 'Settings', href: route('profile.edit'), icon: Settings, active: route().current('profile.*') },
         { name: 'Sign Out', icon: LogOut, isLogout: true },
     ];
 
-    const navItems = isSuperAdmin ? superAdminNavItems : (isReceptionist ? receptionistNavItems : (isAccountant ? accountantNavItems : adminNavItems));
+    const isFeatureAllowed = (featureKey?: string) => {
+        if (!featureKey) return true;
+        if (isSuperAdmin || (auth as any)?.is_impersonating) return true;
+        const features = (auth as any)?.tenant?.features;
+        if (!features) return true;
+        return features[featureKey] !== false;
+    };
+
+    const filterItemsByFeature = (items: any[]): any[] => {
+        return items
+            .map(item => {
+                if (item.section && item.items) {
+                    const filteredSub = item.items.filter((sub: any) => isFeatureAllowed(sub.feature));
+                    return filteredSub.length > 0 ? { ...item, items: filteredSub } : null;
+                }
+                if (item.items) {
+                    const filteredSub = item.items.filter((sub: any) => isFeatureAllowed(sub.feature));
+                    return (filteredSub.length > 0 && isFeatureAllowed(item.feature))
+                        ? { ...item, items: filteredSub }
+                        : null;
+                }
+                return isFeatureAllowed(item.feature) ? item : null;
+            })
+            .filter(Boolean);
+    };
+
+    const baseNav = isSuperAdmin ? superAdminNavItems : (isReceptionist ? receptionistNavItems : (isAccountant ? accountantNavItems : adminNavItems));
+    const navItems = isSuperAdmin ? baseNav : filterItemsByFeature(baseNav);
 
     const getRoleTitle = (role?: string) => {
         if ((auth as any)?.is_impersonating) return 'Support Manager (Temporary)';

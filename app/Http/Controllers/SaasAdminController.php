@@ -101,6 +101,10 @@ class SaasAdminController extends Controller
                     'created_at' => $t->created_at ? $t->created_at->format('d M Y') : 'N/A',
                     'sms_balance' => $t->smsWallet?->balance_credits ?? 0,
                     'sms_wallet_status' => $t->smsWallet?->status ?? 'inactive',
+                    'features' => $t->getFeaturesMap(),
+                    'features_count' => count(array_filter($t->getFeaturesMap())),
+                    'features_total' => count(Tenant::AVAILABLE_FEATURES),
+                    'features_detailed' => $t->getFeaturesDetailedList(),
                     'properties' => $t->properties->map(fn($p) => [
                         'id' => $p->id,
                         'name' => $p->name,
@@ -698,6 +702,7 @@ class SaasAdminController extends Controller
             'marketing_data' => $marketingData,
             'conversion_funnel' => $conversionFunnel,
             'support_tickets' => $supportTickets,
+            'available_features' => array_values(Tenant::AVAILABLE_FEATURES),
         ]);
     }
 
@@ -741,6 +746,7 @@ class SaasAdminController extends Controller
                     'vat_percentage' => 18,
                     'default_currency' => 'TZS',
                 ],
+                'features' => Tenant::getPlanFeatureDefaults($validated['plan']),
             ]);
 
             // 2. Create Initial Main Property / Lodge
@@ -855,6 +861,36 @@ class SaasAdminController extends Controller
         }
 
         return redirect()->back()->with('success', "Tenant {$tenant->name} updated successfully.");
+    }
+
+    /**
+     * Update tenant module feature entitlements (Control Panel).
+     */
+    public function updateTenantFeatures(Request $request, Tenant $tenant): RedirectResponse
+    {
+        $validated = $request->validate([
+            'features' => 'required|array',
+        ]);
+
+        $currentMap = $tenant->getFeaturesMap();
+        $newFeatures = [];
+
+        foreach (Tenant::AVAILABLE_FEATURES as $key => $meta) {
+            if (array_key_exists($key, $validated['features'])) {
+                $newFeatures[$key] = filter_var($validated['features'][$key], FILTER_VALIDATE_BOOLEAN);
+            } else {
+                $newFeatures[$key] = (bool) ($currentMap[$key] ?? false);
+            }
+        }
+
+        $tenant->update([
+            'features' => $newFeatures,
+        ]);
+
+        $activeCount = count(array_filter($newFeatures));
+        $totalCount = count(Tenant::AVAILABLE_FEATURES);
+
+        return redirect()->back()->with('success', "Feature entitlements for {$tenant->name} updated successfully ({$activeCount}/{$totalCount} modules active).");
     }
 
     /**

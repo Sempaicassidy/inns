@@ -255,6 +255,7 @@ class HandleInertiaRequests extends Middleware
                     'sender_id' => $tenant->settings['sender_id'] ?? $tenant->name ?? 'THE INNS',
                     'wifi_ssid' => $tenant->settings['wifi_ssid'] ?? null,
                     'wifi_password' => $tenant->settings['wifi_password'] ?? null,
+                    'features' => $tenant->getFeaturesMap(),
                 ] : null,
                 'active_role' => $user?->active_role,
                 'property' => $property,

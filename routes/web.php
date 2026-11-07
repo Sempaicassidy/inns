@@ -92,147 +92,180 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // 2. Room Availability Gantt Calendar
-    Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
-    Route::post('/calendar/block-room', [CalendarController::class, 'blockRoom'])->name('calendar.block-room');
-    Route::post('/calendar/unblock-room', [CalendarController::class, 'unblockRoom'])->name('calendar.unblock-room');
+    Route::middleware('tenant.feature:calendar')->group(function () {
+        Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
+        Route::post('/calendar/block-room', [CalendarController::class, 'blockRoom'])->name('calendar.block-room');
+        Route::post('/calendar/unblock-room', [CalendarController::class, 'unblockRoom'])->name('calendar.unblock-room');
+    });
 
     // 3. Reservations & Front Desk
-    Route::get('/reservations', [ReservationController::class, 'index'])->name('reservations.index');
-    Route::get('/reservations/create', [ReservationController::class, 'index'])->name('reservations.create');
-    Route::get('/reservations/check-in', [ReservationController::class, 'index'])->name('reservations.checkin');
-    Route::get('/reservations/check-out', [ReservationController::class, 'index'])->name('reservations.checkout');
-    Route::post('/reservations', [ReservationController::class, 'store'])->name('reservations.store');
-    Route::post('/reservations/{reservation}/check-in', [ReservationController::class, 'checkIn'])->name('reservations.check-in');
-    Route::post('/reservations/{reservation}/check-out', [ReservationController::class, 'checkOut'])->name('reservations.check-out');
-    Route::post('/reservations/{reservation}/cancel', [ReservationController::class, 'cancel'])->name('reservations.cancel');
-    Route::match(['put', 'patch'], '/reservations/{reservation}', [ReservationController::class, 'update'])->name('reservations.update');
+    Route::middleware('tenant.feature:reservations')->group(function () {
+        Route::get('/reservations', [ReservationController::class, 'index'])->name('reservations.index');
+        Route::get('/reservations/create', [ReservationController::class, 'index'])->name('reservations.create');
+        Route::get('/reservations/check-in', [ReservationController::class, 'index'])->name('reservations.checkin');
+        Route::get('/reservations/check-out', [ReservationController::class, 'index'])->name('reservations.checkout');
+        Route::post('/reservations', [ReservationController::class, 'store'])->name('reservations.store');
+        Route::post('/reservations/{reservation}/check-in', [ReservationController::class, 'checkIn'])->name('reservations.check-in');
+        Route::post('/reservations/{reservation}/check-out', [ReservationController::class, 'checkOut'])->name('reservations.check-out');
+        Route::post('/reservations/{reservation}/cancel', [ReservationController::class, 'cancel'])->name('reservations.cancel');
+        Route::match(['put', 'patch'], '/reservations/{reservation}', [ReservationController::class, 'update'])->name('reservations.update');
 
-    // 3.01 Rate Plans & Meal Basis Management
-    Route::get('/rate-plans', [RatePlanController::class, 'index'])->name('rate-plans.index');
-    Route::post('/rate-plans', [RatePlanController::class, 'store'])->name('rate-plans.store');
-    Route::match(['put', 'patch'], '/rate-plans/{ratePlan}', [RatePlanController::class, 'update'])->name('rate-plans.update');
-    Route::delete('/rate-plans/{ratePlan}', [RatePlanController::class, 'destroy'])->name('rate-plans.destroy');
+        // 3.01 Rate Plans & Meal Basis Management
+        Route::get('/rate-plans', [RatePlanController::class, 'index'])->name('rate-plans.index');
+        Route::post('/rate-plans', [RatePlanController::class, 'store'])->name('rate-plans.store');
+        Route::match(['put', 'patch'], '/rate-plans/{ratePlan}', [RatePlanController::class, 'update'])->name('rate-plans.update');
+        Route::delete('/rate-plans/{ratePlan}', [RatePlanController::class, 'destroy'])->name('rate-plans.destroy');
 
-    // 3.02 Room Types Management
-    Route::get('/room-types', [RoomTypeController::class, 'index'])->name('room-types.index');
-    Route::post('/room-types', [RoomTypeController::class, 'store'])->name('room-types.store');
-    Route::match(['put', 'patch'], '/room-types/{roomType}', [RoomTypeController::class, 'update'])->name('room-types.update');
-    Route::delete('/room-types/{roomType}', [RoomTypeController::class, 'destroy'])->name('room-types.destroy');
+        // 3.02 Room Types Management
+        Route::get('/room-types', [RoomTypeController::class, 'index'])->name('room-types.index');
+        Route::post('/room-types', [RoomTypeController::class, 'store'])->name('room-types.store');
+        Route::match(['put', 'patch'], '/room-types/{roomType}', [RoomTypeController::class, 'update'])->name('room-types.update');
+        Route::delete('/room-types/{roomType}', [RoomTypeController::class, 'destroy'])->name('room-types.destroy');
+    });
 
     // 3.1 Guest Portal & CRM
-    Route::get('/guests', [GuestController::class, 'index'])->name('guests.index');
-    Route::get('/guest-portal', [GuestController::class, 'index'])->name('guest-portal.index');
-    Route::get('/guest-requests', [GuestController::class, 'index'])->name('guest.requests.index');
-    Route::post('/guests', [GuestController::class, 'store'])->name('guests.store');
-    Route::match(['put', 'patch'], '/guests/{guest}', [GuestController::class, 'update'])->name('guests.update');
+    Route::middleware('tenant.feature:guests')->group(function () {
+        Route::get('/guests', [GuestController::class, 'index'])->name('guests.index');
+        Route::get('/guest-portal', [GuestController::class, 'index'])->name('guest-portal.index');
+        Route::get('/guest-requests', [GuestController::class, 'index'])->name('guest.requests.index');
+        Route::post('/guests', [GuestController::class, 'store'])->name('guests.store');
+        Route::match(['put', 'patch'], '/guests/{guest}', [GuestController::class, 'update'])->name('guests.update');
+        Route::delete('/guests/{guest}', [GuestController::class, 'destroy'])->name('guests.destroy');
+    });
 
     // 4. Folios & Billing
-    Route::get('/folios', [FolioController::class, 'index'])->name('folios.index');
-    Route::get('/folios/{folio}', [FolioController::class, 'show'])->name('folios.show');
-    Route::post('/folios/{folio}/charges', [FolioController::class, 'addCharge'])->name('folios.charges.store');
-    Route::post('/folios/{folio}/payments', [FolioController::class, 'addPayment'])->name('folios.payments.store');
+    Route::middleware('tenant.feature:folios')->group(function () {
+        Route::get('/folios', [FolioController::class, 'index'])->name('folios.index');
+        Route::get('/folios/{folio}', [FolioController::class, 'show'])->name('folios.show');
+        Route::post('/folios/{folio}/charges', [FolioController::class, 'addCharge'])->name('folios.charges.store');
+        Route::post('/folios/{folio}/payments', [FolioController::class, 'addPayment'])->name('folios.payments.store');
+    });
 
     // 5. Housekeeping & Rooms
-    Route::get('/housekeeping', [HousekeepingController::class, 'index'])->name('housekeeping.index');
-    Route::get('/housekeeping/status', [HousekeepingController::class, 'index'])->name('housekeeping.status');
-    Route::get('/maintenance', [HousekeepingController::class, 'index'])->name('maintenance.index');
-    Route::post('/housekeeping/rooms', [HousekeepingController::class, 'storeRoom'])->name('housekeeping.rooms.store');
-    Route::post('/housekeeping/rooms/{room}/status', [HousekeepingController::class, 'updateRoomStatus'])->name('housekeeping.rooms.status');
-    Route::post('/housekeeping/tasks', [HousekeepingController::class, 'createTask'])->name('housekeeping.tasks.store');
-    Route::post('/housekeeping/tasks/{task}/status', [HousekeepingController::class, 'updateTaskStatus'])->name('housekeeping.tasks.status');
+    Route::middleware('tenant.feature:housekeeping')->group(function () {
+        Route::get('/housekeeping', [HousekeepingController::class, 'index'])->name('housekeeping.index');
+        Route::get('/housekeeping/status', [HousekeepingController::class, 'index'])->name('housekeeping.status');
+        Route::post('/housekeeping/rooms', [HousekeepingController::class, 'storeRoom'])->name('housekeeping.rooms.store');
+        Route::post('/housekeeping/rooms/{room}/status', [HousekeepingController::class, 'updateRoomStatus'])->name('housekeeping.rooms.status');
+        Route::post('/housekeeping/tasks', [HousekeepingController::class, 'createTask'])->name('housekeeping.tasks.store');
+        Route::post('/housekeeping/tasks/{task}/status', [HousekeepingController::class, 'updateTaskStatus'])->name('housekeeping.tasks.status');
+    });
+
+    // 5b. Maintenance Tracking
+    Route::middleware('tenant.feature:maintenance')->group(function () {
+        Route::get('/maintenance', [HousekeepingController::class, 'index'])->name('maintenance.index');
+    });
 
     // 6. POS Restaurant Manager Portal & Report (Dedicated Independent Module)
-    Route::get('/restaurant', [RestaurantController::class, 'index'])->name('restaurant.index');
-    Route::post('/restaurant/items', [RestaurantController::class, 'storeItem'])->name('restaurant.items.store');
-    Route::match(['put', 'patch'], '/restaurant/items/{item}', [RestaurantController::class, 'updateItem'])->name('restaurant.items.update');
-    Route::post('/restaurant/items/{item}/toggle-availability', [RestaurantController::class, 'toggleAvailability'])->name('restaurant.items.toggle');
-    Route::post('/restaurant/categories', [RestaurantController::class, 'storeCategory'])->name('restaurant.categories.store');
-    Route::post('/restaurant/orders/{order}/status', [RestaurantController::class, 'updateOrderStatus'])->name('restaurant.orders.status');
+    Route::middleware('tenant.feature:restaurant_pos')->group(function () {
+        Route::get('/restaurant', [RestaurantController::class, 'index'])->name('restaurant.index');
+        Route::post('/restaurant/items', [RestaurantController::class, 'storeItem'])->name('restaurant.items.store');
+        Route::match(['put', 'patch'], '/restaurant/items/{item}', [RestaurantController::class, 'updateItem'])->name('restaurant.items.update');
+        Route::post('/restaurant/items/{item}/toggle-availability', [RestaurantController::class, 'toggleAvailability'])->name('restaurant.items.toggle');
+        Route::post('/restaurant/categories', [RestaurantController::class, 'storeCategory'])->name('restaurant.categories.store');
+        Route::post('/restaurant/orders/{order}/status', [RestaurantController::class, 'updateOrderStatus'])->name('restaurant.orders.status');
 
-    // 6b. Waitstaff & Cashier POS Terminal
-    Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
-    Route::post('/pos/orders', [PosController::class, 'store'])->name('pos.store');
-    Route::post('/pos/order-store', [PosController::class, 'store'])->name('pos.orders.store');
+        // 6b. Waitstaff & Cashier POS Terminal
+        Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
+        Route::post('/pos/orders', [PosController::class, 'store'])->name('pos.store');
+        Route::post('/pos/order-store', [PosController::class, 'store'])->name('pos.orders.store');
+    });
 
     // 6c. POS Grocery & Retail Minimart Management (Manager Portal & Counter Sales)
-    Route::get('/grocery', [GroceryController::class, 'index'])->name('grocery.index');
-    Route::post('/grocery/items', [GroceryController::class, 'storeItem'])->name('grocery.items.store');
-    Route::match(['put', 'patch'], '/grocery/items/{item}', [GroceryController::class, 'updateItem'])->name('grocery.items.update');
-    Route::post('/grocery/items/{item}/restock', [GroceryController::class, 'restock'])->name('grocery.items.restock');
-    Route::post('/grocery/items/{item}/toggle-availability', [GroceryController::class, 'toggleAvailability'])->name('grocery.items.toggle');
-    Route::post('/grocery/orders', [GroceryController::class, 'storeOrder'])->name('grocery.orders.store');
+    Route::middleware('tenant.feature:grocery_pos')->group(function () {
+        Route::get('/grocery', [GroceryController::class, 'index'])->name('grocery.index');
+        Route::post('/grocery/items', [GroceryController::class, 'storeItem'])->name('grocery.items.store');
+        Route::match(['put', 'patch'], '/grocery/items/{item}', [GroceryController::class, 'updateItem'])->name('grocery.items.update');
+        Route::post('/grocery/items/{item}/restock', [GroceryController::class, 'restock'])->name('grocery.items.restock');
+        Route::post('/grocery/items/{item}/toggle-availability', [GroceryController::class, 'toggleAvailability'])->name('grocery.items.toggle');
+        Route::post('/grocery/orders', [GroceryController::class, 'storeOrder'])->name('grocery.orders.store');
+    });
 
     // 7. Hotel Accounting & Financial Engine
-    Route::get('/accounting', [AccountingController::class, 'index'])->name('accounting.index');
-    Route::post('/accounting/expenses', [AccountingController::class, 'storeExpense'])->name('accounting.expenses.store');
-    Route::post('/accounting/expenses/{expense}/approve', [AccountingController::class, 'approveExpense'])->name('accounting.expenses.approve');
-    Route::get('/accounting/transactions', [AccountingController::class, 'transactions'])->name('accounting.transactions');
-    Route::get('/accounting/refunds', [AccountingController::class, 'refunds'])->name('accounting.refunds');
-    Route::get('/accounting/cashbook', [AccountingController::class, 'cashbook'])->name('accounting.cashbook');
-    Route::get('/accounting/invoices/customer', [AccountingController::class, 'customerInvoices'])->name('accounting.invoices.customer');
-    Route::get('/accounting/invoices/supplier', [AccountingController::class, 'supplierInvoices'])->name('accounting.invoices.supplier');
-    Route::get('/accounting/credit-notes', [AccountingController::class, 'creditNotes'])->name('accounting.credit-notes');
-    Route::get('/accounting/ar', [AccountingController::class, 'receivables'])->name('accounting.ar');
-    Route::get('/accounting/ap', [AccountingController::class, 'payables'])->name('accounting.ap');
-    Route::get('/accounting/customer-balances', [AccountingController::class, 'customerBalances'])->name('accounting.customer-balances');
-    Route::get('/accounting/supplier-balances', [AccountingController::class, 'supplierBalances'])->name('accounting.supplier-balances');
-    Route::get('/accounting/chart-of-accounts', [AccountingController::class, 'chartOfAccounts'])->name('accounting.chart-of-accounts');
-    Route::get('/accounting/journals', [AccountingController::class, 'journals'])->name('accounting.journals');
-    Route::get('/accounting/trial-balance', [AccountingController::class, 'trialBalance'])->name('accounting.trial-balance');
-    Route::get('/accounting/statements', [AccountingController::class, 'statements'])->name('accounting.statements');
-    Route::get('/accounting/bank-accounts', [AccountingController::class, 'bankAccounts'])->name('accounting.bank-accounts');
-    Route::get('/accounting/bank-transactions', [AccountingController::class, 'bankTransactions'])->name('accounting.bank-transactions');
-    Route::get('/accounting/bank-reconciliation', [AccountingController::class, 'bankReconciliation'])->name('accounting.bank-reconciliation');
-    Route::get('/accounting/cash-reconciliation', [AccountingController::class, 'cashReconciliation'])->name('accounting.cash-reconciliation');
-    Route::get('/accounting/reports/pnl', [AccountingController::class, 'reportPnl'])->name('accounting.reports.pnl');
-    Route::get('/accounting/reports/balance-sheet', [AccountingController::class, 'reportBalanceSheet'])->name('accounting.reports.balance-sheet');
-    Route::get('/accounting/reports/cash-flow', [AccountingController::class, 'reportCashFlow'])->name('accounting.reports.cash-flow');
-    Route::get('/accounting/reports/revenue', [AccountingController::class, 'reportRevenue'])->name('accounting.reports.revenue');
-    Route::get('/accounting/reports/expenses', [AccountingController::class, 'reportExpenses'])->name('accounting.reports.expenses');
-    Route::get('/accounting/reports/tax', [AccountingController::class, 'reportTax'])->name('accounting.reports.tax');
-    Route::get('/accounting/approvals/expenses', [AccountingController::class, 'approvalsExpenses'])->name('accounting.approvals.expenses');
-    Route::get('/accounting/approvals/payments', [AccountingController::class, 'approvalsPayments'])->name('accounting.approvals.payments');
-    Route::get('/accounting/approvals/journals', [AccountingController::class, 'approvalsJournals'])->name('accounting.approvals.journals');
+    Route::middleware('tenant.feature:accounting')->group(function () {
+        Route::get('/accounting', [AccountingController::class, 'index'])->name('accounting.index');
+        Route::post('/accounting/expenses', [AccountingController::class, 'storeExpense'])->name('accounting.expenses.store');
+        Route::post('/accounting/expenses/{expense}/approve', [AccountingController::class, 'approveExpense'])->name('accounting.expenses.approve');
+        Route::get('/accounting/transactions', [AccountingController::class, 'transactions'])->name('accounting.transactions');
+        Route::get('/accounting/refunds', [AccountingController::class, 'refunds'])->name('accounting.refunds');
+        Route::get('/accounting/cashbook', [AccountingController::class, 'cashbook'])->name('accounting.cashbook');
+        Route::get('/accounting/invoices/customer', [AccountingController::class, 'customerInvoices'])->name('accounting.invoices.customer');
+        Route::get('/accounting/invoices/supplier', [AccountingController::class, 'supplierInvoices'])->name('accounting.invoices.supplier');
+        Route::get('/accounting/credit-notes', [AccountingController::class, 'creditNotes'])->name('accounting.credit-notes');
+        Route::get('/accounting/ar', [AccountingController::class, 'receivables'])->name('accounting.ar');
+        Route::get('/accounting/ap', [AccountingController::class, 'payables'])->name('accounting.ap');
+        Route::get('/accounting/customer-balances', [AccountingController::class, 'customerBalances'])->name('accounting.customer-balances');
+        Route::get('/accounting/supplier-balances', [AccountingController::class, 'supplierBalances'])->name('accounting.supplier-balances');
+        Route::get('/accounting/chart-of-accounts', [AccountingController::class, 'chartOfAccounts'])->name('accounting.chart-of-accounts');
+        Route::get('/accounting/journals', [AccountingController::class, 'journals'])->name('accounting.journals');
+        Route::get('/accounting/trial-balance', [AccountingController::class, 'trialBalance'])->name('accounting.trial-balance');
+        Route::get('/accounting/statements', [AccountingController::class, 'statements'])->name('accounting.statements');
+        Route::get('/accounting/bank-accounts', [AccountingController::class, 'bankAccounts'])->name('accounting.bank-accounts');
+        Route::get('/accounting/bank-transactions', [AccountingController::class, 'bankTransactions'])->name('accounting.bank-transactions');
+        Route::get('/accounting/bank-reconciliation', [AccountingController::class, 'bankReconciliation'])->name('accounting.bank-reconciliation');
+        Route::get('/accounting/cash-reconciliation', [AccountingController::class, 'cashReconciliation'])->name('accounting.cash-reconciliation');
+        Route::get('/accounting/reports/pnl', [AccountingController::class, 'reportPnl'])->name('accounting.reports.pnl');
+        Route::get('/accounting/reports/balance-sheet', [AccountingController::class, 'reportBalanceSheet'])->name('accounting.reports.balance-sheet');
+        Route::get('/accounting/reports/cash-flow', [AccountingController::class, 'reportCashFlow'])->name('accounting.reports.cash-flow');
+        Route::get('/accounting/reports/revenue', [AccountingController::class, 'reportRevenue'])->name('accounting.reports.revenue');
+        Route::get('/accounting/reports/expenses', [AccountingController::class, 'reportExpenses'])->name('accounting.reports.expenses');
+        Route::get('/accounting/reports/tax', [AccountingController::class, 'reportTax'])->name('accounting.reports.tax');
+        Route::get('/accounting/approvals/expenses', [AccountingController::class, 'approvalsExpenses'])->name('accounting.approvals.expenses');
+        Route::get('/accounting/approvals/payments', [AccountingController::class, 'approvalsPayments'])->name('accounting.approvals.payments');
+        Route::get('/accounting/approvals/journals', [AccountingController::class, 'approvalsJournals'])->name('accounting.approvals.journals');
+    });
 
     // 8. HR & Staff Management
-    Route::get('/hr', [HrController::class, 'index'])->name('hr.index');
-    Route::post('/hr/employees', [HrController::class, 'storeEmployee'])->name('hr.employees.store');
-    Route::put('/hr/employees/{id}', [HrController::class, 'updateEmployee'])->name('hr.employees.update');
-    Route::delete('/hr/employees/{id}', [HrController::class, 'destroyEmployee'])->name('hr.employees.destroy');
-    Route::post('/hr/shifts', [HrController::class, 'assignShift'])->name('hr.shifts.store');
-    Route::post('/hr/schedules', [HrController::class, 'assignShift'])->name('hr.schedules.store');
-    Route::delete('/hr/shifts/{id}', [HrController::class, 'destroyShift'])->name('hr.shifts.destroy');
-    Route::post('/hr/attendance', [HrController::class, 'recordAttendance'])->name('hr.attendance.store');
-    Route::post('/hr/leaves', [HrController::class, 'storeLeave'])->name('hr.leaves.store');
-    Route::put('/hr/leaves/{id}/status', [HrController::class, 'updateLeaveStatus'])->name('hr.leaves.update_status');
-    Route::post('/hr/payrolls/generate', [HrController::class, 'generatePayroll'])->name('hr.payrolls.generate');
-    Route::put('/hr/payrolls/{id}/status', [HrController::class, 'updatePayrollStatus'])->name('hr.payrolls.update_status');
-    Route::post('/hr/disciplinary', [HrController::class, 'storeDisciplinary'])->name('hr.disciplinary.store');
+    Route::middleware('tenant.feature:hr_payroll')->group(function () {
+        Route::get('/hr', [HrController::class, 'index'])->name('hr.index');
+        Route::post('/hr/employees', [HrController::class, 'storeEmployee'])->name('hr.employees.store');
+        Route::put('/hr/employees/{id}', [HrController::class, 'updateEmployee'])->name('hr.employees.update');
+        Route::delete('/hr/employees/{id}', [HrController::class, 'destroyEmployee'])->name('hr.employees.destroy');
+        Route::post('/hr/shifts', [HrController::class, 'assignShift'])->name('hr.shifts.store');
+        Route::post('/hr/schedules', [HrController::class, 'assignShift'])->name('hr.schedules.store');
+        Route::delete('/hr/shifts/{id}', [HrController::class, 'destroyShift'])->name('hr.shifts.destroy');
+        Route::post('/hr/attendance', [HrController::class, 'recordAttendance'])->name('hr.attendance.store');
+        Route::post('/hr/leaves', [HrController::class, 'storeLeave'])->name('hr.leaves.store');
+        Route::put('/hr/leaves/{id}/status', [HrController::class, 'updateLeaveStatus'])->name('hr.leaves.update_status');
+        Route::post('/hr/payrolls/generate', [HrController::class, 'generatePayroll'])->name('hr.payrolls.generate');
+        Route::put('/hr/payrolls/{id}/status', [HrController::class, 'updatePayrollStatus'])->name('hr.payrolls.update_status');
+        Route::post('/hr/disciplinary', [HrController::class, 'storeDisciplinary'])->name('hr.disciplinary.store');
+    });
 
     // 9. Central Store & Warehouse Inventory Management (Manager Portal & Requisition)
-    Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
-    Route::post('/inventory/items', [InventoryController::class, 'storeItem'])->name('inventory.items.store');
-    Route::post('/inventory/receive', [InventoryController::class, 'receiveStock'])->name('inventory.receive');
-    Route::post('/inventory/issue', [InventoryController::class, 'issueStock'])->name('inventory.issue');
-    Route::post('/inventory/adjust', [InventoryController::class, 'adjustStock'])->name('inventory.adjust');
+    Route::middleware('tenant.feature:inventory')->group(function () {
+        Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
+        Route::post('/inventory/items', [InventoryController::class, 'storeItem'])->name('inventory.items.store');
+        Route::post('/inventory/receive', [InventoryController::class, 'receiveStock'])->name('inventory.receive');
+        Route::post('/inventory/issue', [InventoryController::class, 'issueStock'])->name('inventory.issue');
+        Route::post('/inventory/adjust', [InventoryController::class, 'adjustStock'])->name('inventory.adjust');
+    });
 
     // 10. Manager Executive Reports & Analytics
-    Route::get('/reports', [ReportsController::class, 'index'])->name('reports.index');
+    Route::middleware('tenant.feature:hotel_reports')->group(function () {
+        Route::get('/reports', [ReportsController::class, 'index'])->name('reports.index');
+    });
 
     // 10-FO. Front Office Shift Progress Reports (Receptionist Operational Reporting)
-    Route::get('/front-office/reports', [FrontOfficeReportController::class, 'index'])->name('front-office.reports.index');
-    Route::post('/front-office/reports', [FrontOfficeReportController::class, 'store'])->name('front-office.reports.store');
+    Route::middleware('tenant.feature:front_office_reports')->group(function () {
+        Route::get('/front-office/reports', [FrontOfficeReportController::class, 'index'])->name('front-office.reports.index');
+        Route::post('/front-office/reports', [FrontOfficeReportController::class, 'store'])->name('front-office.reports.store');
+    });
 
     // 10a. Manager Automated Notifications (SMS, WhatsApp, Email & Scheduled Morning Reports)
-    Route::get('/manager-notifications', [ManagerNotificationController::class, 'index'])->name('manager.notifications.index');
-    Route::post('/manager-notifications/settings', [ManagerNotificationController::class, 'updateSettings'])->name('manager.notifications.settings.update');
-    Route::post('/manager-notifications/send-test-report', [ManagerNotificationController::class, 'sendTestReport'])->name('manager.notifications.test-report');
-    Route::post('/manager-notifications/send-test-reservation', [ManagerNotificationController::class, 'sendTestReservationAlert'])->name('manager.notifications.test-reservation');
+    Route::middleware('tenant.feature:manager_alerts')->group(function () {
+        Route::get('/manager-notifications', [ManagerNotificationController::class, 'index'])->name('manager.notifications.index');
+        Route::post('/manager-notifications/settings', [ManagerNotificationController::class, 'updateSettings'])->name('manager.notifications.settings.update');
+        Route::post('/manager-notifications/send-test-report', [ManagerNotificationController::class, 'sendTestReport'])->name('manager.notifications.test-report');
+        Route::post('/manager-notifications/send-test-reservation', [ManagerNotificationController::class, 'sendTestReservationAlert'])->name('manager.notifications.test-reservation');
+    });
 
     // 10. WhatsApp Guest Messaging & API Settings
-    Route::get('/whatsapp', [WhatsAppController::class, 'index'])->name('whatsapp.index');
-    Route::post('/whatsapp/settings', [WhatsAppController::class, 'updateSettings'])->name('whatsapp.settings.update');
-    Route::post('/whatsapp/send', [WhatsAppController::class, 'sendManualMessage'])->name('whatsapp.send');
+    Route::middleware('tenant.feature:whatsapp_sms')->group(function () {
+        Route::get('/whatsapp', [WhatsAppController::class, 'index'])->name('whatsapp.index');
+        Route::post('/whatsapp/settings', [WhatsAppController::class, 'updateSettings'])->name('whatsapp.settings.update');
+        Route::post('/whatsapp/send', [WhatsAppController::class, 'sendManualMessage'])->name('whatsapp.send');
+    });
 
     // 10b. In-App System Notifications Hub & PWA Push API
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
@@ -247,6 +280,7 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     Route::get('/saas-admin', [SaasAdminController::class, 'index'])->name('saas-admin.index');
     Route::post('/saas-admin/tenants', [SaasAdminController::class, 'storeTenant'])->name('saas-admin.tenants.store');
     Route::put('/saas-admin/tenants/{tenant}', [SaasAdminController::class, 'updateTenantDetails'])->name('saas-admin.tenants.update');
+    Route::put('/saas-admin/tenants/{tenant}/features', [SaasAdminController::class, 'updateTenantFeatures'])->name('saas-admin.tenants.features.update');
     Route::delete('/saas-admin/tenants/{tenant}', [SaasAdminController::class, 'destroyTenant'])->name('saas-admin.tenants.destroy');
     Route::post('/saas-admin/tenants/{tenant}/toggle', [SaasAdminController::class, 'toggleTenantStatus'])->name('saas-admin.tenants.toggle');
     Route::post('/saas-admin/tenants/{tenant}/impersonate', [SaasAdminController::class, 'impersonateTenant'])->name('saas-admin.tenants.impersonate');
@@ -292,21 +326,27 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     Route::post('/night-audit/run', [NightAuditController::class, 'runAudit'])->name('night-audit.run');
 
     // 13. SaaS Branch / Property Management & Switcher
-    Route::get('/branches', [BranchController::class, 'index'])->name('branches.index');
-    Route::post('/branches', [BranchController::class, 'store'])->name('branches.store');
-    Route::put('/branches/{branch}', [BranchController::class, 'update'])->name('branches.update');
-    Route::patch('/branches/{branch}/toggle', [BranchController::class, 'toggle'])->name('branches.toggle');
-    Route::post('/branches/{branch}/switch', [BranchController::class, 'switchBranch'])->name('branches.switch');
+    Route::middleware('tenant.feature:multi_branch')->group(function () {
+        Route::get('/branches', [BranchController::class, 'index'])->name('branches.index');
+        Route::post('/branches', [BranchController::class, 'store'])->name('branches.store');
+        Route::put('/branches/{branch}', [BranchController::class, 'update'])->name('branches.update');
+        Route::patch('/branches/{branch}/toggle', [BranchController::class, 'toggle'])->name('branches.toggle');
+        Route::post('/branches/{branch}/switch', [BranchController::class, 'switchBranch'])->name('branches.switch');
+    });
 
     // 14. Manager Hotel Identity, Receipt & System Branding Settings
-    Route::get('/settings/tenant', [TenantSettingsController::class, 'edit'])->name('tenant.settings');
-    Route::post('/settings/tenant', [TenantSettingsController::class, 'update'])->name('tenant.settings.update');
+    Route::middleware('tenant.feature:branding_settings')->group(function () {
+        Route::get('/settings/tenant', [TenantSettingsController::class, 'edit'])->name('tenant.settings');
+        Route::post('/settings/tenant', [TenantSettingsController::class, 'update'])->name('tenant.settings.update');
+    });
 
     // 15. Universal Spreadsheet CSV Data Entry (Importer & Exporter)
-    Route::get('/data-entry', [SpreadsheetDataEntryController::class, 'index'])->name('data-entry.index');
-    Route::get('/data-entry/template/{type}', [SpreadsheetDataEntryController::class, 'downloadTemplate'])->name('data-entry.template');
-    Route::get('/data-entry/export/{type}', [SpreadsheetDataEntryController::class, 'exportCsv'])->name('data-entry.export');
-    Route::post('/data-entry/import/{type}', [SpreadsheetDataEntryController::class, 'importCsv'])->name('data-entry.import');
+    Route::middleware('tenant.feature:data_entry_hub')->group(function () {
+        Route::get('/data-entry', [SpreadsheetDataEntryController::class, 'index'])->name('data-entry.index');
+        Route::get('/data-entry/template/{type}', [SpreadsheetDataEntryController::class, 'downloadTemplate'])->name('data-entry.template');
+        Route::get('/data-entry/export/{type}', [SpreadsheetDataEntryController::class, 'exportCsv'])->name('data-entry.export');
+        Route::post('/data-entry/import/{type}', [SpreadsheetDataEntryController::class, 'importCsv'])->name('data-entry.import');
+    });
 
     // Profile Settings
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

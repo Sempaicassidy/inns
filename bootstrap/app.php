@@ -8,6 +8,7 @@ if (! function_exists('request_parse_body')) {
     }
 }
 
+use App\Http\Middleware\EnsureTenantFeatureEnabled;
 use App\Http\Middleware\EnsureTenantIsolation;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -30,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'tenant.isolation' => EnsureTenantIsolation::class,
+            'tenant.feature' => EnsureTenantFeatureEnabled::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

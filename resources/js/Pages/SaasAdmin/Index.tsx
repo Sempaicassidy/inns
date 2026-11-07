@@ -59,7 +59,9 @@ import {
     ShieldAlert,
     ShieldCheck,
     ShoppingBag,
+    Sliders,
     Sparkles,
+    ToggleLeft,
     Trash2,
     TrendingDown,
     TrendingUp,
@@ -93,6 +95,16 @@ interface TenantItem {
     created_at: string;
     sms_balance: number;
     sms_wallet_status: string;
+    features?: Record<string, boolean>;
+    features_count?: number;
+    features_total?: number;
+    features_detailed?: Array<{
+        key: string;
+        name: string;
+        category: string;
+        description: string;
+        enabled: boolean;
+    }>;
     properties: Array<{
         id: string;
         name: string;
@@ -340,6 +352,15 @@ interface SaasAdminProps extends PageProps {
     marketing_data?: any;
     conversion_funnel?: any;
     support_tickets?: Array<any>;
+    available_features?: Array<{
+        key: string;
+        name: string;
+        category: string;
+        description: string;
+        default_starter: boolean;
+        default_pro: boolean;
+        default_enterprise: boolean;
+    }>;
 }
 
 export default function SaasAdminDashboard({
@@ -369,6 +390,7 @@ export default function SaasAdminDashboard({
     marketing_data,
     conversion_funnel,
     support_tickets = [],
+    available_features = [],
 }: SaasAdminProps) {
     // Current Active Tab
     const [activeTab, setActiveTab] = useState<string>(() => {
@@ -611,6 +633,18 @@ export default function SaasAdminDashboard({
     const [showEditTenantModal, setShowEditTenantModal] = useState(false);
     const [selectedTenantToEdit, setSelectedTenantToEdit] = useState<TenantItem | null>(null);
 
+    // Feature Control Panel modal state
+    const [showFeatureModal, setShowFeatureModal] = useState(false);
+    const [selectedTenantForFeatures, setSelectedTenantForFeatures] = useState<TenantItem | null>(null);
+    const [featureSearch, setFeatureSearch] = useState('');
+    const [activeCategoryFilter, setActiveCategoryFilter] = useState('all');
+
+    const featureForm = useForm<{
+        features: Record<string, boolean>;
+    }>({
+        features: {},
+    });
+
     const [showIssueSmsModal, setShowIssueSmsModal] = useState(false);
     const [selectedTenantForSms, setSelectedTenantForSms] = useState<string>('');
 
@@ -778,6 +812,64 @@ export default function SaasAdminDashboard({
         if (!selectedTenantToEdit) return;
         editTenantForm.put(route('saas-admin.tenants.update', selectedTenantToEdit.id), {
             onSuccess: () => setShowEditTenantModal(false),
+        });
+    };
+
+    const handleOpenFeatureModal = (tenant: TenantItem) => {
+        setSelectedTenantForFeatures(tenant);
+        const initialMap: Record<string, boolean> = {};
+        if (available_features && available_features.length > 0) {
+            available_features.forEach((f: any) => {
+                if (tenant.features && typeof tenant.features[f.key] !== 'undefined') {
+                    initialMap[f.key] = Boolean(tenant.features[f.key]);
+                } else if (tenant.plan === 'enterprise') {
+                    initialMap[f.key] = true;
+                } else if (tenant.plan === 'starter') {
+                    initialMap[f.key] = Boolean(f.default_starter);
+                } else {
+                    initialMap[f.key] = Boolean(f.default_pro);
+                }
+            });
+        }
+        featureForm.setData('features', initialMap);
+        setFeatureSearch('');
+        setActiveCategoryFilter('all');
+        setShowFeatureModal(true);
+    };
+
+    const handleApplyPreset = (presetName: 'starter' | 'pro' | 'enterprise' | 'none') => {
+        if (!available_features) return;
+        const newMap: Record<string, boolean> = {};
+        available_features.forEach((f: any) => {
+            if (presetName === 'none') {
+                newMap[f.key] = false;
+            } else if (presetName === 'starter') {
+                newMap[f.key] = Boolean(f.default_starter);
+            } else if (presetName === 'pro') {
+                newMap[f.key] = Boolean(f.default_pro);
+            } else if (presetName === 'enterprise') {
+                newMap[f.key] = true;
+            }
+        });
+        featureForm.setData('features', newMap);
+    };
+
+    const handleToggleSingleFeature = (featureKey: string) => {
+        const current = featureForm.data.features[featureKey] ?? true;
+        featureForm.setData('features', {
+            ...featureForm.data.features,
+            [featureKey]: !current,
+        });
+    };
+
+    const submitSaveFeatures = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedTenantForFeatures) return;
+        featureForm.put(route('saas-admin.tenants.features.update', selectedTenantForFeatures.id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                setShowFeatureModal(false);
+            },
         });
     };
 
@@ -1744,6 +1836,15 @@ export default function SaasAdminDashboard({
                                                     <span className="block text-slate-500 text-[11px] mt-1 font-semibold">
                                                         TZS {new Intl.NumberFormat('en-TZ').format(tenant.subscription_price)}/mo
                                                     </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleOpenFeatureModal(tenant)}
+                                                        title="Configure Module Entitlements & Features"
+                                                        className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-extrabold text-indigo-700 bg-indigo-50/80 hover:bg-indigo-100 hover:text-indigo-900 px-2 py-0.5 rounded-md border border-indigo-200/80 transition cursor-pointer"
+                                                    >
+                                                        <Sliders className="w-2.5 h-2.5 text-indigo-600" />
+                                                        <span>{tenant.features_count ?? 19}/{tenant.features_total ?? 19} Modules</span>
+                                                    </button>
                                                 </td>
 
                                                 <td className="py-4 px-4">
@@ -1803,6 +1904,16 @@ export default function SaasAdminDashboard({
                                                         >
                                                             <ExternalLink className="w-3.5 h-3.5" />
                                                             <span>Workspace</span>
+                                                        </button>
+
+                                                        {/* Feature Control Panel */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleOpenFeatureModal(tenant)}
+                                                            title="Module Entitlements & Features Control Panel"
+                                                            className="p-1.5 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-lg transition cursor-pointer"
+                                                        >
+                                                            <Sliders className="w-4 h-4" />
                                                         </button>
 
                                                         {/* Edit Tenant */}
@@ -3900,6 +4011,26 @@ export default function SaasAdminDashboard({
                                 </label>
                             </div>
 
+                            <div className="pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const currentTenant = selectedTenantToEdit;
+                                        setShowEditTenantModal(false);
+                                        if (currentTenant) {
+                                            handleOpenFeatureModal(currentTenant);
+                                        }
+                                    }}
+                                    className="w-full flex items-center justify-between p-3 rounded-2xl bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200 text-indigo-900 transition font-bold text-xs cursor-pointer"
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <Sliders className="w-4 h-4 text-indigo-600" />
+                                        <span>Manage Module & Feature Entitlements</span>
+                                    </span>
+                                    <span className="text-[11px] text-indigo-600 font-extrabold">&rarr;</span>
+                                </button>
+                            </div>
+
                             <div className="pt-3 flex items-center justify-end gap-2">
                                 <button
                                     type="button"
@@ -3915,6 +4046,220 @@ export default function SaasAdminDashboard({
                                 >
                                     Save Changes
                                 </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL 2B: TENANT FEATURE CONTROL PANEL & MODULE ENTITLEMENTS */}
+            {showFeatureModal && selectedTenantForFeatures && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+                    <div className="bg-white rounded-3xl max-w-4xl w-full shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] my-4 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        {/* Header */}
+                        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-50 via-white to-blue-50/30">
+                            <div className="flex items-center gap-3.5">
+                                <div className="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-md shadow-indigo-200 shrink-0">
+                                    <Sliders className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="font-extrabold text-base sm:text-lg text-slate-900">
+                                            Feature Entitlements & Module Control Panel
+                                        </h3>
+                                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-200">
+                                            {selectedTenantForFeatures.plan} Plan
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-slate-500 mt-0.5">
+                                        Hotel: <strong className="text-slate-800">{selectedTenantForFeatures.name}</strong> • 
+                                        Subdomain: <span className="font-mono text-slate-600">{selectedTenantForFeatures.subdomain}.theinns.com</span>
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowFeatureModal(false)}
+                                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Presets & Quick Action Bar */}
+                        <div className="px-6 py-3.5 bg-slate-50/80 border-b border-slate-200/80 flex flex-col lg:flex-row items-center justify-between gap-3">
+                            <div className="flex items-center gap-1.5 flex-wrap w-full lg:w-auto">
+                                <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mr-1">Presets:</span>
+                                <button
+                                    type="button"
+                                    onClick={() => handleApplyPreset('starter')}
+                                    className="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-300 bg-white hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 transition text-slate-700 cursor-pointer shadow-2xs"
+                                >
+                                    Starter (Core Front Desk)
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleApplyPreset('pro')}
+                                    className="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-300 bg-white hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 transition text-slate-700 cursor-pointer shadow-2xs"
+                                >
+                                    Pro (Front Desk + Store + Alerts)
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleApplyPreset('enterprise')}
+                                    className="px-2.5 py-1 text-xs font-bold rounded-lg border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 transition cursor-pointer shadow-2xs"
+                                >
+                                    Enterprise (All 19 Modules)
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleApplyPreset('none')}
+                                    className="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-rose-600 hover:border-rose-200 transition cursor-pointer"
+                                >
+                                    Deselect All
+                                </button>
+                            </div>
+
+                            <div className="flex items-center gap-3 w-full lg:w-auto justify-end">
+                                <div className="relative w-full sm:w-56">
+                                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                                    <input
+                                        type="text"
+                                        value={featureSearch}
+                                        onChange={(e) => setFeatureSearch(e.target.value)}
+                                        placeholder="Search features..."
+                                        className="w-full pl-8 pr-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+                                    />
+                                </div>
+                                <span className="text-xs font-extrabold text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-xl shrink-0">
+                                    {Object.values(featureForm.data.features).filter(Boolean).length} of {available_features?.length || 19} Active
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Scrollable Features Form */}
+                        <form onSubmit={submitSaveFeatures} className="flex-1 overflow-y-auto p-6 space-y-6">
+                            <div className="text-xs text-slate-600 bg-blue-50/70 border border-blue-200/80 rounded-2xl p-3.5 flex items-start gap-3">
+                                <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                                <div>
+                                    <strong className="text-blue-900 block font-bold mb-0.5">Enforced Tenant Access Control</strong>
+                                    <span>
+                                        Turning off a module below removes it from this client's left navigation menu and blocks direct URL access immediately. Grant access only to the modules this hotel has subscribed and paid for.
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Render Features Grouped by Category */}
+                            {Object.entries(
+                                (available_features || []).reduce((acc: Record<string, any[]>, item: any) => {
+                                    const matchesSearch = !featureSearch || 
+                                        item.name.toLowerCase().includes(featureSearch.toLowerCase()) ||
+                                        item.description.toLowerCase().includes(featureSearch.toLowerCase()) ||
+                                        item.category.toLowerCase().includes(featureSearch.toLowerCase());
+                                    if (matchesSearch) {
+                                        if (!acc[item.category]) acc[item.category] = [];
+                                        acc[item.category].push(item);
+                                    }
+                                    return acc;
+                                }, {})
+                            ).map(([category, items]: [string, any[]]) => (
+                                <div key={category} className="space-y-3">
+                                    <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
+                                        <h4 className="font-extrabold text-xs uppercase tracking-wider text-slate-700 flex items-center gap-2">
+                                            <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                                            {category}
+                                        </h4>
+                                        <span className="text-[11px] font-semibold text-slate-400">
+                                            {items.filter(f => featureForm.data.features[f.key]).length} / {items.length} Enabled
+                                        </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {items.map((feature: any) => {
+                                            const isEnabled = featureForm.data.features[feature.key] ?? false;
+                                            return (
+                                                <div
+                                                    key={feature.key}
+                                                    onClick={() => handleToggleSingleFeature(feature.key)}
+                                                    className={`p-3.5 rounded-2xl border transition-all cursor-pointer select-none flex items-start justify-between gap-3 ${
+                                                        isEnabled
+                                                            ? 'bg-white border-indigo-200 shadow-xs hover:border-indigo-300 ring-1 ring-indigo-500/10'
+                                                            : 'bg-slate-50/60 border-slate-200 hover:bg-slate-100/60 opacity-75'
+                                                    }`}
+                                                >
+                                                    <div className="flex-1 pr-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-extrabold text-xs text-slate-900 block">
+                                                                {feature.name}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">
+                                                            {feature.description}
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Toggle Switch */}
+                                                    <div className="shrink-0 pt-0.5">
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleToggleSingleFeature(feature.key);
+                                                            }}
+                                                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                                                                isEnabled ? 'bg-indigo-600' : 'bg-slate-300'
+                                                            }`}
+                                                        >
+                                                            <span
+                                                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                                                                    isEnabled ? 'translate-x-5' : 'translate-x-0'
+                                                                }`}
+                                                            />
+                                                        </button>
+                                                        <span className={`block text-[10px] font-bold text-center mt-1 uppercase tracking-tight ${
+                                                            isEnabled ? 'text-indigo-600' : 'text-slate-400'
+                                                        }`}>
+                                                            {isEnabled ? 'Active' : 'Off'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+
+                            {/* Sticky Bottom Actions */}
+                            <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                                <span className="text-xs text-slate-500">
+                                    Changes take effect immediately for all staff logged into this hotel workspace.
+                                </span>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowFeatureModal(false)}
+                                        className="px-4 py-2 border border-slate-200 rounded-xl font-bold text-xs text-slate-600 hover:bg-slate-50 cursor-pointer"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={featureForm.processing}
+                                        className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-md shadow-indigo-200 cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                                    >
+                                        {featureForm.processing ? (
+                                            <>
+                                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                                <span>Saving Entitlements...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Check className="w-4 h-4" />
+                                                <span>Save Module Entitlements</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
                         </form>
                     </div>

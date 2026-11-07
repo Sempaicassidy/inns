@@ -183,12 +183,11 @@ export default function AuthenticatedLayout({
         );
     const isAccountant = !isSuperAdmin && (
         ['accountant', 'senior_accountant', 'finance_officer', 'auditor'].includes(activeRole) ||
-        ['accountant', 'senior_accountant', 'finance_officer', 'auditor'].includes(user?.role) ||
-        route().current('accounting.*')
+        ['accountant', 'senior_accountant', 'finance_officer', 'auditor'].includes(user?.role)
     );
     const isManager = !isSuperAdmin && !isAccountant && (
-        ['general_manager', 'manager', 'owner'].includes(activeRole) ||
-        ['general_manager', 'manager', 'owner'].includes(user?.role)
+        ['general_manager', 'manager', 'owner', 'admin'].includes(activeRole) ||
+        ['general_manager', 'manager', 'owner', 'admin'].includes(user?.role)
     );
     const isReceptionist = !isSuperAdmin && !isAccountant && !isManager && (
         ['receptionist', 'front_desk', 'front_office', 'front_office_manager', 'staff'].includes(activeRole) ||
@@ -801,24 +800,24 @@ export default function AuthenticatedLayout({
                         { name: 'Guest Folios', href: route('folios.index'), icon: FileTextIcon, active: route().current('folios.*') },
                     ]
                 },
-            ]
-        },
-        {
-            section: 'room_management',
-            title: 'ROOM MANAGEMENT',
-            icon: Bed,
-            items: [
-                { name: 'Rooms & Availability', href: route('housekeeping.index'), icon: Bed, active: route().current('housekeeping.index') },
-                { name: 'Housekeeping Status', href: route('housekeeping.status'), icon: Activity, active: route().current('housekeeping.status') },
-                { name: 'Maintenance Requests', href: route('maintenance.index'), icon: Wrench, active: route().current('maintenance.*') },
+                { 
+                    name: 'Room Management', 
+                    icon: Bed, 
+                    active: Boolean(route().current('housekeeping.*') || route().current('maintenance.*')),
+                    items: [
+                        { name: 'Rooms & Availability', href: route('housekeeping.index'), icon: Bed, active: route().current('housekeeping.index') },
+                        { name: 'Housekeeping Status', href: route('housekeeping.status'), icon: Activity, active: route().current('housekeeping.status') },
+                        { name: 'Maintenance Requests', href: route('maintenance.index'), icon: Wrench, active: route().current('maintenance.*') },
+                    ]
+                },
             ]
         },
         {
             section: 'reports_account',
-            title: 'REPORTS & ACCOUNT',
-            icon: BarChart3,
+            title: 'SHIFT REPORTS & ACCOUNT',
+            icon: FileText,
             items: [
-                { name: 'My Reports', href: route('reports.index'), icon: BarChart3, active: route().current('reports.*') },
+                { name: 'Shift Progress Reports', href: route('front-office.reports.index'), icon: FileText, active: route().current('front-office.reports.*') },
                 { name: 'Notifications', href: route('notifications.index'), icon: Bell, active: route().current('notifications.*') },
                 { name: 'My Account', href: route('profile.edit'), icon: User, active: route().current('profile.*') },
                 { name: 'Sign Out', icon: LogOut, isLogout: true },
@@ -831,14 +830,24 @@ export default function AuthenticatedLayout({
         { name: 'Dashboard', href: route('dashboard'), icon: Home, active: route().current('dashboard') },
         { name: 'Calendar View', href: route('calendar.index'), icon: Calendar, active: route().current('calendar.*') },
         { name: 'Reservations', href: route('reservations.index'), icon: Calendar, active: route().current('reservations.*') },
-        { name: 'Room Overview', href: route('housekeeping.index'), icon: Bed, active: route().current('housekeeping.*') },
+        { 
+            name: 'Room Management', 
+            icon: Bed, 
+            active: Boolean(route().current('housekeeping.*') || route().current('maintenance.*')),
+            items: [
+                { name: 'Rooms & Availability', href: route('housekeeping.index'), icon: Bed, active: route().current('housekeeping.index') },
+                { name: 'Housekeeping Status', href: route('housekeeping.status'), icon: Activity, active: route().current('housekeeping.status') },
+                { name: 'Maintenance Requests', href: route('maintenance.index'), icon: Wrench, active: route().current('maintenance.*') },
+            ]
+        },
         { name: 'Hotel Report', href: route('reports.index'), icon: BarChart3, active: route().current('reports.*') },
+        { name: 'Front Office Shift Reports', href: route('front-office.reports.index'), icon: FileText, active: route().current('front-office.reports.*') },
         { name: 'Manager Alerts (SMS/WhatsApp)', href: route('manager.notifications.index'), icon: BellRing, active: route().current('manager.notifications.*') },
         { name: 'POS Restaurant Report', href: route('restaurant.index'), icon: Utensils, active: route().current('restaurant.*') },
         { name: 'Super / Mini Market', href: route('grocery.index'), icon: ShoppingBag, active: route().current('grocery.*') },
         { name: 'Store Report', href: route('inventory.index'), icon: Package, active: route().current('inventory.*') },
         { name: 'Staff & HR System', href: route('hr.index'), icon: UserCheck, active: route().current('hr.*') },
-        { name: 'Billing', href: route('accounting.index'), icon: DollarSign, active: route().current('accounting.*') },
+        { name: 'Accounting & Reports', href: route('accounting.index'), icon: DollarSign, active: route().current('accounting.*') },
         { name: 'Notifications', href: route('whatsapp.index'), icon: MessageSquare, active: route().current('whatsapp.*') },
         { name: 'Hotel & Receipt Branding', href: route('tenant.settings'), icon: Building2, active: route().current('tenant.settings*') },
         { name: 'CSV Data Entry Hub', href: route('data-entry.index'), icon: FileSpreadsheet, active: route().current('data-entry.*') },

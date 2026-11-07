@@ -384,7 +384,7 @@ export default function HrIndex({
     };
 
     const handleDeleteEmployee = (emp: Employee) => {
-        if (confirm(`Are you sure you want to remove employee ${emp.full_name} from the system?`)) {
+        if (confirm(`Are you sure you want to remove employee "${emp.full_name}" and delete their system login account? This action cannot be undone.`)) {
             router.delete(route('hr.employees.destroy', emp.id));
         }
     };
@@ -764,28 +764,29 @@ export default function HrIndex({
                                                     </span>
                                                 </td>
                                                 <td className="py-3 px-4 text-right">
-                                                    <div className="inline-flex items-center gap-1">
+                                                    <div className="inline-flex items-center gap-1.5">
                                                         <button
                                                             onClick={() => {
                                                                 setSelectedEmployee(emp);
                                                                 setIsViewProfileOpen(true);
                                                             }}
-                                                            title="View Profile"
-                                                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer"
+                                                            title="View Full Profile"
+                                                            className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer"
                                                         >
                                                             <Eye className="w-4 h-4" />
                                                         </button>
                                                         <button
                                                             onClick={() => handleOpenEditEmployee(emp)}
-                                                            title="Edit Details & Password"
-                                                            className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition cursor-pointer"
+                                                            title="Edit Details & Login Password"
+                                                            className="inline-flex items-center gap-1 px-2.5 py-1 text-slate-700 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 rounded-lg font-bold text-xs transition cursor-pointer border border-slate-200"
                                                         >
-                                                            <Edit3 className="w-4 h-4" />
+                                                            <Edit3 className="w-3.5 h-3.5 text-emerald-600" />
+                                                            <span>Edit</span>
                                                         </button>
                                                         <button
                                                             onClick={() => handleDeleteEmployee(emp)}
-                                                            title="Remove Employee"
-                                                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                                                            title="Delete Employee & Login Account"
+                                                            className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
                                                         >
                                                             <Trash2 className="w-4 h-4" />
                                                         </button>

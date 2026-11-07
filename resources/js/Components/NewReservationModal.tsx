@@ -159,7 +159,7 @@ export default function NewReservationModal({
 
         // Section 4: Billing, Payments & Receipt
         discount_minor: 0,
-        deposit: 0,
+        deposit: (initialPriceMinor / 100),
         payment_method: 'cash',
         receipt_no: '',
 
@@ -195,17 +195,11 @@ export default function NewReservationModal({
             }
 
             const targetGuest = initialGuestId ? guests.find(g => String(g.id) === String(initialGuestId)) : null;
-            const yymm = new Date().toISOString().slice(2, 7).replace('-', '');
-            const rand = Math.floor(1000 + Math.random() * 9000);
-            const freshReceiptNo = `RCT-${yymm}-${rand}`;
-            setAutoReceiptNo(freshReceiptNo);
 
             setData(prev => ({
                 ...prev,
                 check_in: inDate,
                 check_out: outDate,
-                deposit: 0,
-                receipt_no: freshReceiptNo,
                 room_ids: effRoomId ? [effRoomId] : (prev.room_ids.length > 0 ? prev.room_ids : (rooms[0]?.id ? [rooms[0].id] : [])),
                 room_id: effRoomId || prev.room_id || (rooms[0]?.id ?? ''),
                 room_type_id: rtId || prev.room_type_id,
@@ -378,22 +372,29 @@ export default function NewReservationModal({
         return Object.values(floorGroups).reduce((acc, list) => acc + list.length, 0);
     }, [floorGroups]);
 
-    // Calculate total amount
+    // Calculate total amount (strictly 1 room per guest reservation)
     const totalAmountMinor = useMemo(() => {
-        let sum = 0;
-        selectedRoomIds.forEach(id => {
-            const room = rooms.find(r => String(r.id) === String(id));
-            const rt = room?.room_type || room?.roomType;
-            const price = rt?.base_price_minor || 35000000;
-            sum += price * nights;
-        });
+        const roomId = selectedRoomIds[0] || data.room_id;
+        const room = rooms.find(r => String(r.id) === String(roomId));
+        const rt = room?.room_type || room?.roomType;
+        const price = rt?.base_price_minor || (data.rate_price ? Number(data.rate_price) * 100 : 0) || 35000000;
+        const sum = price * nights;
         return Math.max(0, sum - (data.discount_minor || 0));
-    }, [selectedRoomIds, rooms, nights, data.discount_minor]);
+    }, [selectedRoomIds, data.room_id, data.rate_price, rooms, nights, data.discount_minor]);
 
-    const toggleRoomSelection = (roomId: string) => {
-        setSelectedRoomIds(prev =>
-            prev.includes(roomId) ? prev.filter(id => id !== roomId) : [...prev, roomId]
-        );
+    // Single room selection handler
+    const selectRoom = (roomId: string) => {
+        setSelectedRoomIds([roomId]);
+        const selectedRoom = rooms.find(r => String(r.id) === String(roomId));
+        const rtId = selectedRoom?.room_type_id || selectedRoom?.roomType?.id || selectedRoom?.room_type?.id || '';
+        const basePrice = (selectedRoom?.roomType?.base_price_minor || selectedRoom?.room_type?.base_price_minor || 0) / 100;
+        setData(prev => ({
+            ...prev,
+            room_id: roomId,
+            room_ids: [roomId],
+            room_type_id: rtId,
+            rate_price: basePrice > 0 ? basePrice : prev.rate_price,
+        }));
     };
 
     const toggleFloor = (floor: string) => {
@@ -423,13 +424,13 @@ export default function NewReservationModal({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (selectedRoomIds.length === 0) {
-            setSubmitErrors({ room: 'Please select at least one room from the list.' });
+        const targetRoomId = selectedRoomIds[0] || data.room_id;
+        if (!targetRoomId) {
+            setSubmitErrors({ room: 'Please select an available room for this guest booking.' });
             return;
         }
 
-        const primaryRoomId = selectedRoomIds[0] || data.room_id || (rooms[0]?.id ?? '');
-        const primaryRoom = rooms.find(r => String(r.id) === String(primaryRoomId));
+        const primaryRoom = rooms.find(r => String(r.id) === String(targetRoomId));
         const rtId = primaryRoom?.room_type_id || primaryRoom?.roomType?.id || primaryRoom?.room_type?.id || roomTypes[0]?.id || '';
         const rpId = data.rate_plan_id || ratePlans[0]?.id || '';
         const rtPrice = (primaryRoom?.roomType?.base_price_minor || primaryRoom?.room_type?.base_price_minor || 0) / 100;
@@ -438,13 +439,14 @@ export default function NewReservationModal({
             ...data,
             age: data.age ? Number(data.age) : null,
             deposit: data.deposit ? Number(data.deposit) : 0,
-            receipt_no: Number(data.deposit) > 0 ? (autoReceiptNo || data.receipt_no) : null,
             guest_id: data.guest_id ? data.guest_id : null,
-            room_id: primaryRoomId || null,
-            room_ids: selectedRoomIds,
+            room_id: targetRoomId,
+            room_ids: [targetRoomId],
             room_type_id: rtId || null,
             rate_plan_id: rpId || null,
             rate_price: data.rate_price && Number(data.rate_price) > 0 ? Number(data.rate_price) : rtPrice,
+            total_minor: totalAmountMinor,
+            source: data.source || 'walk_in',
             receptionist_name: data.receptionist_name || currentUser?.name || 'Front Desk Attendant',
         };
 
@@ -482,10 +484,6 @@ export default function NewReservationModal({
                                 <h2 className="text-lg sm:text-xl font-black text-slate-900">
                                     Guest Registration & Reservation Form
                                 </h2>
-                                <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                                    <Shield className="w-3 h-3 text-emerald-600" />
-                                    Statutory Guest House Ledger
-                                </span>
                             </div>
                             <p className="text-xs text-slate-500">
                                 Statutory guest ledger registration, identity verification, room assignment & billing receipt
@@ -776,16 +774,18 @@ export default function NewReservationModal({
                                 <div className="flex items-center justify-between flex-wrap gap-2">
                                     <div>
                                         <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                                            <KeyRound className="w-3.5 h-3.5 text-blue-600" />
+                                            <KeyRound className="w-3.5 h-3.5 text-[#1E3A5F]" />
                                             Room Assignment <span className="text-rose-500">*</span>
                                         </h4>
-                                        <p className="text-[11px] text-slate-500">Select one or more available rooms for this booking</p>
+                                        <p className="text-[11px] text-slate-500">
+                                            Select 1 designated room for this guest (strictly 1 room per booking)
+                                        </p>
                                     </div>
                                     <div className="flex items-center gap-3 text-xs">
                                         <button
                                             type="button"
                                             onClick={expandAllFloors}
-                                            className="text-blue-600 hover:underline font-semibold"
+                                            className="text-[#1E3A5F] hover:underline font-semibold"
                                         >
                                             Expand All
                                         </button>
@@ -793,12 +793,14 @@ export default function NewReservationModal({
                                         <button
                                             type="button"
                                             onClick={collapseAllFloors}
-                                            className="text-blue-600 hover:underline font-semibold"
+                                            className="text-[#1E3A5F] hover:underline font-semibold"
                                         >
                                             Collapse All
                                         </button>
-                                        <span className="text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg font-bold border border-slate-200">
-                                            {selectedRoomIds.length} Room(s) Selected
+                                        <span className="text-[#1E3A5F] bg-[#1E3A5F]/10 px-2.5 py-1 rounded-lg font-bold border border-[#1E3A5F]/20">
+                                            {selectedRoomIds[0]
+                                                ? `Room ${rooms.find(r => String(r.id) === String(selectedRoomIds[0]))?.room_number || ''} Selected`
+                                                : 'No Room Selected'}
                                         </span>
                                     </div>
                                 </div>
@@ -810,7 +812,7 @@ export default function NewReservationModal({
                                         value={roomSearch}
                                         onChange={e => setRoomSearch(e.target.value)}
                                         placeholder="Search room number, type, floor..."
-                                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
+                                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-[#1E3A5F]/20"
                                     />
                                 </div>
 
@@ -829,7 +831,7 @@ export default function NewReservationModal({
                                                         className="w-full px-3.5 py-2 bg-slate-50 hover:bg-slate-100/80 transition flex items-center justify-between text-left"
                                                     >
                                                         <div className="flex items-center gap-2">
-                                                            <span className="w-5 h-5 rounded-md bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center">
+                                                            <span className="w-5 h-5 rounded-md bg-[#1E3A5F] text-white text-[10px] font-bold flex items-center justify-center">
                                                                 {floor.charAt(0).toUpperCase()}
                                                             </span>
                                                             <span className="font-bold text-xs text-slate-900">
@@ -857,22 +859,23 @@ export default function NewReservationModal({
                                                                 return (
                                                                     <div
                                                                         key={room.id}
-                                                                        onClick={() => !isOccupied && toggleRoomSelection(room.id)}
+                                                                        onClick={() => !isOccupied && selectRoom(room.id)}
                                                                         className={`border rounded-xl p-2.5 cursor-pointer transition flex items-center justify-between ${
                                                                             isOccupied
                                                                                 ? 'bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed'
                                                                                 : isSelected
-                                                                                ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500'
-                                                                                : 'bg-white border-slate-200 hover:border-blue-300'
+                                                                                ? 'bg-[#1E3A5F]/10 border-[#1E3A5F] ring-1 ring-[#1E3A5F]'
+                                                                                : 'bg-white border-slate-200 hover:border-[#1E3A5F]/40'
                                                                         }`}
                                                                     >
                                                                         <div className="flex items-center gap-2 min-w-0">
                                                                             <input
-                                                                                type="checkbox"
+                                                                                type="radio"
+                                                                                name="assigned_single_room"
                                                                                 checked={isSelected}
                                                                                 disabled={isOccupied}
-                                                                                onChange={() => {}}
-                                                                                className="rounded text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 shrink-0"
+                                                                                onChange={() => !isOccupied && selectRoom(room.id)}
+                                                                                className="text-[#1E3A5F] focus:ring-[#1E3A5F] w-3.5 h-3.5 shrink-0 cursor-pointer"
                                                                             />
                                                                             <div className="truncate">
                                                                                 <div className="font-bold text-xs text-slate-900">
@@ -901,6 +904,17 @@ export default function NewReservationModal({
                                     )}
                                 </div>
                             </div>
+
+                            {/* Inline Room / Guest Conflict Error */}
+                            {(submitErrors.room_id || submitErrors.guest_id || submitErrors.room) && (
+                                <div className="mt-1 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2 animate-in fade-in">
+                                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="font-bold text-rose-900 mb-0.5">Booking Conflict Detected</p>
+                                        <p>{submitErrors.room_id || submitErrors.guest_id || submitErrors.room}</p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -1155,10 +1169,6 @@ export default function NewReservationModal({
                                         </p>
                                     </div>
                                 </div>
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                                    <Shield className="w-3 h-3 text-amber-600" />
-                                    Statutory Police Inspection
-                                </span>
                             </div>
 
                             {/* ID Type & ID Number */}
@@ -1286,29 +1296,19 @@ export default function NewReservationModal({
 
                                 {/* Advance Deposit / Amount Paid */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
-                                        <span className="flex items-center gap-1.5">
-                                            <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
-                                            Advance Amount Paid (TZS)
-                                        </span>
-                                        <span className="text-[10px] text-slate-400 font-normal">
-                                            Default: 0
-                                        </span>
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                                        <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
+                                        Advance Amount Paid (TZS)
                                     </label>
                                     <input
                                         type="number"
                                         min="0"
-                                        value={data.deposit === 0 ? '' : data.deposit}
-                                        onChange={e => {
-                                            const val = e.target.value === '' ? 0 : Math.max(0, Number(e.target.value));
-                                            setData('deposit', val);
-                                        }}
+                                        value={data.deposit}
+                                        onChange={e => setData('deposit', Number(e.target.value))}
                                         placeholder="0"
-                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500"
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-bold text-emerald-700"
                                     />
-                                    <span className="text-[10px] text-slate-400 mt-1 block">
-                                        Weka kiasi ikiwa mgeni amelipa advance (Baki ni 0 kama analipa check-out)
-                                    </span>
+                                    <span className="text-[10px] text-slate-400 mt-1 block">Enter 0 if paying upon check-out</span>
                                 </div>
 
                                 {/* Payment Method */}
@@ -1333,32 +1333,18 @@ export default function NewReservationModal({
 
                                 {/* Receipt Number */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
-                                        <span className="flex items-center gap-1.5">
-                                            <Receipt className="w-3.5 h-3.5 text-blue-600" />
-                                            Receipt Reference #
-                                        </span>
-                                        <span className="text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded font-bold border border-blue-200">
-                                            Auto-Generated
-                                        </span>
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                                        <Receipt className="w-3.5 h-3.5 text-blue-600" />
+                                        Receipt Reference #
                                     </label>
-                                    {Number(data.deposit) > 0 ? (
-                                        <div className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 flex items-center justify-between shadow-2xs">
-                                            <span className="text-emerald-700 font-extrabold">{autoReceiptNo}</span>
-                                            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-sans font-bold border border-emerald-200">
-                                                <Check className="w-3 h-3 text-emerald-600" /> System Locked
-                                            </span>
-                                        </div>
-                                    ) : (
-                                        <div className="w-full bg-slate-50/70 border border-slate-200/80 rounded-xl px-3 py-2 text-xs font-mono text-slate-400 flex items-center justify-between">
-                                            <span>Inatolewa akilipa advance</span>
-                                            <span className="text-[10px] text-slate-400 font-sans italic">Hakuna Advance</span>
-                                        </div>
-                                    )}
-                                    <span className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
-                                        <Lock className="w-3 h-3 text-slate-400 shrink-0" />
-                                        <span>Namba ya risiti inazalishwa kiotomatiki na mfumo (Hairekebishwi na mtumiaji).</span>
-                                    </span>
+                                    <input
+                                        type="text"
+                                        value={data.receipt_no}
+                                        onChange={e => setData('receipt_no', e.target.value)}
+                                        placeholder="Auto-generated if blank"
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono font-semibold"
+                                    />
+                                    <span className="text-[10px] text-slate-400 mt-1 block">Generated automatically if left empty</span>
                                 </div>
                             </div>
                         </div>

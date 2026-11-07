@@ -307,7 +307,7 @@ export default function WhatsAppIndex({
                                     <textarea
                                         rows={4}
                                         required
-                                        placeholder="Habari! Karibu sana THE INNS. Chumba chako kipo tayari..."
+                                        placeholder="Hello! Welcome to THE INNS. Your room is ready..."
                                         value={sendForm.data.message}
                                         onChange={(e) => sendForm.setData('message', e.target.value)}
                                         className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"

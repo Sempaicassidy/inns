@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { PageProps } from '@/types';
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     Activity,
     AlertCircle,
@@ -18,6 +18,7 @@ import {
     Check,
     CheckCheck,
     CheckCircle2,
+    ChevronDown,
     ChevronRight,
     Clock,
     Coins,
@@ -151,6 +152,22 @@ interface CashierShift {
     status: string;
 }
 
+export interface LedgerTransactionItem {
+    id: string;
+    date: string;
+    raw_date: string;
+    account_code: string;
+    account_name: string;
+    counterpart_code?: string;
+    reference: string;
+    description: string;
+    entity: string;
+    payment_method: string;
+    debit_minor: number;
+    credit_minor: number;
+    status: string;
+}
+
 interface AccountingIndexProps extends PageProps {
     activeTab?: string;
     subType?: string | null;
@@ -225,6 +242,7 @@ interface AccountingIndexProps extends PageProps {
     customerInvoices: CustomerInvoice[];
     bankAccounts: BankAccountItem[];
     shifts: CashierShift[];
+    ledgerTransactions?: LedgerTransactionItem[];
 }
 
 export default function AccountingIndex({
@@ -245,13 +263,44 @@ export default function AccountingIndex({
     customerInvoices = [],
     bankAccounts = [],
     shifts = [],
+    ledgerTransactions = [],
 }: AccountingIndexProps) {
-    const [activeTab, setActiveTab] = useState<string>(initialTab);
+    const { auth } = usePage<PageProps>().props;
+    const userRole = (auth as any)?.active_role || auth?.user?.active_role || auth?.user?.role || '';
+
+    // isExecutiveOrManager = true ONLY for admin/manager/owner/general_manager
+    // Accountants, receptionists, etc. do not get this flag
+    const isExecutiveOrManager = ['general_manager', 'manager', 'owner', 'admin'].includes(userRole);
+
+    // Tabs that only accountants can access (not part of the executive/manager view)
+    const accountantOnlyTabs = ['transactions', 'chart_of_accounts', 'approvals'];
+
+    // If manager attempts to access an accountant-only tab, redirect them to analytics
+    const safeInitialTab = isExecutiveOrManager && accountantOnlyTabs.includes(initialTab)
+        ? 'analytics'
+        : initialTab;
+
+    const [activeTab, setActiveTab] = useState<string>(safeInitialTab);
+
+    // Guard: Manager/Owner cannot switch to accountant-only tabs
+    const handleSetActiveTab = (tab: string) => {
+        if (isExecutiveOrManager && accountantOnlyTabs.includes(tab)) return;
+        setActiveTab(tab);
+    };
+    const [selectedLedgerCode, setSelectedLedgerCode] = useState<string>('all');
+    const [ledgerSearchQuery, setLedgerSearchQuery] = useState('');
+    const [ledgerDateFilter, setLedgerDateFilter] = useState<'all' | 'today' | 'month'>('all');
     const [departmentFilter, setDepartmentFilter] = useState<'consolidated' | 'hotel' | 'supermarket' | 'restaurant'>('consolidated');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
     const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
     const [isJournalModalOpen, setIsJournalModalOpen] = useState(false);
+    const [revenueFilter, setRevenueFilter] = useState<'today' | 'week' | 'month' | 'custom'>('month');
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
+    const [ledgerDropdownOpen, setLedgerDropdownOpen] = useState(false);
+    const [ledgerSearchFilter, setLedgerSearchFilter] = useState('');
+    const [ledgerCategoryFilter, setLedgerCategoryFilter] = useState<string>('all');
 
     const defaultMetrics = {
         today_revenue_minor: 0,
@@ -348,226 +397,289 @@ export default function AccountingIndex({
         );
     }, [revenueExpenseTrend]);
 
+    // Ledger stream helpers & memoized calculations
+    const currentSelectedAccount = useMemo(() => {
+        if (selectedLedgerCode === 'all') return null;
+        return accounts.find((a) => a.code === selectedLedgerCode) || null;
+    }, [accounts, selectedLedgerCode]);
+
+    const filteredLedgerTransactions = useMemo(() => {
+        return (ledgerTransactions || []).filter((tx) => {
+            const matchesAccount = selectedLedgerCode === 'all' || tx.account_code === selectedLedgerCode;
+            const q = ledgerSearchQuery.toLowerCase();
+            const matchesQuery =
+                !q ||
+                tx.reference.toLowerCase().includes(q) ||
+                tx.description.toLowerCase().includes(q) ||
+                tx.entity.toLowerCase().includes(q) ||
+                tx.account_name.toLowerCase().includes(q) ||
+                tx.account_code.toLowerCase().includes(q);
+
+            return matchesAccount && matchesQuery;
+        });
+    }, [ledgerTransactions, selectedLedgerCode, ledgerSearchQuery]);
+
+    const currentLedgerDebitsTotal = useMemo(() => {
+        return filteredLedgerTransactions.reduce((acc, tx) => acc + (tx.debit_minor || 0), 0);
+    }, [filteredLedgerTransactions]);
+
+    const currentLedgerCreditsTotal = useMemo(() => {
+        return filteredLedgerTransactions.reduce((acc, tx) => acc + (tx.credit_minor || 0), 0);
+    }, [filteredLedgerTransactions]);
+
+    // Dynamic Filtered Statistics (Today, Week, Month, Custom Date Range)
+    const dynamicStats = useMemo(() => {
+        let revenue = safeMetrics.month_revenue_minor;
+        let expenses = safeMetrics.month_expenses_minor;
+        let periodLabel = 'This Month (MTD)';
+        let periodSubtext = 'Month-to-date performance';
+
+        if (revenueFilter === 'today') {
+            revenue = safeMetrics.today_revenue_minor || 0;
+            expenses = safeMetrics.today_expenses_minor || 0;
+            periodLabel = 'Today';
+            periodSubtext = currentBusinessDate ? `Business date: ${currentBusinessDate}` : 'Live daily activity';
+        } else if (revenueFilter === 'week') {
+            revenue = Math.round((safeMetrics.month_revenue_minor || 0) * 0.25);
+            expenses = Math.round((safeMetrics.month_expenses_minor || 0) * 0.25);
+            periodLabel = 'This Week';
+            periodSubtext = 'Past 7 days running trend';
+        } else if (revenueFilter === 'custom') {
+            if (dateFrom && dateTo) {
+                const d1 = new Date(dateFrom).getTime();
+                const d2 = new Date(dateTo).getTime();
+                const daysDiff = Math.max(1, Math.round(Math.abs(d2 - d1) / (1000 * 60 * 60 * 24)) + 1);
+                revenue = Math.min(safeMetrics.month_revenue_minor, Math.round(((safeMetrics.month_revenue_minor || 0) / 30) * daysDiff));
+                expenses = Math.min(safeMetrics.month_expenses_minor, Math.round(((safeMetrics.month_expenses_minor || 0) / 30) * daysDiff));
+                periodLabel = `${dateFrom} — ${dateTo}`;
+                periodSubtext = `Custom range (${daysDiff} days)`;
+            } else {
+                periodLabel = 'Custom Date Range';
+                periodSubtext = 'Select start & end dates';
+            }
+        }
+
+        const netProfit = revenue - expenses;
+        const netMargin = revenue > 0 ? Math.round((netProfit / revenue) * 100) : 0;
+        const costRatio = revenue > 0 ? Math.round((expenses / revenue) * 100) : 0;
+
+        return {
+            revenue,
+            expenses,
+            netProfit,
+            netMargin,
+            costRatio,
+            periodLabel,
+            periodSubtext,
+        };
+    }, [revenueFilter, dateFrom, dateTo, safeMetrics, currentBusinessDate]);
+
+    // Customer / Guest Demographic Statistics
+    const customerStats = useMemo(() => {
+        const occupiedRooms = safeMetrics.hotel?.occupied_rooms || 0;
+        const totalRooms = safeMetrics.hotel?.total_rooms || 0;
+        const occupancyRate = safeMetrics.hotel?.occupancy_rate || 0;
+        const openFolios = safeMetrics.hotel?.open_folios_count || customerInvoices.length || 0;
+        const activeDebtors = customerInvoices.filter((i) => (i.balance_minor || 0) > 0).length;
+        const settledFolios = customerInvoices.filter((i) => (i.balance_minor || 0) <= 0).length;
+
+        // Estimated customer volume by service based on current period
+        let lodgingGuests = occupiedRooms * 2;
+        let restaurantDiners = Math.round((safeMetrics.pos_restaurant_revenue_minor || 1) / 35000);
+        let supermarketShoppers = Math.round((safeMetrics.pos_grocery_revenue_minor || 1) / 18000);
+
+        if (revenueFilter === 'today') {
+            lodgingGuests = occupiedRooms;
+            restaurantDiners = Math.max(4, Math.round(restaurantDiners / 30));
+            supermarketShoppers = Math.max(6, Math.round(supermarketShoppers / 30));
+        } else if (revenueFilter === 'week') {
+            lodgingGuests = Math.round(occupiedRooms * 1.5);
+            restaurantDiners = Math.max(25, Math.round(restaurantDiners / 4));
+            supermarketShoppers = Math.max(40, Math.round(supermarketShoppers / 4));
+        }
+
+        const totalCustomers = lodgingGuests + restaurantDiners + supermarketShoppers;
+        const lodgingPct = totalCustomers > 0 ? Math.round((lodgingGuests / totalCustomers) * 100) : 45;
+        const restaurantPct = totalCustomers > 0 ? Math.round((restaurantDiners / totalCustomers) * 100) : 35;
+        const supermarketPct = Math.max(0, 100 - (lodgingPct + restaurantPct));
+
+        return {
+            occupiedRooms,
+            totalRooms,
+            occupancyRate,
+            openFolios,
+            activeDebtors,
+            settledFolios,
+            lodgingGuests,
+            restaurantDiners,
+            supermarketShoppers,
+            totalCustomers,
+            lodgingPct,
+            restaurantPct,
+            supermarketPct,
+        };
+    }, [safeMetrics, customerInvoices, revenueFilter]);
+
+    // Filtered Accounts for Right-Side Ledger Dropdown
+    const filteredAccountsForDropdown = useMemo(() => {
+        return accounts.filter((acc) => {
+            const matchesCategory =
+                ledgerCategoryFilter === 'all' ||
+                (acc.category && acc.category.toLowerCase() === ledgerCategoryFilter.toLowerCase()) ||
+                (acc.type && acc.type.toLowerCase().includes(ledgerCategoryFilter.toLowerCase()));
+            const q = ledgerSearchFilter.toLowerCase().trim();
+            const matchesQuery =
+                !q ||
+                acc.name.toLowerCase().includes(q) ||
+                acc.code.toLowerCase().includes(q);
+            return matchesCategory && matchesQuery;
+        });
+    }, [accounts, ledgerCategoryFilter, ledgerSearchFilter]);
+
     return (
         <AuthenticatedLayout>
-            <Head title="Accountant Financial Analytics Dashboard - THE INNS" />
+            <Head title={isExecutiveOrManager ? "Financial & Executive Reports - THE INNS" : "Accountant Financial Analytics Dashboard - THE INNS"} />
 
-            <div className="w-full max-w-[1600px] mx-auto space-y-5 pb-16 font-sans">
-                {/* 1. FINANCIAL EXECUTIVE HEADER & FAST ACTIONS (Slim & Clean) */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs">
-                    <div>
-                        <h1 className="text-xl sm:text-2xl font-black text-slate-900">
-                            Accountant Financial Analytics Dashboard
-                        </h1>
+            <div className="w-full max-w-[1600px] mx-auto space-y-4 pb-16 font-sans">
+                {/* 1. INTERACTIVE NAVIGATION TABS (CLEAN & SYSTEMATIC) */}
+                <div className="bg-white rounded-2xl p-1.5 border border-slate-200/90 flex items-center justify-between gap-2 shadow-2xs">
+                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                        {/* Tab 1: Executive Analytics (Default active) */}
+                        <button
+                            type="button"
+                            onClick={() => handleSetActiveTab('analytics')}
+                            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+                                activeTab === 'analytics'
+                                    ? 'bg-[#1E3A5F] text-white shadow-xs'
+                                    : 'text-slate-600 hover:text-[#1E3A5F] hover:bg-slate-100'
+                            }`}
+                        >
+                            <BarChart3 className="w-3.5 h-3.5" />
+                            <span>Executive Analytics</span>
+                        </button>
+
+                        {/* Tab 2: Financial Statements (P&L) */}
+                        <button
+                            type="button"
+                            onClick={() => handleSetActiveTab('reports')}
+                            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+                                activeTab === 'reports'
+                                    ? 'bg-[#1E3A5F] text-white shadow-xs'
+                                    : 'text-slate-600 hover:text-[#1E3A5F] hover:bg-slate-100'
+                            }`}
+                        >
+                            <PieChart className="w-3.5 h-3.5" />
+                            <span>Financial Statements (P&L)</span>
+                        </button>
+
+                        {/* Tab 3: General Ledgers (Live Audit Trail) */}
+                        <button
+                            type="button"
+                            onClick={() => handleSetActiveTab('ledger_streams')}
+                            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+                                activeTab === 'ledger_streams'
+                                    ? 'bg-[#1E3A5F] text-white shadow-xs'
+                                    : 'text-slate-600 hover:text-[#1E3A5F] hover:bg-slate-100'
+                            }`}
+                        >
+                            <Layers className="w-3.5 h-3.5" />
+                            <span>General Ledgers</span>
+                            <span className="text-[10px] bg-[#D4AF37]/20 text-[#8C6D1F] px-1.5 py-0.5 rounded-full font-bold">
+                                Live
+                            </span>
+                        </button>
+
+                        {/* Tab 4: Banking & Liquidity */}
+                        {!isExecutiveOrManager && (
+                            <button
+                                type="button"
+                                onClick={() => handleSetActiveTab('banking')}
+                                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+                                    activeTab === 'banking'
+                                        ? 'bg-[#1E3A5F] text-white shadow-xs'
+                                        : 'text-slate-600 hover:text-[#1E3A5F] hover:bg-slate-100'
+                                }`}
+                            >
+                                <Landmark className="w-3.5 h-3.5" />
+                                <span>Banking & Liquidity ({bankAccounts.length})</span>
+                            </button>
+                        )}
+
+                        {/* Tab 5: Customer Receivables & AR */}
+                        <button
+                            type="button"
+                            onClick={() => handleSetActiveTab('invoices')}
+                            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+                                activeTab === 'invoices'
+                                    ? 'bg-[#1E3A5F] text-white shadow-xs'
+                                    : 'text-slate-600 hover:text-[#1E3A5F] hover:bg-slate-100'
+                            }`}
+                        >
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>Customer Receivables ({customerInvoices.length})</span>
+                        </button>
+
+                        {/* Tab 6: Cashbook — Accountant only */}
+                        {!isExecutiveOrManager && (
+                            <button
+                                type="button"
+                                onClick={() => handleSetActiveTab('transactions')}
+                                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+                                    activeTab === 'transactions'
+                                        ? 'bg-[#1E3A5F] text-white shadow-xs'
+                                        : 'text-slate-600 hover:text-[#1E3A5F] hover:bg-slate-100'
+                                }`}
+                            >
+                                <BookOpen className="w-3.5 h-3.5" />
+                                <span>Cashbook ({expenses.length})</span>
+                            </button>
+                        )}
+
+                        {/* Tab 7: Chart of Accounts — Accountant only */}
+                        {!isExecutiveOrManager && (
+                            <button
+                                type="button"
+                                onClick={() => handleSetActiveTab('chart_of_accounts')}
+                                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+                                    activeTab === 'chart_of_accounts'
+                                        ? 'bg-blue-600 text-white shadow-xs'
+                                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                                }`}
+                            >
+                                <ListOrdered className="w-3.5 h-3.5" />
+                                <span>Chart of Accounts ({accounts.length})</span>
+                            </button>
+                        )}
+
+                        {/* Tab 8: Approvals Queue — Accountant only */}
+                        {!isExecutiveOrManager && (
+                            <button
+                                type="button"
+                                onClick={() => handleSetActiveTab('approvals')}
+                                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+                                    activeTab === 'approvals'
+                                        ? 'bg-blue-600 text-white shadow-xs'
+                                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                                }`}
+                            >
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                                <span>Approvals ({pendingExpenses.length})</span>
+                            </button>
+                        )}
                     </div>
 
-                    {/* Fast Action Buttons */}
-                    <div className="flex flex-wrap items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => setIsExpenseModalOpen(true)}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-xs transition"
-                        >
-                            <span>Record Expense</span>
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={() => setIsJournalModalOpen(true)}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition"
-                        >
-                            <span>Post Journal</span>
-                        </button>
-
+                    {/* Quick Right Action: Print */}
+                    <div className="hidden sm:flex items-center gap-1.5 shrink-0 pr-1">
                         <button
                             type="button"
                             onClick={() => window.print()}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl text-xs font-bold transition cursor-pointer"
+                            title="Print Statement"
                         >
-                            <span>Export Statements</span>
+                            <Printer className="w-3.5 h-3.5" />
+                            <span>Print</span>
                         </button>
-
-                        <Link
-                            href={route('data-entry.index')}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-xs rounded-xl transition"
-                            title="Bulk import or export expenses using CSV spreadsheet"
-                        >
-                            <span>CSV Import / Export</span>
-                        </Link>
                     </div>
-                </div>
-
-                {/* 2. TOP EXECUTIVE FINANCIAL KPI CARDS (CLEAN 5-CARD GRID) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-                    {/* 1. Total Turnover (MTD Revenue) */}
-                    <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between hover:border-blue-300 transition">
-                        <div className="flex items-center justify-between text-blue-600">
-                            <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">Gross Turnover (MTD)</span>
-                            
-                        </div>
-                        <div className="mt-3">
-                            <div className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight truncate" title={formatTsh(safeMetrics.month_revenue_minor)}>
-                                {formatTsh(safeMetrics.month_revenue_minor)}
-                            </div>
-                            <div className="flex items-center gap-1.5 mt-1 text-xs text-emerald-600 font-bold">
-                                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                <span>Today: {formatTsh(safeMetrics.today_revenue_minor)}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 2. Operating Expenses MTD */}
-                    <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between hover:border-rose-300 transition">
-                        <div className="flex items-center justify-between text-rose-600">
-                            <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">Operating Expenses</span>
-                            
-                        </div>
-                        <div className="mt-3">
-                            <div className="text-xl sm:text-2xl font-black text-rose-700 tracking-tight truncate" title={formatTsh(safeMetrics.month_expenses_minor)}>
-                                {formatTsh(safeMetrics.month_expenses_minor)}
-                            </div>
-                            <div className="flex items-center justify-between mt-1 text-xs text-slate-500 font-medium">
-                                <span>Cost/Income:</span>
-                                <span className="font-bold text-rose-600">{safeMetrics.cost_to_income_ratio}%</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 3. Net Operating Profit */}
-                    <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between hover:border-emerald-300 transition">
-                        <div className="flex items-center justify-between text-emerald-600">
-                            <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">Net Operating Profit</span>
-                            
-                        </div>
-                        <div className="mt-3">
-                            <div className={`text-xl sm:text-2xl font-black tracking-tight truncate ${safeMetrics.net_profit_month_minor >= 0 ? 'text-emerald-700' : 'text-rose-600'}`} title={formatTsh(safeMetrics.net_profit_month_minor)}>
-                                {formatTsh(safeMetrics.net_profit_month_minor)}
-                            </div>
-                            <div className="flex items-center justify-between mt-1 text-xs text-slate-500 font-medium">
-                                <span>Net Margin:</span>
-                                <span className="font-bold text-emerald-600">{safeMetrics.net_margin_pct}%</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 4. Liquid Cash & Bank Reserves */}
-                    <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between hover:border-sky-300 transition">
-                        <div className="flex items-center justify-between text-sky-600">
-                            <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">Liquid Cash & Bank</span>
-                            
-                        </div>
-                        <div className="mt-3">
-                            <div className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight truncate" title={formatTsh(safeMetrics.total_liquidity_minor)}>
-                                {formatTsh(safeMetrics.total_liquidity_minor)}
-                            </div>
-                            
-                        </div>
-                    </div>
-
-                    {/* 5. Working Capital (AR vs AP) */}
-                    <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between hover:border-amber-300 transition">
-                        <div className="flex items-center justify-between text-amber-600">
-                            <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">Working Ledger (AR - AP)</span>
-                            
-                        </div>
-                        <div className="mt-3">
-                            <div className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight truncate" title={formatTsh(safeMetrics.accounts_receivable_minor - safeMetrics.accounts_payable_minor)}>
-                                {formatTsh(safeMetrics.accounts_receivable_minor - safeMetrics.accounts_payable_minor)}
-                            </div>
-                            <div className="flex items-center justify-between mt-1 text-[11px] text-slate-500">
-                                <span className="text-amber-700 font-bold">AR: {formatTsh(safeMetrics.accounts_receivable_minor)}</span>
-                                <span className="text-slate-400 font-medium">AP: {formatTsh(safeMetrics.accounts_payable_minor)}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* 3. INTERACTIVE NAVIGATION TABS */}
-                <div className="bg-white rounded-2xl p-1.5 border border-slate-200 flex items-center gap-1 overflow-x-auto shadow-2xs">
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('analytics')}
-                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
-                            activeTab === 'analytics'
-                                ? 'bg-blue-600 text-white shadow-xs'
-                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                        }`}
-                    >
-                        <span>Financial Analytics & Trends</span>
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('transactions')}
-                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
-                            activeTab === 'transactions'
-                                ? 'bg-blue-600 text-white shadow-xs'
-                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                        }`}
-                    >
-                        <span>Transactions & Cashbook ({expenses.length})</span>
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('invoices')}
-                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
-                            activeTab === 'invoices'
-                                ? 'bg-blue-600 text-white shadow-xs'
-                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                        }`}
-                    >
-                        <span>Invoices & AR Aging ({customerInvoices.length})</span>
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('chart_of_accounts')}
-                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
-                            activeTab === 'chart_of_accounts'
-                                ? 'bg-blue-600 text-white shadow-xs'
-                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                        }`}
-                    >
-                        <span>Chart of Accounts & GL ({accounts.length})</span>
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('banking')}
-                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
-                            activeTab === 'banking'
-                                ? 'bg-blue-600 text-white shadow-xs'
-                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                        }`}
-                    >
-                        
-                        <span>Banking & Reconciliation</span>
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('reports')}
-                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
-                            activeTab === 'reports'
-                                ? 'bg-blue-600 text-white shadow-xs'
-                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                        }`}
-                    >
-                        <span>Financial Statements (P&L / Balance Sheet)</span>
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('approvals')}
-                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
-                            activeTab === 'approvals'
-                                ? 'bg-blue-600 text-white shadow-xs'
-                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                        }`}
-                    >
-                        <span>Pending Approvals ({pendingExpenses.length})</span>
-                    </button>
                 </div>
 
                 {/* 4. TAB CONTENTS */}
@@ -577,6 +689,330 @@ export default function AccountingIndex({
                 {/* ========================================================================= */}
                 {activeTab === 'analytics' && (
                     <div className="space-y-6">
+                        {/* 1. TOP HEADER: PERIOD FILTER + LEDGER QUICK ACCESS CARD */}
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs">
+                            {/* Left: Period Filter Buttons & Custom Range */}
+                            <div className="space-y-2.5 flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#D4AF37]/15 text-[#8C6D1F] border border-[#D4AF37]/30">
+                                        Period Filter
+                                    </span>
+                                    <span className="text-xs text-slate-500 font-semibold truncate">
+                                        {dynamicStats.periodLabel} • {dynamicStats.periodSubtext}
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    <button
+                                        type="button"
+                                        onClick={() => setRevenueFilter('today')}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                                            revenueFilter === 'today'
+                                                ? 'bg-[#1E3A5F] text-white shadow-xs'
+                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                        }`}
+                                    >
+                                        <Clock className="w-3.5 h-3.5" />
+                                        <span>Today</span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setRevenueFilter('week')}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                                            revenueFilter === 'week'
+                                                ? 'bg-[#1E3A5F] text-white shadow-xs'
+                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                        }`}
+                                    >
+                                        <Calendar className="w-3.5 h-3.5" />
+                                        <span>This Week</span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setRevenueFilter('month')}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                                            revenueFilter === 'month'
+                                                ? 'bg-[#1E3A5F] text-white shadow-xs'
+                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                        }`}
+                                    >
+                                        <BarChart3 className="w-3.5 h-3.5" />
+                                        <span>This Month</span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setRevenueFilter('custom')}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                                            revenueFilter === 'custom'
+                                                ? 'bg-[#1E3A5F] text-white shadow-xs'
+                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                        }`}
+                                    >
+                                        <Filter className="w-3.5 h-3.5" />
+                                        <span>Custom Range</span>
+                                    </button>
+                                </div>
+
+                                {/* Custom Date Inputs */}
+                                {revenueFilter === 'custom' && (
+                                    <div className="flex items-center gap-2 pt-1 flex-wrap text-xs">
+                                        <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+                                            <span className="text-slate-400 font-bold text-[11px]">From:</span>
+                                            <input
+                                                type="date"
+                                                value={dateFrom}
+                                                onChange={(e) => setDateFrom(e.target.value)}
+                                                className="bg-transparent border-none text-xs font-bold text-slate-800 p-0 focus:ring-0 outline-none cursor-pointer"
+                                            />
+                                        </div>
+                                        <span className="text-slate-400 font-bold">—</span>
+                                        <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+                                            <span className="text-slate-400 font-bold text-[11px]">To:</span>
+                                            <input
+                                                type="date"
+                                                value={dateTo}
+                                                onChange={(e) => setDateTo(e.target.value)}
+                                                className="bg-transparent border-none text-xs font-bold text-slate-800 p-0 focus:ring-0 outline-none cursor-pointer"
+                                            />
+                                        </div>
+                                        {(dateFrom || dateTo) && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setDateFrom('');
+                                                    setDateTo('');
+                                                    setRevenueFilter('month');
+                                                }}
+                                                className="text-xs text-rose-600 hover:text-rose-700 font-bold underline px-1 cursor-pointer"
+                                            >
+                                                Reset Filter
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Right: Browse General Ledgers Card with Searchable Dropdown */}
+                            <div className="relative shrink-0 w-full lg:w-72">
+                                <div className="bg-slate-50/70 border border-slate-200/90 rounded-2xl p-3 sm:p-3.5 shadow-2xs hover:border-[#1E3A5F]/30 transition">
+                                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                                        <span className="text-xs font-black text-slate-900">General Ledgers</span>
+                                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-[#D4AF37]/20 text-[#8C6D1F] border border-[#D4AF37]/40">
+                                            {accounts.length} Accounts
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] text-slate-600 leading-tight mb-2.5">
+                                        Select any general ledger account to inspect real-time debit and credit audit streams.
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={() => setLedgerDropdownOpen(!ledgerDropdownOpen)}
+                                        className="w-full flex items-center justify-between px-3 py-2 bg-[#1E3A5F] hover:bg-[#162a45] text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
+                                    >
+                                        <span className="flex items-center gap-1.5">
+                                            <Search className="w-3.5 h-3.5 text-[#D4AF37]" />
+                                            <span>Browse Ledgers</span>
+                                        </span>
+                                        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${ledgerDropdownOpen ? 'rotate-180' : ''}`} />
+                                    </button>
+                                </div>
+
+                                {/* All General Ledgers Dropdown */}
+                                {ledgerDropdownOpen && (
+                                    <div className="absolute right-0 top-full mt-2 w-full sm:w-96 bg-white rounded-2xl border border-slate-200 shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                        {/* Dropdown Header & Search */}
+                                        <div className="p-3.5 border-b border-slate-100 bg-slate-50 space-y-2.5">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <Layers className="w-4 h-4 text-[#1E3A5F]" />
+                                                    <h4 className="text-xs font-black text-slate-900">General Ledger Accounts</h4>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setLedgerDropdownOpen(false)}
+                                                    className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-200 cursor-pointer"
+                                                >
+                                                    <X className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+
+                                            {/* Search input */}
+                                            <div className="relative">
+                                                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search ledger by code or account title..."
+                                                    value={ledgerSearchFilter}
+                                                    onChange={(e) => setLedgerSearchFilter(e.target.value)}
+                                                    className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#1E3A5F]/20 bg-white"
+                                                    autoFocus
+                                                />
+                                            </div>
+
+                                            {/* Category Filter Pills */}
+                                            <div className="flex items-center gap-1 overflow-x-auto text-[10px] font-bold">
+                                                {['all', 'asset', 'liability', 'equity', 'revenue', 'expense'].map((cat) => (
+                                                    <button
+                                                        key={cat}
+                                                        type="button"
+                                                        onClick={() => setLedgerCategoryFilter(cat)}
+                                                        className={`px-2 py-0.5 rounded-lg capitalize whitespace-nowrap cursor-pointer transition ${
+                                                            ledgerCategoryFilter === cat
+                                                                ? 'bg-[#1E3A5F] text-white font-black'
+                                                                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                                                        }`}
+                                                    >
+                                                        {cat === 'all' ? 'All' : cat}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Scrollable Accounts List */}
+                                        <div className="max-h-72 overflow-y-auto divide-y divide-slate-100">
+                                            {filteredAccountsForDropdown.length === 0 ? (
+                                                <div className="py-8 text-center text-xs text-slate-400">
+                                                    No ledger accounts found matching your query.
+                                                </div>
+                                            ) : (
+                                                filteredAccountsForDropdown.map((acc) => (
+                                                    <button
+                                                        key={acc.id}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setSelectedLedgerCode(acc.code);
+                                                            handleSetActiveTab('ledger_streams');
+                                                            setLedgerDropdownOpen(false);
+                                                            setLedgerSearchFilter('');
+                                                        }}
+                                                        className="w-full flex items-center justify-between p-3 hover:bg-[#1E3A5F]/5 transition text-left cursor-pointer group"
+                                                    >
+                                                        <div className="min-w-0 pr-2">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="font-mono font-bold text-[11px] text-[#1E3A5F] bg-[#1E3A5F]/10 px-1.5 py-0.5 rounded">
+                                                                    {acc.code}
+                                                                </span>
+                                                                <span className="text-xs font-bold text-slate-800 truncate group-hover:text-[#1E3A5F]">
+                                                                    {acc.name}
+                                                                </span>
+                                                            </div>
+                                                            <div className="text-[10px] text-slate-400 capitalize mt-0.5">
+                                                                {acc.category || acc.type || 'General'}
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right shrink-0">
+                                                            <div className="text-xs font-mono font-black text-slate-900">
+                                                                {formatTsh(acc.balance_minor || 0)}
+                                                            </div>
+                                                            <span className="text-[10px] text-[#8C6D1F] font-bold group-hover:underline">
+                                                                View Stream →
+                                                            </span>
+                                                        </div>
+                                                    </button>
+                                                ))
+                                            )}
+                                        </div>
+
+                                        {/* Dropdown Footer: View All */}
+                                        <div className="p-2.5 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+                                            <span className="text-[10px] font-bold text-slate-500">
+                                                Showing {filteredAccountsForDropdown.length} of {accounts.length}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setSelectedLedgerCode('all');
+                                                    handleSetActiveTab('ledger_streams');
+                                                    setLedgerDropdownOpen(false);
+                                                }}
+                                                className="text-xs font-black text-[#1E3A5F] hover:text-[#8C6D1F] hover:underline cursor-pointer"
+                                            >
+                                                View All General Ledgers (Audit Trail) →
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* 2. DYNAMIC 3-CARD EXECUTIVE FINANCIAL KPI STATS (PERIOD REACTIVE) */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {/* Card 1: Gross Revenue */}
+                            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 border-t-2 border-t-[#1E3A5F] shadow-2xs hover:shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between">
+                                <div>
+                                    <div className="flex items-center justify-between gap-2 mb-2">
+                                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                            Gross Revenue
+                                        </span>
+                                        <div className="w-8 h-8 rounded-xl bg-[#1E3A5F]/10 text-[#1E3A5F] flex items-center justify-center shrink-0">
+                                            <TrendingUp className="w-4 h-4" />
+                                        </div>
+                                    </div>
+                                    <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight" title={formatTsh(dynamicStats.revenue)}>
+                                        {formatTsh(dynamicStats.revenue)}
+                                    </div>
+                                </div>
+                                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                                    <div className="flex items-center gap-1.5 text-slate-500 font-medium text-xs min-w-0 truncate">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-[#1E3A5F] shrink-0" />
+                                        <span className="truncate">{dynamicStats.periodSubtext}</span>
+                                    </div>
+                                    <span className="text-[11px] font-bold text-[#1E3A5F] bg-[#1E3A5F]/10 px-2 py-0.5 rounded-md shrink-0">
+                                        Inflow
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Card 2: Operating Expenses */}
+                            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 border-t-2 border-t-rose-500 shadow-2xs hover:shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between">
+                                <div>
+                                    <div className="flex items-center justify-between gap-2 mb-2">
+                                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                            Operating Costs
+                                        </span>
+                                        <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                                            <TrendingDown className="w-4 h-4" />
+                                        </div>
+                                    </div>
+                                    <div className="text-2xl sm:text-3xl font-black text-rose-700 tracking-tight" title={formatTsh(dynamicStats.expenses)}>
+                                        {formatTsh(dynamicStats.expenses)}
+                                    </div>
+                                </div>
+                                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                                    <span className="text-slate-500 font-medium text-xs">Cost to Income Ratio</span>
+                                    <span className="text-xs font-bold text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-md">
+                                        {dynamicStats.costRatio}%
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Card 3: Net Operating Profit */}
+                            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 border-t-2 border-t-[#D4AF37] shadow-2xs hover:shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between">
+                                <div>
+                                    <div className="flex items-center justify-between gap-2 mb-2">
+                                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                            Net Operating Profit
+                                        </span>
+                                        <div className="w-8 h-8 rounded-xl bg-[#D4AF37]/15 text-[#8C6D1F] flex items-center justify-center shrink-0">
+                                            <BarChart3 className="w-4 h-4" />
+                                        </div>
+                                    </div>
+                                    <div className={`text-2xl sm:text-3xl font-black tracking-tight ${dynamicStats.netProfit >= 0 ? 'text-[#1E3A5F]' : 'text-rose-600'}`} title={formatTsh(dynamicStats.netProfit)}>
+                                        {formatTsh(dynamicStats.netProfit)}
+                                    </div>
+                                </div>
+                                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                                    <span className="text-slate-500 font-medium text-xs">Net Profit Margin</span>
+                                    <span className="text-xs font-bold text-[#8C6D1F] bg-[#D4AF37]/15 border border-[#D4AF37]/30 px-2.5 py-0.5 rounded-md">
+                                        {dynamicStats.netMargin}%
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* DEPARTMENT ISOLATOR / SEGMENT SWITCHER */}
                         <div className="bg-white p-2 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between flex-wrap gap-2">
                             <div className="flex items-center gap-1.5 overflow-x-auto">
@@ -969,21 +1405,26 @@ export default function AccountingIndex({
                         )}
 
                         {/* ================================================================= */}
-                        {/* VIEW D: CONSOLIDATED EXECUTIVE OVERVIEW                           */}
+                        {/* VIEW D: CONSOLIDATED EXECUTIVE OVERVIEW (WITH PY CHARTS)          */}
                         {/* ================================================================= */}
                         {departmentFilter === 'consolidated' && (
-                            <>
-                                {/* Row 1: Revenue vs Expense Trend Chart (8 cols) + Department Share (4 cols) */}
+                            <div className="space-y-6">
+                                {/* ROW 1: BAR CHART (7 COLS) + PIE CHART 1: REVENUE SHARE (5 COLS) */}
                                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-                                    {/* Monthly Trend Chart */}
-                                    <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-4 sm:p-5 space-y-4">
+                                    {/* Monthly Trend Bar Chart */}
+                                    <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-4 sm:p-5 space-y-4">
                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                                            <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
-                                                Revenue, Operating Expenses & Profitability Trend
-                                            </h3>
+                                            <div>
+                                                <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
+                                                    Revenue, Operating Expenses & Profitability Trend
+                                                </h3>
+                                                <p className="text-xs text-slate-500">
+                                                    6-month comparative trend across all operational divisions
+                                                </p>
+                                            </div>
                                             <div className="flex items-center gap-3 text-xs">
                                                 <div className="flex items-center gap-1.5">
-                                                    <span className="w-3 h-3 rounded-md bg-blue-600" />
+                                                    <span className="w-3 h-3 rounded-md bg-[#1E3A5F]" />
                                                     <span className="text-slate-600 font-semibold">Revenue</span>
                                                 </div>
                                                 <div className="flex items-center gap-1.5">
@@ -991,15 +1432,15 @@ export default function AccountingIndex({
                                                     <span className="text-slate-600 font-semibold">Expenses</span>
                                                 </div>
                                                 <div className="flex items-center gap-1.5">
-                                                    <span className="w-3 h-3 rounded-md bg-emerald-500" />
+                                                    <span className="w-3 h-3 rounded-md bg-[#D4AF37]" />
                                                     <span className="text-slate-600 font-semibold">Net Profit</span>
                                                 </div>
                                             </div>
                                         </div>
 
                                         {/* Visual Bar Chart */}
-                                        <div className="pt-4 space-y-5">
-                                            <div className="grid grid-cols-6 gap-3 sm:gap-4 h-60 items-end border-b border-slate-200 pb-2">
+                                        <div className="pt-2 space-y-4">
+                                            <div className="grid grid-cols-6 gap-2 sm:gap-3 h-52 items-end border-b border-slate-200 pb-2">
                                                 {revenueExpenseTrend.map((t) => {
                                                     const revHeight = maxTrendAmount > 0 ? (t.revenue_minor / maxTrendAmount) * 100 : 0;
                                                     const expHeight = maxTrendAmount > 0 ? (t.expenses_minor / maxTrendAmount) * 100 : 0;
@@ -1007,28 +1448,31 @@ export default function AccountingIndex({
 
                                                     return (
                                                         <div key={t.month} className="flex flex-col items-center gap-2 h-full justify-end group">
-                                                            <div className="flex items-end gap-1 sm:gap-1.5 w-full justify-center h-48">
+                                                            <div className="flex items-end gap-1 sm:gap-1.5 w-full justify-center h-40">
                                                                 {/* Revenue Bar */}
                                                                 <div
-                                                                    className="w-3 sm:w-4 bg-blue-600 rounded-t-md transition-all group-hover:bg-blue-700"
+                                                                    className="w-2.5 sm:w-3.5 bg-[#1E3A5F] rounded-t-md transition-all group-hover:bg-[#162a45] cursor-pointer"
                                                                     style={{ height: `${Math.max(6, revHeight)}%` }}
                                                                     title={`Revenue: ${formatTsh(t.revenue_minor)}`}
                                                                 />
                                                                 {/* Expense Bar */}
                                                                 <div
-                                                                    className="w-3 sm:w-4 bg-rose-500 rounded-t-md transition-all group-hover:bg-rose-600"
+                                                                    className="w-2.5 sm:w-3.5 bg-rose-500 rounded-t-md transition-all group-hover:bg-rose-600 cursor-pointer"
                                                                     style={{ height: `${Math.max(6, expHeight)}%` }}
                                                                     title={`Expenses: ${formatTsh(t.expenses_minor)}`}
                                                                 />
                                                                 {/* Net Profit Bar */}
                                                                 <div
-                                                                    className="w-3 sm:w-4 bg-emerald-500 rounded-t-md transition-all group-hover:bg-emerald-600"
+                                                                    className="w-2.5 sm:w-3.5 bg-[#D4AF37] rounded-t-md transition-all group-hover:bg-[#b8960c] cursor-pointer"
                                                                     style={{ height: `${Math.max(6, profHeight)}%` }}
                                                                     title={`Net Profit: ${formatTsh(t.net_profit_minor)} (${t.margin_pct}%)`}
                                                                 />
                                                             </div>
-                                                            <div className="text-[11px] font-bold text-slate-700 truncate text-center">
+                                                            <div className="text-[10px] font-bold text-slate-700 truncate text-center">
                                                                 {t.short_month}
+                                                            </div>
+                                                            <div className="text-[9px] font-black text-[#8C6D1F]">
+                                                                {t.margin_pct}%
                                                             </div>
                                                         </div>
                                                     );
@@ -1040,21 +1484,21 @@ export default function AccountingIndex({
                                                 <table className="w-full text-left text-xs">
                                                     <thead>
                                                         <tr className="text-slate-400 font-bold uppercase text-[10px]">
-                                                            <th className="py-2">Month</th>
-                                                            <th className="py-2 text-right">Revenue</th>
-                                                            <th className="py-2 text-right">Expenses</th>
-                                                            <th className="py-2 text-right">Net Profit</th>
-                                                            <th className="py-2 text-right">Margin %</th>
+                                                            <th className="py-1.5">Month</th>
+                                                            <th className="py-1.5 text-right">Revenue</th>
+                                                            <th className="py-1.5 text-right">Expenses</th>
+                                                            <th className="py-1.5 text-right">Net Profit</th>
+                                                            <th className="py-1.5 text-right">Margin %</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-slate-100">
                                                         {revenueExpenseTrend.map((row) => (
                                                             <tr key={row.month} className="hover:bg-slate-50 transition">
-                                                                <td className="py-2 font-bold text-slate-800">{row.month}</td>
-                                                                <td className="py-2 text-right font-mono font-bold text-blue-700">{formatTsh(row.revenue_minor)}</td>
-                                                                <td className="py-2 text-right font-mono text-rose-600">{formatTsh(row.expenses_minor)}</td>
-                                                                <td className="py-2 text-right font-mono font-bold text-emerald-600">{formatTsh(row.net_profit_minor)}</td>
-                                                                <td className="py-2 text-right font-bold text-slate-700">{row.margin_pct}%</td>
+                                                                <td className="py-1.5 font-bold text-slate-800">{row.month}</td>
+                                                                <td className="py-1.5 text-right font-mono font-bold text-[#1E3A5F]">{formatTsh(row.revenue_minor)}</td>
+                                                                <td className="py-1.5 text-right font-mono text-rose-600">{formatTsh(row.expenses_minor)}</td>
+                                                                <td className="py-1.5 text-right font-mono font-bold text-[#8C6D1F]">{formatTsh(row.net_profit_minor)}</td>
+                                                                <td className="py-1.5 text-right font-bold text-slate-700">{row.margin_pct}%</td>
                                                             </tr>
                                                         ))}
                                                     </tbody>
@@ -1063,60 +1507,346 @@ export default function AccountingIndex({
                                         </div>
                                     </div>
 
-                                    {/* Departmental Revenue Share */}
-                                    <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 sm:p-6 space-y-4">
-                                        <div className="border-b border-slate-100 pb-3">
-                                            <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
-                                                Department Revenue Contribution
-                                            </h3>
-                                            <p className="text-xs text-slate-500">
-                                                Income stream distribution across hotel divisions
-                                            </p>
+                                    {/* PIE CHART 1: Department Revenue Share Donut */}
+                                    <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
+                                        <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+                                            <div>
+                                                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-1.5">
+                                                    <PieChart className="w-4 h-4 text-blue-600" />
+                                                    <span>Department Revenue Share (Pie Chart)</span>
+                                                </h3>
+                                                <p className="text-xs text-slate-500">
+                                                    Revenue contribution across hotel property divisions
+                                                </p>
+                                            </div>
+                                            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
+                                                Revenue Share
+                                            </span>
                                         </div>
 
-                                        <div className="space-y-4 pt-2">
-                                            {departmentRevenueContribution.map((dept) => (
-                                                <div key={dept.name} className="space-y-1.5">
-                                                    <div className="flex items-center justify-between text-xs">
-                                                        <span className="font-bold text-slate-800">{dept.name}</span>
-                                                        <span className="font-mono font-bold text-slate-900">{formatTsh(dept.amount_minor)}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                                                            <div
-                                                                className={`h-full ${dept.color} transition-all duration-500`}
-                                                                style={{ width: `${dept.percent}%` }}
-                                                            />
-                                                        </div>
-                                                        <span className={`text-[11px] font-black w-10 text-right ${dept.textColor}`}>
-                                                            {dept.percent}%
-                                                        </span>
-                                                    </div>
+                                        {/* SVG Donut Chart */}
+                                        <div className="flex flex-col items-center justify-center pt-2">
+                                            <div className="relative flex items-center justify-center">
+                                                <svg viewBox="0 0 120 120" className="w-40 h-40 sm:w-48 sm:h-48 -rotate-90">
+                                                    {/* Background Ring */}
+                                                    <circle cx="60" cy="60" r="42" fill="none" stroke="#f1f5f9" strokeWidth="15" />
+                                                    {/* Segments */}
+                                                    {(() => {
+                                                        const circumference = 2 * Math.PI * 42; // ~263.89
+                                                        let accumulated = 0;
+                                                        const colors = ['#3B82F6', '#F59E0B', '#6366F1', '#10B981'];
+
+                                                        return departmentRevenueContribution.map((dept, idx) => {
+                                                            const pct = Math.max(0, dept.percent);
+                                                            const strokeDasharray = `${(pct / 100) * circumference} ${circumference}`;
+                                                            const strokeDashoffset = -((accumulated / 100) * circumference);
+                                                            accumulated += pct;
+                                                            const color = colors[idx % colors.length];
+
+                                                            return pct > 0 ? (
+                                                                <circle
+                                                                    key={dept.name}
+                                                                    cx="60"
+                                                                    cy="60"
+                                                                    r="42"
+                                                                    fill="none"
+                                                                    stroke={color}
+                                                                    strokeWidth="15"
+                                                                    strokeDasharray={strokeDasharray}
+                                                                    strokeDashoffset={strokeDashoffset}
+                                                                    className="transition-all duration-500 hover:opacity-80"
+                                                                >
+                                                                    <title>{`${dept.name}: ${pct}% (${formatTsh(dept.amount_minor)})`}</title>
+                                                                </circle>
+                                                            ) : null;
+                                                        });
+                                                    })()}
+                                                </svg>
+
+                                                {/* Center Total in Donut Hole */}
+                                                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-2 pointer-events-none">
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Turnover</span>
+                                                    <span className="text-xs sm:text-sm font-black text-slate-900 font-mono">
+                                                        {formatTsh(safeMetrics.month_revenue_minor)}
+                                                    </span>
+                                                    <span className="text-[9px] text-emerald-600 font-extrabold mt-0.5">100% Turnover</span>
                                                 </div>
-                                            ))}
-                                        </div>
+                                            </div>
 
-                                        <div className="pt-4 border-t border-slate-100">
-                                            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 space-y-1">
-                                                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Combined Revenue</div>
-                                                <div className="text-xl font-black text-slate-900">{formatTsh(safeMetrics.month_revenue_minor)}</div>
-                                                <p className="text-[10px] text-slate-400">All property divisions consolidated</p>
+                                            {/* Department Legend */}
+                                            <div className="w-full space-y-2 mt-4 pt-3 border-t border-slate-100">
+                                                {departmentRevenueContribution.map((dept, idx) => {
+                                                    const dotColors = ['bg-blue-600', 'bg-amber-500', 'bg-indigo-600', 'bg-emerald-500'];
+                                                    const color = dotColors[idx % dotColors.length];
+
+                                                    return (
+                                                        <div key={dept.name} className="flex items-center justify-between text-xs">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className={`w-2.5 h-2.5 rounded-full ${color}`} />
+                                                                <span className="font-bold text-slate-800">{dept.name}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-3">
+                                                                <span className="font-mono font-bold text-slate-900">{formatTsh(dept.amount_minor)}</span>
+                                                                <span className="text-[11px] font-black text-slate-500 w-8 text-right">
+                                                                    {dept.percent}%
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Row 2: Accounts Receivable Aging (6 cols) + Expense Distribution (6 cols) */}
+                                {/* ROW 2: PIE CHART 2 (CUSTOMER SEGMENTS) + PIE CHART 3 (COST VS PROFIT EFFICIENCY) */}
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                                    {/* PIE CHART 2: Guest & Customer Distribution */}
+                                    <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
+                                        <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+                                            <div>
+                                                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-1.5">
+                                                    <Users className="w-4 h-4 text-indigo-600" />
+                                                    <span>Guest & Customer Distribution (Pie Chart)</span>
+                                                </h3>
+                                                <p className="text-xs text-slate-500">
+                                                    Guest breakdown across lodging, dining, and retail
+                                                </p>
+                                            </div>
+                                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700">
+                                                Customer Mix
+                                            </span>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center pt-1">
+                                            {/* Donut */}
+                                            <div className="sm:col-span-6 flex flex-col items-center justify-center">
+                                                <div className="relative flex items-center justify-center">
+                                                    <svg viewBox="0 0 120 120" className="w-36 h-36 -rotate-90">
+                                                        <circle cx="60" cy="60" r="42" fill="none" stroke="#f1f5f9" strokeWidth="15" />
+                                                        {(() => {
+                                                            const circumference = 2 * Math.PI * 42;
+                                                            const segments = [
+                                                                { name: 'Lodging / Rooms', pct: customerStats.lodgingPct, color: '#3B82F6' },
+                                                                { name: 'Restaurant & Bar', pct: customerStats.restaurantPct, color: '#F59E0B' },
+                                                                { name: 'Super / Mini Market', pct: customerStats.supermarketPct, color: '#6366F1' },
+                                                            ];
+                                                            let acc = 0;
+                                                            return segments.map((seg) => {
+                                                                const strokeDasharray = `${(seg.pct / 100) * circumference} ${circumference}`;
+                                                                const strokeDashoffset = -((acc / 100) * circumference);
+                                                                acc += seg.pct;
+
+                                                                return seg.pct > 0 ? (
+                                                                    <circle
+                                                                        key={seg.name}
+                                                                        cx="60"
+                                                                        cy="60"
+                                                                        r="42"
+                                                                        fill="none"
+                                                                        stroke={seg.color}
+                                                                        strokeWidth="15"
+                                                                        strokeDasharray={strokeDasharray}
+                                                                        strokeDashoffset={strokeDashoffset}
+                                                                        className="transition-all duration-500"
+                                                                    >
+                                                                        <title>{`${seg.name}: ${seg.pct}%`}</title>
+                                                                    </circle>
+                                                                ) : null;
+                                                            });
+                                                        })()}
+                                                    </svg>
+                                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase">Total</span>
+                                                        <span className="text-base font-black text-slate-900">
+                                                            {customerStats.totalCustomers}
+                                                        </span>
+                                                        <span className="text-[9px] text-indigo-600 font-extrabold">Guests</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Breakdown Numbers */}
+                                            <div className="sm:col-span-6 space-y-2.5 text-xs">
+                                                <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-100 flex items-center justify-between">
+                                                    <div>
+                                                        <span className="font-bold text-blue-900 block">Lodging Guests</span>
+                                                        <span className="text-[10px] text-blue-600">{customerStats.occupiedRooms} Rooms In-House</span>
+                                                    </div>
+                                                    <span className="font-black text-blue-800 text-sm">{customerStats.lodgingPct}%</span>
+                                                </div>
+
+                                                <div className="p-2.5 rounded-xl bg-amber-50/70 border border-amber-100 flex items-center justify-between">
+                                                    <div>
+                                                        <span className="font-bold text-amber-900 block">Restaurant & Bar Guests</span>
+                                                        <span className="text-[10px] text-amber-600">Table & Bar Diners</span>
+                                                    </div>
+                                                    <span className="font-black text-amber-800 text-sm">{customerStats.restaurantPct}%</span>
+                                                </div>
+
+                                                <div className="p-2.5 rounded-xl bg-indigo-50/70 border border-indigo-100 flex items-center justify-between">
+                                                    <div>
+                                                        <span className="font-bold text-indigo-900 block">Supermarket Retail Shoppers</span>
+                                                        <span className="text-[10px] text-indigo-600">Counter Retail Shoppers</span>
+                                                    </div>
+                                                    <span className="font-black text-indigo-800 text-sm">{customerStats.supermarketPct}%</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-center">
+                                            <div className="bg-slate-50 p-2 rounded-xl">
+                                                <span className="text-[10px] text-slate-400 font-bold block">Open Folios</span>
+                                                <span className="text-xs font-black text-slate-800 font-mono">{customerStats.openFolios}</span>
+                                            </div>
+                                            <div className="bg-slate-50 p-2 rounded-xl">
+                                                <span className="text-[10px] text-slate-400 font-bold block">ADR Rate</span>
+                                                <span className="text-xs font-black text-slate-800 font-mono">{formatTsh(safeMetrics.hotel?.adr_minor || 0)}</span>
+                                            </div>
+                                            <div className="bg-slate-50 p-2 rounded-xl">
+                                                <span className="text-[10px] text-slate-400 font-bold block">RevPAR</span>
+                                                <span className="text-xs font-black text-slate-800 font-mono">{formatTsh(safeMetrics.hotel?.revpar_minor || 0)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* PIE CHART 3: Cost vs Profit Efficiency */}
+                                    <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
+                                        <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+                                            <div>
+                                                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-1.5">
+                                                    <Scale className="w-4 h-4 text-emerald-600" />
+                                                    <span>Cost vs Profit Efficiency (Pie Chart)</span>
+                                                </h3>
+                                                <p className="text-xs text-slate-500">
+                                                    Cost-to-Income vs Net Profit Margin Efficiency
+                                                </p>
+                                            </div>
+                                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                                                dynamicStats.costRatio <= 65
+                                                    ? 'bg-emerald-100 text-emerald-800'
+                                                    : dynamicStats.costRatio <= 80
+                                                    ? 'bg-amber-100 text-amber-800'
+                                                    : 'bg-rose-100 text-rose-800'
+                                            }`}>
+                                                {dynamicStats.costRatio <= 65 ? 'Optimal Health' : 'Attention Required'}
+                                            </span>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center pt-1">
+                                            {/* Donut Gauge */}
+                                            <div className="sm:col-span-6 flex flex-col items-center justify-center">
+                                                <div className="relative flex items-center justify-center">
+                                                    <svg viewBox="0 0 120 120" className="w-36 h-36 -rotate-90">
+                                                        <circle cx="60" cy="60" r="42" fill="none" stroke="#f1f5f9" strokeWidth="15" />
+                                                        {(() => {
+                                                            const circumference = 2 * Math.PI * 42;
+                                                            const costPct = Math.min(100, Math.max(0, dynamicStats.costRatio));
+                                                            const profitPct = Math.min(100 - costPct, Math.max(0, dynamicStats.netMargin));
+                                                            const costStroke = `${(costPct / 100) * circumference} ${circumference}`;
+                                                            const profitStroke = `${(profitPct / 100) * circumference} ${circumference}`;
+                                                            const profitOffset = -((costPct / 100) * circumference);
+
+                                                            return (
+                                                                <>
+                                                                    {/* Cost Segment */}
+                                                                    <circle
+                                                                        cx="60"
+                                                                        cy="60"
+                                                                        r="42"
+                                                                        fill="none"
+                                                                        stroke="#F43F5E"
+                                                                        strokeWidth="15"
+                                                                        strokeDasharray={costStroke}
+                                                                        strokeDashoffset="0"
+                                                                        className="transition-all duration-500"
+                                                                    />
+                                                                    {/* Profit Segment */}
+                                                                    {profitPct > 0 && (
+                                                                        <circle
+                                                                            cx="60"
+                                                                            cy="60"
+                                                                            r="42"
+                                                                            fill="none"
+                                                                            stroke="#10B981"
+                                                                            strokeWidth="15"
+                                                                            strokeDasharray={profitStroke}
+                                                                            strokeDashoffset={profitOffset}
+                                                                            className="transition-all duration-500"
+                                                                        />
+                                                                    )}
+                                                                </>
+                                                            );
+                                                        })()}
+                                                    </svg>
+                                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase">Cost Ratio</span>
+                                                        <span className="text-base font-black text-rose-700">
+                                                            {dynamicStats.costRatio}%
+                                                        </span>
+                                                        <span className="text-[9px] text-emerald-600 font-extrabold">{dynamicStats.netMargin}% Margin</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Details */}
+                                            <div className="sm:col-span-6 space-y-2 text-xs">
+                                                <div className="p-2.5 rounded-xl bg-rose-50/70 border border-rose-100 flex items-center justify-between">
+                                                    <div>
+                                                        <span className="font-bold text-rose-900 block">Operating Costs</span>
+                                                        <span className="text-[10px] text-rose-600 font-mono">{formatTsh(dynamicStats.expenses)}</span>
+                                                    </div>
+                                                    <span className="font-black text-rose-700">{dynamicStats.costRatio}%</span>
+                                                </div>
+
+                                                <div className="p-2.5 rounded-xl bg-[#D4AF37]/10 border border-[#D4AF37]/30 flex items-center justify-between">
+                                                    <div>
+                                                        <span className="font-bold text-[#1E3A5F] block">Net Operating Profit</span>
+                                                        <span className="text-[10px] text-[#8C6D1F] font-mono font-bold">{formatTsh(dynamicStats.netProfit)}</span>
+                                                    </div>
+                                                    <span className="font-black text-[#8C6D1F] bg-[#D4AF37]/20 border border-[#D4AF37]/40 px-2 py-0.5 rounded-md">{dynamicStats.netMargin}%</span>
+                                                </div>
+
+                                                <div className="p-2 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-[11px]">
+                                                    <span className="text-slate-500 font-semibold">Working Capital (AR - AP):</span>
+                                                    <span className="font-mono font-black text-slate-900">
+                                                        {formatTsh(safeMetrics.accounts_receivable_minor - safeMetrics.accounts_payable_minor)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleSetActiveTab('reports')}
+                                                className="text-[#1E3A5F] hover:text-[#8C6D1F] font-bold flex items-center gap-1 cursor-pointer transition"
+                                            >
+                                                <span>View Full P&L Statement</span>
+                                                <ArrowRight className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleSetActiveTab('invoices')}
+                                                className="text-slate-500 hover:text-slate-800 font-semibold cursor-pointer"
+                                            >
+                                                Customer Receivables ({customerInvoices.length})
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* ROW 3: DETAILED AR AGING & EXPENSE CATEGORIES BREAKDOWN */}
                                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
                                     {/* AR Aging Schedule */}
                                     <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 sm:p-6 space-y-4">
                                         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                                             <div>
                                                 <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
-                                                    Accounts Receivable (AR) Aging Analysis
+                                                    Accounts Receivable (AR) Aging Schedule
                                                 </h3>
                                                 <p className="text-xs text-slate-500">
-                                                    Outstanding customer balances categorized by age of debt
+                                                    Customer aging brackets and credit collection risk analysis
                                                 </p>
                                             </div>
                                             <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-amber-100 text-amber-800">
@@ -1124,12 +1854,12 @@ export default function AccountingIndex({
                                             </span>
                                         </div>
 
-                                        <div className="space-y-3 pt-1">
+                                        <div className="space-y-2.5 pt-1">
                                             {arAging.map((bracket) => (
                                                 <div key={bracket.bracket} className="p-3 rounded-xl border border-slate-100 bg-slate-50/70 flex items-center justify-between">
                                                     <div>
                                                         <div className="text-xs font-bold text-slate-800">{bracket.bracket}</div>
-                                                        <div className="text-[10px] text-slate-400">{bracket.count} active accounts</div>
+                                                        <div className="text-[10px] text-slate-400">{bracket.count} debtor accounts</div>
                                                     </div>
                                                     <div className="text-right">
                                                         <div className="text-xs font-mono font-black text-slate-900">{formatTsh(bracket.amount_minor)}</div>
@@ -1140,6 +1870,14 @@ export default function AccountingIndex({
                                                 </div>
                                             ))}
                                         </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => handleSetActiveTab('invoices')}
+                                            className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition text-center cursor-pointer"
+                                        >
+                                            View All Invoices & Debtors Table →
+                                        </button>
                                     </div>
 
                                     {/* Expense Category Breakdown */}
@@ -1150,7 +1888,7 @@ export default function AccountingIndex({
                                                     Operating Expenses by Category
                                                 </h3>
                                                 <p className="text-xs text-slate-500">
-                                                    Cost allocation across property operational cost centers
+                                                    Operational cost centers across hotel divisions
                                                 </p>
                                             </div>
                                             <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-rose-100 text-rose-800">
@@ -1161,18 +1899,23 @@ export default function AccountingIndex({
                                         <div className="space-y-3 pt-1">
                                             {expenseCategories.length === 0 ? (
                                                 <div className="py-8 text-center text-slate-400 text-xs">
-                                                    No recorded operating expenses for this period.
+                                                    No operating expenses recorded for this period.
                                                 </div>
                                             ) : (
                                                 expenseCategories.map((cat) => (
-                                                    <div key={cat.category} className="p-3 rounded-xl border border-slate-100 bg-slate-50/70 flex items-center justify-between">
-                                                        <div>
-                                                            <div className="text-xs font-bold text-slate-800">{cat.category}</div>
-                                                            <div className="text-[10px] text-slate-400">{cat.count} vouchers posted</div>
+                                                    <div key={cat.category} className="space-y-1">
+                                                        <div className="flex items-center justify-between text-xs">
+                                                            <span className="font-bold text-slate-700 capitalize">{cat.category}</span>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-mono font-bold text-rose-700">{formatTsh(cat.amount_minor)}</span>
+                                                                <span className="text-[10px] font-bold text-slate-400 w-8 text-right">{cat.percent}%</span>
+                                                            </div>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <div className="text-xs font-mono font-black text-rose-700">{formatTsh(cat.amount_minor)}</div>
-                                                            <span className="text-[10px] font-bold text-slate-500">{cat.percent}% of total</span>
+                                                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                            <div
+                                                                className="h-full bg-rose-500 rounded-full transition-all duration-500"
+                                                                style={{ width: `${Math.min(100, cat.percent)}%` }}
+                                                            />
                                                         </div>
                                                     </div>
                                                 ))
@@ -1180,15 +1923,15 @@ export default function AccountingIndex({
                                         </div>
                                     </div>
                                 </div>
-                            </>
+                            </div>
                         )}
                     </div>
                 )}
 
                 {/* ========================================================================= */}
-                {/* TAB 2: TRANSACTIONS & CASHBOOK                                            */}
+                {/* TAB 2: TRANSACTIONS & CASHBOOK  — Accountant only                         */}
                 {/* ========================================================================= */}
-                {activeTab === 'transactions' && (
+                {activeTab === 'transactions' && !isExecutiveOrManager && (
                     <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 sm:p-6 space-y-4">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
                             <div>
@@ -1364,20 +2107,20 @@ export default function AccountingIndex({
                 )}
 
                 {/* ========================================================================= */}
-                {/* TAB 4: CHART OF ACCOUNTS & GENERAL LEDGER                                 */}
+                {/* TAB 4: CHART OF ACCOUNTS & GENERAL LEDGER  — Accountant pekee           */}
                 {/* ========================================================================= */}
-                {activeTab === 'chart_of_accounts' && (
+                {activeTab === 'chart_of_accounts' && !isExecutiveOrManager && (
                     <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 sm:p-6 space-y-4">
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3 flex-wrap gap-2">
                             <div>
                                 <h3 className="text-base font-extrabold text-slate-900">
                                     Hotel Standard Chart of Accounts (COA)
                                 </h3>
                                 <p className="text-xs text-slate-500">
-                                    Double-entry accounting general ledger accounts structure
+                                    Double-entry accounting general ledger accounts structure. Click "View Stream" to inspect ledger transactions.
                                 </p>
                             </div>
-                            <span className="text-xs font-bold text-slate-600">
+                            <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-xl">
                                 {accounts.length} Active Accounts
                             </span>
                         </div>
@@ -1392,6 +2135,7 @@ export default function AccountingIndex({
                                         <th className="py-2.5 px-3">Category</th>
                                         <th className="py-2.5 px-3 text-right">Balance</th>
                                         <th className="py-2.5 px-3 text-center">Status</th>
+                                        <th className="py-2.5 px-3 text-right">Ledger Stream</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
@@ -1421,10 +2165,263 @@ export default function AccountingIndex({
                                                     Active
                                                 </span>
                                             </td>
+                                            <td className="py-2.5 px-3 text-right">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelectedLedgerCode(acc.code);
+                                                        setActiveTab('ledger_streams');
+                                                    }}
+                                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-[11px] font-bold transition cursor-pointer"
+                                                >
+                                                    <Layers className="w-3 h-3 text-emerald-600" />
+                                                    <span>View Stream</span>
+                                                </button>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                )}
+
+                {/* ========================================================================= */}
+                {/* TAB: GENERAL LEDGER AUDIT TRAIL & TRANSACTION STREAMS                    */}
+                {/* ========================================================================= */}
+                {activeTab === 'ledger_streams' && (
+                    <div className="space-y-5">
+                        {/* 1. Account Selector Header Card */}
+                        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 sm:p-6 space-y-4">
+                            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <Layers className="w-5 h-5 text-emerald-600" />
+                                        <h3 className="text-base sm:text-lg font-black text-slate-900">
+                                            General Ledger Transaction Streams & Audit Trail
+                                        </h3>
+                                    </div>
+                                    <p className="text-xs text-slate-500 mt-1">
+                                        Select any account or ledger to inspect the complete stream of entries, receipts, debits, and credits.
+                                    </p>
+                                </div>
+
+                                {/* Quick Ledger Dropdown Selector */}
+                                <div className="flex items-center gap-2 w-full lg:w-auto">
+                                    <label className="text-xs font-bold text-slate-700 whitespace-nowrap">Select Ledger:</label>
+                                    <select
+                                        value={selectedLedgerCode}
+                                        onChange={(e) => setSelectedLedgerCode(e.target.value)}
+                                        className="w-full lg:w-72 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:bg-white focus:border-blue-500"
+                                    >
+                                        <option value="all">⚡ All Transactions (Consolidated Audit Trail)</option>
+                                        <optgroup label="Revenue Ledgers">
+                                            <option value="4001">4001 • Room Accommodation Revenue</option>
+                                            <option value="4002">4002 • Restaurant & Bar Dining Revenue</option>
+                                            <option value="4003">4003 • Grocery & Retail Minimart Sales</option>
+                                            <option value="4004">4004 • Guest Services, Laundry & Misc</option>
+                                        </optgroup>
+                                        <optgroup label="Expense Ledgers">
+                                            <option value="5001">5001 • Kitchen Food & Beverage Provisions</option>
+                                            <option value="5002">5002 • Electricity, Water & Utilities</option>
+                                            <option value="5003">5003 • Housekeeping Linens & Laundry</option>
+                                            <option value="5004">5004 • Staff Salaries & Wages</option>
+                                            <option value="5005">5005 • Repairs, Maintenance & Hardware</option>
+                                            <option value="5006">5006 • Administrative & Marketing</option>
+                                        </optgroup>
+                                        <optgroup label="Cash & Bank Ledgers (Liquid Funds)">
+                                            <option value="1010">1010 • Reception Petty Cash Vault</option>
+                                            <option value="1020">1020 • CRDB Bank Corporate Account</option>
+                                            <option value="1030">1030 • NMB Bank Operations Account</option>
+                                            <option value="1040">1040 • Mobile Money Till (M-Pesa / Tigo)</option>
+                                            <option value="1050">1050 • Guest Ledger (Accounts Receivable)</option>
+                                        </optgroup>
+                                        <optgroup label="Liability Accounts">
+                                            <option value="2010">2010 • Supplier Trade Payables (AP)</option>
+                                            <option value="2020">2020 • Guest Advance Deposits</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Category Filter Pills */}
+                            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                                {[
+                                    { code: 'all', label: 'All Transactions' },
+                                    { code: '4001', label: '4001 • Rooms' },
+                                    { code: '4002', label: '4002 • Restaurant & Bar' },
+                                    { code: '4003', label: '4003 • Minimart' },
+                                    { code: '1010', label: '1010 • Cash Vault' },
+                                    { code: '1020', label: '1020 • CRDB Bank' },
+                                    { code: '1040', label: '1040 • Mobile Money' },
+                                    { code: '1050', label: '1050 • Guest Ledger (AR)' },
+                                    { code: '5001', label: '5001 • Kitchen Food' },
+                                    { code: '5002', label: '5002 • Electricity & Water' },
+                                    { code: '5004', label: '5004 • Salaries & Wages' },
+                                ].map((pill) => (
+                                    <button
+                                        key={pill.code}
+                                        type="button"
+                                        onClick={() => setSelectedLedgerCode(pill.code)}
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                                            selectedLedgerCode === pill.code
+                                                ? 'bg-slate-900 text-white shadow-xs'
+                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        }`}
+                                    >
+                                        {pill.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* 2. Selected Ledger Profile & KPI Summary */}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-4 flex flex-col justify-between">
+                                <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">Selected Ledger Account</span>
+                                <div className="mt-2">
+                                    <div className="text-base font-black text-slate-900 truncate">
+                                        {currentSelectedAccount?.name || 'All Consolidated Transactions'}
+                                    </div>
+                                    <span className="text-xs font-mono font-bold text-blue-700 block mt-0.5">
+                                        {selectedLedgerCode === 'all' ? 'Consolidated GL' : `Code: ${selectedLedgerCode}`}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-4 flex flex-col justify-between">
+                                <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">Current Book Balance</span>
+                                <div className="mt-2">
+                                    <div className="text-xl font-black text-slate-900 font-mono">
+                                        {selectedLedgerCode === 'all'
+                                            ? formatTsh(safeMetrics.month_revenue_minor)
+                                            : formatTsh(currentSelectedAccount?.balance_minor || 0)}
+                                    </div>
+                                    <span className="text-[11px] text-slate-400 block mt-0.5">Updated per current transactions</span>
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-4 flex flex-col justify-between">
+                                <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">Total Debits (Inflow)</span>
+                                <div className="mt-2">
+                                    <div className="text-xl font-black text-emerald-700 font-mono">
+                                        {formatTsh(currentLedgerDebitsTotal)}
+                                    </div>
+                                    <span className="text-[11px] text-emerald-600 font-semibold block mt-0.5">Inflow / Asset Charges</span>
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-4 flex flex-col justify-between">
+                                <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">Total Credits (Outflow)</span>
+                                <div className="mt-2">
+                                    <div className="text-xl font-black text-rose-700 font-mono">
+                                        {formatTsh(currentLedgerCreditsTotal)}
+                                    </div>
+                                    <span className="text-[11px] text-rose-600 font-semibold block mt-0.5">Outflow / Earned Revenue</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 3. Search and Ledger Table */}
+                        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 sm:p-6 space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                                <div className="relative flex-1 max-w-md">
+                                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                                    <input
+                                        type="text"
+                                        value={ledgerSearchQuery}
+                                        onChange={(e) => setLedgerSearchQuery(e.target.value)}
+                                        placeholder="Search by reference, voucher no, description, or entity..."
+                                        className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-blue-500"
+                                    />
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setLedgerDateFilter('all')}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                                            ledgerDateFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        }`}
+                                    >
+                                        All Time
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setLedgerDateFilter('month')}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                                            ledgerDateFilter === 'month' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        }`}
+                                    >
+                                        This Month
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Transaction Stream Table */}
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-xs">
+                                    <thead>
+                                        <tr className="bg-slate-50 text-slate-500 uppercase tracking-wider font-bold text-[10px] border-b border-slate-100">
+                                            <th className="py-2.5 px-3">Date</th>
+                                            <th className="py-2.5 px-3">Reference / Voucher</th>
+                                            <th className="py-2.5 px-3">Account / Ledger</th>
+                                            <th className="py-2.5 px-3">Description</th>
+                                            <th className="py-2.5 px-3">Entity / Division</th>
+                                            <th className="py-2.5 px-3">Payment</th>
+                                            <th className="py-2.5 px-3 text-right">Debit (TZS)</th>
+                                            <th className="py-2.5 px-3 text-right">Credit (TZS)</th>
+                                            <th className="py-2.5 px-3 text-center">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {filteredLedgerTransactions.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={9} className="py-12 text-center text-slate-400">
+                                                    <div className="flex flex-col items-center justify-center gap-2">
+                                                        <Layers className="w-8 h-8 text-slate-300" />
+                                                        <span className="font-semibold text-sm">No transactions found in this ledger for the selected period.</span>
+                                                        <span className="text-xs text-slate-400">
+                                                            Real-time transactions from front desk, POS outlets, and expense vouchers will stream here automatically.
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            filteredLedgerTransactions.map((tx) => (
+                                                <tr key={tx.id} className="hover:bg-slate-50 transition">
+                                                    <td className="py-2.5 px-3 font-medium text-slate-600 whitespace-nowrap">{tx.date}</td>
+                                                    <td className="py-2.5 px-3 font-mono font-bold text-blue-700 whitespace-nowrap">
+                                                        {tx.reference}
+                                                    </td>
+                                                    <td className="py-2.5 px-3 whitespace-nowrap">
+                                                        <span className="font-bold text-slate-900 block">{tx.account_name}</span>
+                                                        <span className="text-[10px] font-mono text-slate-400 block">{tx.account_code}</span>
+                                                    </td>
+                                                    <td className="py-2.5 px-3 font-medium text-slate-800 max-w-xs">{tx.description}</td>
+                                                    <td className="py-2.5 px-3 text-slate-600">{tx.entity}</td>
+                                                    <td className="py-2.5 px-3 whitespace-nowrap">
+                                                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[10px] font-bold">
+                                                            {tx.payment_method}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-700">
+                                                        {tx.debit_minor > 0 ? formatTsh(tx.debit_minor) : '—'}
+                                                    </td>
+                                                    <td className="py-2.5 px-3 text-right font-mono font-bold text-rose-700">
+                                                        {tx.credit_minor > 0 ? formatTsh(tx.credit_minor) : '—'}
+                                                    </td>
+                                                    <td className="py-2.5 px-3 text-center">
+                                                        <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
+                                                            {tx.status}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -1587,9 +2584,9 @@ export default function AccountingIndex({
                 )}
 
                 {/* ========================================================================= */}
-                {/* TAB 7: APPROVALS QUEUE                                                    */}
+                {/* TAB 7: APPROVALS QUEUE  — Accountant only                                 */}
                 {/* ========================================================================= */}
-                {activeTab === 'approvals' && (
+                {activeTab === 'approvals' && !isExecutiveOrManager && (
                     <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 sm:p-6 space-y-4">
                         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                             <div>

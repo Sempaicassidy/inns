@@ -100,29 +100,29 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
         {
             id: 'slide_1',
             badge: cms_content?.hero_badge || 'THE INNS • Centralized Hospitality OS 2026',
-            title: cms_content?.hero_title || 'Mfumo Kamilifu wa Kisasa wa Kusimamia Mahoteli, Lodges & Restaurants',
-            subtitle: cms_content?.hero_subtitle || 'Dhibiti vyumba, mapokezi, mikataba ya kisheria, ankara na risiti za malipo, POS ya mgahawa, na ripoti za mapato kidijitali katika mfumo mmoja unaoaminika.',
+            title: cms_content?.hero_title || 'Complete Modern Cloud PMS for Hotels, Lodges & Resorts',
+            subtitle: cms_content?.hero_subtitle || 'Manage rooms, front desk, reservations, legal contracts, invoices, payment receipts, POS, and financial reporting seamlessly on one unified cloud platform.',
             image: cms_content?.hero_image || '/uploads/cms/hero_1794042362.png',
         },
         {
             id: 'slide_2',
             badge: 'SAFARI & BOUTIQUE LODGES',
-            title: 'Usimamizi wa Kisasa wa Safari Lodges, Camps & Luxury Resorts',
-            subtitle: 'Fuatilia wageni wa kitalii, uhifadhi wa vyumba (Gantt Rack), stakabadhi za malipo, na ripoti za flash za kila siku za meneja kupitia SMS na WhatsApp.',
+            title: 'Modern Operations for Safari Lodges, Camps & Luxury Boutique Resorts',
+            subtitle: 'Track guest stays, room calendar Gantt racks, folios and payments, with automated daily manager flash reports via SMS and WhatsApp.',
             image: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1920&q=80&fit=crop',
         },
         {
             id: 'slide_3',
             badge: 'RESTAURANT & BAR TOUCHSCREEN POS',
-            title: 'Touchscreen POS ya Mgahawa, Grocery Minimart na Night Audit ya Haraka',
-            subtitle: 'Mfumo wa mauzo wa haraka wa wateja wa ndani na nje, jikoni KOT, usimamizi wa stoo na ripoti kamili za faida na hasara (Double-Entry GL).',
+            title: 'Touchscreen Restaurant POS, Grocery Minimart & Automated Night Audit',
+            subtitle: 'Fast sales ordering for resident and walk-in guests, kitchen KOT tickets, inventory stock management, and double-entry accounting ledger.',
             image: 'https://images.unsplash.com/photo-1551882547-ff40c63fe524?w=1920&q=80&fit=crop',
         },
         {
             id: 'slide_4',
             badge: 'MULTI-PROPERTY CENTRALIZED CLOUD',
-            title: 'Dhibiti Hoteli Nyingi na Matawi Yote Kutoka Dashboard Moja Kuu',
-            subtitle: 'Unganisha matawi yote ya mikoani, linganisha mapato ya kila tawi kwa sekunde, dhibiti watumiaji kwa viwango vya madaraka, na zuia upotevu wa mapato.',
+            title: 'Manage Multiple Hotel Properties & Branches From a Single Command Hub',
+            subtitle: 'Consolidate multiple branches across regions, benchmark property revenue performance in real-time, enforce RBAC permissions, and eliminate revenue leakage.',
             image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=1920&q=80&fit=crop',
         },
     ], [cms_content]);
@@ -153,8 +153,8 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
 
     const currentSlide = heroSlides[heroSlideIndex] || heroSlides[0] || {
         badge: 'THE INNS • Centralized Hospitality OS 2026',
-        title: 'Mfumo Kamilifu wa Kisasa wa Kusimamia Mahoteli, Lodges & Restaurants',
-        subtitle: 'Dhibiti vyumba, mapokezi, mikataba ya kisheria, ankara na risiti za malipo, POS ya mgahawa, na ripoti za mapato kidijitali katika mfumo mmoja unaoaminika.',
+        title: 'Complete Modern Cloud PMS for Hotels, Lodges & Resorts',
+        subtitle: 'Manage rooms, front desk, reservations, legal contracts, invoices, payment receipts, POS, and financial reporting seamlessly on one unified cloud platform.',
     };
 
     const triggerSyncDemo = () => {

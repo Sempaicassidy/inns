@@ -137,7 +137,7 @@ class DashboardController extends Controller
         $rooms = Room::with(['roomType', 'housekeepingTasks' => function ($q) {
             $q->latest()->limit(1)->with('assignee');
         }, 'stays' => function ($q) {
-            $q->whereNull('checked_out_at')->latest()->with('guest');
+            $q->whereNull('checked_out_at')->latest()->with(['guest', 'folio', 'reservationRoom.reservation']);
         }])->orderBy('room_number')->get();
 
         $roomCleanList = $rooms->map(function ($r) {
@@ -179,6 +179,10 @@ class DashboardController extends Controller
             ['number' => $totalRooms.'+', 'type' => 'Total Rooms', 'image' => 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=600&q=80'],
         ];
 
+        $role = $user->active_role ?: $user->role;
+        $isManager = in_array($role, ['general_manager', 'manager', 'owner', 'super_admin', 'admin']);
+        $isReceptionist = ! $isManager && in_array($role, ['receptionist', 'front_desk', 'front_office', 'front_office_manager', 'staff']);
+
         return Inertia::render('Dashboard', [
             'selectedRange' => $selectedRange,
             'stats' => [
@@ -189,22 +193,22 @@ class DashboardController extends Controller
                 'vacant_clean' => $vacantClean,
                 'vacant_dirty' => $vacantDirty,
                 'out_of_service' => $outOfOrder,
-                'today_revenue_minor' => $totalPayments,
-                'room_revenue_minor' => $roomRevenue,
-                'pos_revenue_minor' => $posRevenue,
-                'expenses_minor' => $expensesTotal,
-                'outstanding_minor' => $outstandingBalance,
-                'net_profit_minor' => ($roomRevenue + $posRevenue) - $expensesTotal,
-                'adr' => $adr,
-                'revpar' => $revpar,
+                'today_revenue_minor' => $isReceptionist ? 0 : $totalPayments,
+                'room_revenue_minor' => $isReceptionist ? 0 : $roomRevenue,
+                'pos_revenue_minor' => $isReceptionist ? 0 : $posRevenue,
+                'expenses_minor' => $isReceptionist ? 0 : $expensesTotal,
+                'outstanding_minor' => $isReceptionist ? 0 : $outstandingBalance,
+                'net_profit_minor' => $isReceptionist ? 0 : (($roomRevenue + $posRevenue) - $expensesTotal),
+                'adr' => $isReceptionist ? 0 : $adr,
+                'revpar' => $isReceptionist ? 0 : $revpar,
                 'in_house_count' => $inHouseStays->count(),
                 'arrivals_count' => $arrivals->count(),
                 'departures_count' => $departures->count(),
                 'available_count' => $vacantClean,
                 'reserved_count' => $pendingCount,
-                'revenue_change_pct' => $revenueChangePct,
+                'revenue_change_pct' => $isReceptionist ? 0 : $revenueChangePct,
             ],
-            'revenueTrend' => $revenueTrend,
+            'revenueTrend' => $isReceptionist ? [] : $revenueTrend,
             'arrivals' => $arrivals,
             'departures' => $departures,
             'inHouseStays' => $inHouseStays,
@@ -214,20 +218,32 @@ class DashboardController extends Controller
             'staffList' => $staffList,
             'notifications' => $notifications,
             'availableRooms' => $rooms->where('status_occupancy', 'vacant')->values()->all(),
-            'isReceptionist' => (function () use ($user) {
-                $role = $user->active_role ?: $user->role;
-                $isManager = in_array($role, ['general_manager', 'manager', 'owner', 'super_admin']);
-                return ! $isManager && in_array($role, ['receptionist', 'front_desk', 'front_office', 'front_office_manager', 'staff']);
-            })(),
+            'isReceptionist' => $isReceptionist,
             'pendingFoliosCount' => Folio::where('balance_minor', '>', 0)->where('status', 'open')->count(),
-            'allRooms' => $rooms->map(fn ($r) => [
-                'id' => $r->id,
-                'room_number' => $r->room_number,
-                'type_name' => $r->roomType?->name ?? 'Standard',
-                'status_occupancy' => $r->status_occupancy,
-                'status_hk' => $r->status_hk,
-                'guest_name' => $r->stays->whereNull('checked_out_at')->first()?->guest?->full_name,
-            ])->values()->all(),
+            'calendarData' => app(CalendarController::class)->getCalendarData($request),
+            'allRooms' => $rooms->map(function ($r) use ($currentDate) {
+                $stay = $r->stays->first();
+                $res = $stay?->reservationRoom?->reservation;
+                $folio = $stay?->folio ?? $res?->folios?->first();
+                return [
+                    'id' => $r->id,
+                    'room_number' => $r->room_number,
+                    'room_type_id' => $r->room_type_id,
+                    'type_name' => $r->roomType?->name ?? 'Standard',
+                    'floor' => $r->floor ?? 'Ground Floor',
+                    'base_price_minor' => $r->roomType?->base_price_minor ?? 0,
+                    'status_occupancy' => $r->status_occupancy,
+                    'status_hk' => $r->status_hk,
+                    'guest_name' => $stay?->guest?->full_name ?? $stay?->guest?->name,
+                    'current_guest' => $stay?->guest?->full_name ?? $stay?->guest?->name,
+                    'current_guest_phone' => $stay?->guest?->phone,
+                    'current_check_in' => $stay?->checked_in_at ? Carbon::parse($stay->checked_in_at)->toDateString() : ($res?->check_in ? Carbon::parse($res->check_in)->toDateString() : null),
+                    'current_check_out' => $stay?->expected_check_out ? Carbon::parse($stay->expected_check_out)->toDateString() : ($res?->check_out ? Carbon::parse($res->check_out)->toDateString() : null),
+                    'current_folio_id' => $folio?->id,
+                    'current_folio_balance_minor' => $folio?->balance_minor ?? 0,
+                    'is_due_out' => ($stay?->expected_check_out && Carbon::parse($stay->expected_check_out)->toDateString() === $currentDate->toDateString()),
+                ];
+            })->values()->all(),
         ]);
     }
 

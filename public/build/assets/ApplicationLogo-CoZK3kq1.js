@@ -1,0 +1,1 @@
+import{c as e,t}from"./app-CMDLJF0M.js";e();var n=`/inns/build/assets/logo-KX48dFGA.png`,r=t();function i({className:e=`w-16 h-16`,alt:t=`THE INNS`,src:i,...a}){return(0,r.jsx)(`img`,{src:i||n,alt:t,className:`object-contain rounded-full select-none ${e}`,...a})}export{i as t};

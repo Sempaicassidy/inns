@@ -587,7 +587,7 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
                                     [TRA QR]
                                 </div>
                                 <p className="font-bold">{auth.tenant?.receipt_header || 'VERIFIED FISCAL RECEIPT'}</p>
-                                <p>{auth.tenant?.receipt_footer || `Asante kwa kutembelea ${auth.tenant?.name || 'hoteli yetu'}!`}</p>
+                                <p>{auth.tenant?.receipt_footer || `Thank you for staying with us at ${auth.tenant?.name || 'our hotel'}!`}</p>
                             </div>
                         </div>
 

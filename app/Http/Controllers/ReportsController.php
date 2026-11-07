@@ -24,9 +24,17 @@ use Inertia\Response;
 
 class ReportsController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request): Response|\Illuminate\Http\RedirectResponse
     {
         $user = $request->user();
+
+        // Redirect front desk / receptionists away from Executive Financial Reports to Front Office Shift Reports
+        $role = $user->active_role ?: $user->role;
+        $isManager = in_array($role, ['general_manager', 'manager', 'owner', 'super_admin', 'admin']);
+        if (! $isManager && in_array($role, ['receptionist', 'front_desk', 'front_office', 'front_office_manager', 'staff'])) {
+            return redirect()->route('front-office.reports.index');
+        }
+
         $property = $user->property ?? Property::first();
         $tenantId = $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
 

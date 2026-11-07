@@ -6,6 +6,7 @@ use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FolioController;
+use App\Http\Controllers\FrontOfficeReportController;
 use App\Http\Controllers\GroceryController;
 use App\Http\Controllers\GuestController;
 use App\Http\Controllers\HousekeepingController;
@@ -186,6 +187,10 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     // 10. Manager Executive Reports & Analytics
     Route::get('/reports', [ReportsController::class, 'index'])->name('reports.index');
 
+    // 10-FO. Front Office Shift Progress Reports (Receptionist Operational Reporting)
+    Route::get('/front-office/reports', [FrontOfficeReportController::class, 'index'])->name('front-office.reports.index');
+    Route::post('/front-office/reports', [FrontOfficeReportController::class, 'store'])->name('front-office.reports.store');
+
     // 10a. Manager Automated Notifications (SMS, WhatsApp, Email & Scheduled Morning Reports)
     Route::get('/manager-notifications', [ManagerNotificationController::class, 'index'])->name('manager.notifications.index');
     Route::post('/manager-notifications/settings', [ManagerNotificationController::class, 'updateSettings'])->name('manager.notifications.settings.update');
@@ -210,6 +215,7 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     Route::get('/saas-admin', [SaasAdminController::class, 'index'])->name('saas-admin.index');
     Route::post('/saas-admin/tenants', [SaasAdminController::class, 'storeTenant'])->name('saas-admin.tenants.store');
     Route::put('/saas-admin/tenants/{tenant}', [SaasAdminController::class, 'updateTenantDetails'])->name('saas-admin.tenants.update');
+    Route::delete('/saas-admin/tenants/{tenant}', [SaasAdminController::class, 'destroyTenant'])->name('saas-admin.tenants.destroy');
     Route::post('/saas-admin/tenants/{tenant}/toggle', [SaasAdminController::class, 'toggleTenantStatus'])->name('saas-admin.tenants.toggle');
     Route::post('/saas-admin/tenants/{tenant}/impersonate', [SaasAdminController::class, 'impersonateTenant'])->name('saas-admin.tenants.impersonate');
     Route::post('/saas-admin/impersonate/leave', [SaasAdminController::class, 'leaveImpersonation'])->name('saas-admin.impersonate.leave');
@@ -240,6 +246,8 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
 
     // Users & Roles Management
     Route::post('/saas-admin/users', [SaasAdminController::class, 'storeGlobalUser'])->name('saas-admin.users.store');
+    Route::put('/saas-admin/users/{user}', [SaasAdminController::class, 'updateGlobalUser'])->name('saas-admin.users.update');
+    Route::delete('/saas-admin/users/{user}', [SaasAdminController::class, 'destroyGlobalUser'])->name('saas-admin.users.destroy');
     Route::post('/saas-admin/users/{user}/toggle', [SaasAdminController::class, 'toggleUserStatus'])->name('saas-admin.users.toggle');
 
     // Website CMS & Marketing & Support

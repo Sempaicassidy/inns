@@ -1,4 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import RoomArrangementGrid from '@/Components/RoomArrangementGrid';
+import RoomAvailabilityCalendar, { CalendarProps } from '@/Components/RoomAvailabilityCalendar';
 import { PageProps } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import {
@@ -80,6 +82,7 @@ interface DashboardProps extends PageProps {
     isReceptionist?: boolean;
     pendingFoliosCount?: number;
     allRooms?: RoomItem[];
+    calendarData?: CalendarProps;
     stats: {
         current_business_date: string;
         occupancy_percent: number;
@@ -119,12 +122,14 @@ export default function Dashboard({
     isReceptionist: isPropReceptionist,
     pendingFoliosCount = 0,
     allRooms = [],
+    calendarData,
 }: DashboardProps) {
     const activeRole = (auth as any)?.active_role || auth?.user?.active_role || auth?.user?.role || '';
     const isManagerRole = ['general_manager', 'manager', 'owner', 'super_admin'].includes(activeRole);
     const isReceptionist = isPropReceptionist !== undefined
         ? isPropReceptionist
         : (!isManagerRole && ['receptionist', 'front_desk', 'front_office', 'front_office_manager', 'staff'].includes(activeRole));
+    const [workstationView, setWorkstationView] = useState<'calendar' | 'movement'>('calendar');
     const [movementTab, setMovementTab] = useState<'arrivals' | 'departures' | 'in_house'>(
         isReceptionist ? 'arrivals' : 'in_house'
     );
@@ -332,18 +337,56 @@ export default function Dashboard({
                             <div className="mt-2 text-xl font-black text-slate-900">{safeStats.reserved_count}</div>
                         </Link>
 
-                        {/* 8. Unpaid Folios */}
+                        {/* 8. Maintenance / Out of Order Rooms */}
                         <Link
-                            href={route('folios.index')}
+                            href={route('maintenance.index')}
                             className="bg-white rounded-xl p-3 border border-slate-200/90 shadow-2xs hover:border-rose-300 hover:shadow-xs transition flex flex-col justify-between"
                         >
-                            <span className="text-[10px] font-black uppercase tracking-wider text-rose-600">Unpaid Folios</span>
-                            <div className="mt-2 text-xl font-black text-rose-700">{pendingFoliosCount}</div>
+                            <span className="text-[10px] font-black uppercase tracking-wider text-rose-600">Out of Order</span>
+                            <div className="mt-2 text-xl font-black text-rose-700">{safeStats.out_of_service}</div>
                         </Link>
                     </div>
 
-                    {/* 3. Front Desk Guest Movement Workstation (Tabs: Arrivals, Departures, In-House) */}
-                    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden p-4 sm:p-5 space-y-4">
+                    {/* 3. Front Desk Room Availability Calendar Workstation (Replaces old arrivals table) */}
+                    <div className="space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs">
+                            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+                                <button
+                                    type="button"
+                                    onClick={() => setWorkstationView('calendar')}
+                                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                                        workstationView === 'calendar'
+                                            ? 'bg-[#1E3A5F] text-white shadow-2xs'
+                                            : 'text-slate-600 hover:text-slate-900'
+                                    }`}
+                                >
+                                    <Calendar className="w-3.5 h-3.5" />
+                                    <span>Room Availability Calendar (Gantt Matrix)</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setWorkstationView('movement')}
+                                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                                        workstationView === 'movement'
+                                            ? 'bg-[#1E3A5F] text-white shadow-2xs'
+                                            : 'text-slate-600 hover:text-slate-900'
+                                    }`}
+                                >
+                                    <Luggage className="w-3.5 h-3.5" />
+                                    <span>Arrivals & Departures ({safeArrivals.length + safeDepartures.length})</span>
+                                </button>
+                            </div>
+
+                            <span className="text-[11px] font-bold text-slate-500">
+                                {workstationView === 'calendar' ? 'Interactive Room Matrix & Timeline' : 'Daily Movement Log'}
+                            </span>
+                        </div>
+
+                        {workstationView === 'calendar' ? (
+                            <RoomAvailabilityCalendar {...(calendarData || {})} />
+                        ) : (
+                            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden p-4 sm:p-5 space-y-4">
                         {/* Header & Search */}
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                             {/* Tab Switcher */}
@@ -583,143 +626,16 @@ export default function Dashboard({
                             )}
                         </div>
                     </div>
+                )}
+            </div>
 
-                    {/* 4. Live Front Desk Room Rack (Visual Grid of Rooms) */}
-                    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-4 sm:p-5 space-y-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-                            <div>
-                                <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
-                                    Front Desk Room Rack & Availability
-                                </h3>
-                                
-                            </div>
-
-                            {/* Filter Pills */}
-                            <div className="flex items-center gap-1.5 flex-wrap text-xs">
-                                <button
-                                    type="button"
-                                    onClick={() => setRoomRackFilter('all')}
-                                    className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer ${
-                                        roomRackFilter === 'all'
-                                            ? 'bg-slate-900 text-white'
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                    }`}
-                                >
-                                    All ({safeRooms.length})
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setRoomRackFilter('clean')}
-                                    className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer ${
-                                        roomRackFilter === 'clean'
-                                            ? 'bg-emerald-600 text-white'
-                                            : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-                                    }`}
-                                >
-                                    Available Clean ({safeStats.available_count})
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setRoomRackFilter('occupied')}
-                                    className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer ${
-                                        roomRackFilter === 'occupied'
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-blue-50 text-blue-800 hover:bg-blue-100'
-                                    }`}
-                                >
-                                    Occupied ({safeStats.occupied_rooms})
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setRoomRackFilter('dirty')}
-                                    className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer ${
-                                        roomRackFilter === 'dirty'
-                                            ? 'bg-amber-600 text-white'
-                                            : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
-                                    }`}
-                                >
-                                    Dirty ({safeStats.vacant_dirty})
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setRoomRackFilter('maintenance')}
-                                    className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer ${
-                                        roomRackFilter === 'maintenance'
-                                            ? 'bg-rose-600 text-white'
-                                            : 'bg-rose-50 text-rose-800 hover:bg-rose-100'
-                                    }`}
-                                >
-                                    Out of Order ({safeStats.out_of_service})
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Room Rack Grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5 sm:gap-3">
-                            {filteredRooms.length === 0 ? (
-                                <div className="col-span-full py-8 text-center text-slate-400 text-xs">
-                                    No rooms found matching the selected filter.
-                                </div>
-                            ) : (
-                                filteredRooms.map((room) => {
-                                    const isOccupied = room.status_occupancy === 'occupied';
-                                    const isDirty = room.status_hk === 'dirty';
-                                    const isOoo = room.status_hk === 'out_of_order' || room.status_hk === 'out_of_service';
-                                    const isCleanAvailable = !isOccupied && !isDirty && !isOoo;
-
-                                    return (
-                                        <div
-                                            key={room.id}
-                                            className={`p-3 rounded-xl border flex flex-col justify-between transition relative ${
-                                                isOccupied
-                                                    ? 'bg-blue-50/60 border-blue-200'
-                                                    : isCleanAvailable
-                                                    ? 'bg-emerald-50/60 border-emerald-200 hover:border-emerald-400'
-                                                    : isDirty
-                                                    ? 'bg-amber-50/60 border-amber-200'
-                                                    : 'bg-slate-100 border-slate-300'
-                                            }`}
-                                        >
-                                            <div className="flex items-center justify-between">
-                                                <span className="font-mono font-black text-xs text-slate-900">
-                                                    {room.room_number}
-                                                </span>
-                                                <span
-                                                    className={`w-2 h-2 rounded-full ${
-                                                        isOccupied
-                                                            ? 'bg-blue-500'
-                                                            : isCleanAvailable
-                                                            ? 'bg-emerald-500'
-                                                            : isDirty
-                                                            ? 'bg-amber-500'
-                                                            : 'bg-rose-500'
-                                                    }`}
-                                                />
-                                            </div>
-
-                                            <div className="mt-2 text-[10px] text-slate-500 truncate">
-                                                {room.type_name}
-                                            </div>
-
-                                            <div className="mt-1 text-[11px] font-bold truncate">
-                                                {isOccupied ? (
-                                                    <span className="text-blue-700 truncate block">
-                                                        {room.guest_name || 'Occupied'}
-                                                    </span>
-                                                ) : isCleanAvailable ? (
-                                                    <span className="text-emerald-700">Ready to Sell</span>
-                                                ) : isDirty ? (
-                                                    <span className="text-amber-700">Dirty / Clean</span>
-                                                ) : (
-                                                    <span className="text-rose-700">Out of Order</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    );
-                                })
-                            )}
-                        </div>
-                    </div>
+                    {/* 4. Live Front Desk Room Arrangement (Interactive Popover Grid matching Image 2) */}
+                    <RoomArrangementGrid
+                        rooms={safeRooms as any}
+                        businessDate={stats?.current_business_date}
+                        mode="dashboard"
+                        title="Front Desk Rooms Arrangement"
+                    />
                 </div>
             ) : (
                 /* ========================================================================= */

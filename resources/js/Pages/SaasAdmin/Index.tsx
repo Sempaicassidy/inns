@@ -23,6 +23,7 @@ import {
     Copy,
     CreditCard,
     DollarSign,
+    Edit3,
     ExternalLink,
     Eye,
     FileCheck,
@@ -415,6 +416,8 @@ export default function SaasAdminDashboard({
     const [userSearchTerm, setUserSearchTerm] = useState('');
     const [selectedUserRole, setSelectedUserRole] = useState('all');
     const [showCreateUserModal, setShowCreateUserModal] = useState(false);
+    const [showEditUserModal, setShowEditUserModal] = useState(false);
+    const [selectedUserToEdit, setSelectedUserToEdit] = useState<any>(null);
     const [showCreatePromoModal, setShowCreatePromoModal] = useState(false);
     const [showReplyTicketModal, setShowReplyTicketModal] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState<any>(null);
@@ -425,6 +428,15 @@ export default function SaasAdminDashboard({
         role: 'general_manager',
         tenant_id: '',
         password: 'password123',
+    });
+
+    const editUserForm = useForm({
+        name: '',
+        email: '',
+        role: 'general_manager',
+        tenant_id: '',
+        password: '',
+        is_active: true,
     });
 
     const promoForm = useForm({
@@ -449,32 +461,32 @@ export default function SaasAdminDashboard({
         {
             id: 'slide_1',
             badge: cms_content?.hero_badge || 'THE INNS • Centralized Hospitality OS 2026',
-            title: cms_content?.hero_title || 'Mfumo Kamilifu wa Kisasa wa Kusimamia Mahoteli, Lodges & Restaurants',
-            subtitle: cms_content?.hero_subtitle || 'Dhibiti vyumba, mapokezi, mikataba ya kisheria, ankara na risiti za malipo, POS ya mgahawa, na ripoti za mapato kidijitali katika mfumo mmoja unaoaminika.',
+            title: cms_content?.hero_title || 'Complete Modern Cloud PMS for Hotels, Lodges & Resorts',
+            subtitle: cms_content?.hero_subtitle || 'Manage rooms, front desk, reservations, legal contracts, invoices, payment receipts, POS, and financial reporting seamlessly on one unified cloud platform.',
             image: cms_content?.hero_image || '/uploads/cms/hero_1794042362.png',
             previewUrl: cms_content?.hero_image || '/uploads/cms/hero_1794042362.png',
         },
         {
             id: 'slide_2',
             badge: 'SAFARI & BOUTIQUE LODGES',
-            title: 'Usimamizi wa Kisasa wa Safari Lodges, Camps & Luxury Resorts',
-            subtitle: 'Fuatilia wageni wa kitalii, uhifadhi wa vyumba (Gantt Rack), stakabadhi za malipo, na ripoti za flash za kila siku za meneja kupitia SMS na WhatsApp.',
+            title: 'Modern Operations for Safari Lodges, Camps & Luxury Boutique Resorts',
+            subtitle: 'Track guest stays, room calendar Gantt racks, folios and payments, with automated daily manager flash reports via SMS and WhatsApp.',
             image: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1920&q=80&fit=crop',
             previewUrl: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1920&q=80&fit=crop',
         },
         {
             id: 'slide_3',
             badge: 'RESTAURANT & BAR TOUCHSCREEN POS',
-            title: 'Touchscreen POS ya Mgahawa, Grocery Minimart na Night Audit ya Haraka',
-            subtitle: 'Mfumo wa mauzo wa haraka wa wateja wa ndani na nje, jikoni KOT, usimamizi wa stoo na ripoti kamili za faida na hasara (Double-Entry GL).',
+            title: 'Touchscreen Restaurant POS, Grocery Minimart & Automated Night Audit',
+            subtitle: 'Fast sales ordering for resident and walk-in guests, kitchen KOT tickets, inventory stock management, and double-entry accounting ledger.',
             image: 'https://images.unsplash.com/photo-1551882547-ff40c63fe524?w=1920&q=80&fit=crop',
             previewUrl: 'https://images.unsplash.com/photo-1551882547-ff40c63fe524?w=1920&q=80&fit=crop',
         },
         {
             id: 'slide_4',
             badge: 'MULTI-PROPERTY CENTRALIZED CLOUD',
-            title: 'Dhibiti Hoteli Nyingi na Matawi Yote Kutoka Dashboard Moja Kuu',
-            subtitle: 'Unganisha matawi yote ya mikoani, linganisha mapato ya kila tawi kwa sekunde, dhibiti watumiaji kwa viwango vya madaraka, na zuia upotevu wa mapato.',
+            title: 'Manage Multiple Hotel Properties & Branches From a Single Command Hub',
+            subtitle: 'Consolidate multiple branches across regions, benchmark property revenue performance in real-time, enforce RBAC permissions, and eliminate revenue leakage.',
             image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=1920&q=80&fit=crop',
             previewUrl: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=1920&q=80&fit=crop',
         },
@@ -528,8 +540,8 @@ export default function SaasAdminDashboard({
         const newSlide: HeroSlideItem = {
             id: newId,
             badge: `NEW HOSPITALITY MODULE • SLIDE ${newIndex}`,
-            title: `Huduma ya Kisasa ya Mahoteli na Wageni #${newIndex}`,
-            subtitle: 'Weka maelezo mafupi kuhusu faida, urahisi, au vipengele vya kipekee vya mfumo hapa ili kuwavutia wageni na wamiliki wa mahoteli.',
+            title: `Next-Generation Hotel Management #${newIndex}`,
+            subtitle: 'Provide a brief summary of the key features, advantages, and operational speed of the platform here.',
             image: 'https://images.unsplash.com/photo-1566073741257-6a1056039daa?w=1920&q=80&fit=crop',
             previewUrl: 'https://images.unsplash.com/photo-1566073741257-6a1056039daa?w=1920&q=80&fit=crop',
         };
@@ -539,10 +551,10 @@ export default function SaasAdminDashboard({
 
     const handleRemoveSlide = (index: number) => {
         if (heroSlidesList.length <= 1) {
-            alert('Huwezi kufuta slide hii. Mfumo unahitaji angalau slide 1 ili kuonyesha Hero section.');
+            alert('Cannot remove this slide. The platform requires at least 1 slide for the hero showcase.');
             return;
         }
-        if (window.confirm(`Una uhakika unataka kufuta Slide #${index + 1}?`)) {
+        if (window.confirm(`Are you sure you want to remove Slide #${index + 1}?`)) {
             setHeroSlidesList((prev) => prev.filter((_, i) => i !== index));
             setActivePreviewIndex(0);
         }
@@ -564,10 +576,10 @@ export default function SaasAdminDashboard({
     const [heroImagePreview, setHeroImagePreview] = useState<string | null>(cms_content?.hero_image || null);
 
     const liveCmsForm = useForm({
-        hero_title: cms_content?.hero_title || 'Mfumo Kamilifu wa Kisasa wa Kusimamia Mahoteli, Lodges & Restaurants',
-        hero_subtitle: cms_content?.hero_subtitle || 'Dhibiti vyumba, mapokezi, mikataba ya kisheria, ankara na risiti za malipo, POS ya mgahawa, na ripoti za mapato kidijitali katika mfumo mmoja unaoaminika.',
-        hero_cta_text: cms_content?.hero_cta_text || 'Anza Jaribio la Siku 14 Bure',
-        demo_cta_text: cms_content?.demo_cta_text || 'Omba Kuona Demo ya Mfumo',
+        hero_title: cms_content?.hero_title || 'Complete Modern Cloud PMS for Hotels, Lodges & Resorts',
+        hero_subtitle: cms_content?.hero_subtitle || 'Manage rooms, front desk, reservations, legal contracts, invoices, payment receipts, POS, and financial reporting seamlessly on one unified cloud platform.',
+        hero_cta_text: cms_content?.hero_cta_text || 'Start 14-Day Free Trial',
+        demo_cta_text: cms_content?.demo_cta_text || 'Schedule a Live Platform Demo',
         hero_badge: cms_content?.hero_badge || 'THE INNS • Centralized Hospitality OS 2026',
         demo_cta_phone: cms_content?.demo_cta_phone || '+255 744 396 220',
         hero_image: null as File | null,
@@ -628,7 +640,7 @@ export default function SaasAdminDashboard({
         city: '',
         admin_name: '',
         admin_email: '',
-        admin_password: 'password123',
+        admin_password: '',
     });
 
     const editTenantForm = useForm({
@@ -673,8 +685,8 @@ export default function SaasAdminDashboard({
 
     const testWaForm = useForm({
         recipient_phone: '+255779646632',
-        recipient_name: 'Meneja wa Hoteli',
-        message: 'Habari! Ujumbe huu ni uthibitisho rasmi wa WhatsApp Cloud Business API gateway inayofanya kazi kwenye THE INNS.',
+        recipient_name: 'Hotel Manager',
+        message: 'Hello! This is an official test notification from the WhatsApp Cloud Business API gateway configured for THE INNS platform.',
     });
 
     const quotationForm = useForm({
@@ -735,7 +747,7 @@ export default function SaasAdminDashboard({
 
     // Tenant Actions
     const handleToggleTenant = (tenantId: string) => {
-        if (confirm('Je, una uhakika unataka kusimamisha au kuwezesha hoteli hii?')) {
+        if (confirm('Are you sure you want to change the active/suspended status for this hotel?')) {
             router.post(route('saas-admin.tenants.toggle', tenantId), {}, {
                 preserveScroll: true,
             });
@@ -743,7 +755,7 @@ export default function SaasAdminDashboard({
     };
 
     const handleImpersonate = (tenantId: string, tenantName: string) => {
-        if (confirm(`Unataka kuingia kwenye workspace ya hoteli ya "${tenantName}" kama General Manager?`)) {
+        if (confirm(`Do you want to access the workspace for "${tenantName}" as General Manager?`)) {
             router.post(route('saas-admin.tenants.impersonate', tenantId));
         }
     };
@@ -834,7 +846,7 @@ export default function SaasAdminDashboard({
     };
 
     const handleConvertQuotation = (quoteId: string) => {
-        if (confirm('Je, unataka kubadilisha Quotation hii kuwa Invoice rasmi?')) {
+        if (confirm('Are you sure you want to convert this quotation into an official SaaS invoice?')) {
             router.post(route('saas-admin.quotations.convert', quoteId));
         }
     };
@@ -869,7 +881,7 @@ export default function SaasAdminDashboard({
     };
 
     const handleVerifyPayment = (paymentId: string) => {
-        if (confirm('Thibitisha malipo haya ili mfumo utoe Risiti rasmi na kurefusha subscription ya hoteli?')) {
+        if (confirm('Verify and approve this payment to generate an official SaaS receipt and extend the hotel subscription?')) {
             router.post(route('saas-admin.payments.verify', paymentId));
         }
     };
@@ -905,7 +917,7 @@ export default function SaasAdminDashboard({
     };
 
     const handleClearCache = () => {
-        if (confirm('Je, unataka kusafisha cache zote za mfumo (Config, Routes, Views, Cache)?')) {
+        if (confirm('Are you sure you want to clear all platform caches (Config, Routes, Views, Application Cache)?')) {
             router.post(route('saas-admin.system.clear-cache'));
         }
     };
@@ -920,8 +932,44 @@ export default function SaasAdminDashboard({
         });
     };
 
+    const handleOpenEditUser = (u: any) => {
+        setSelectedUserToEdit(u);
+        editUserForm.setData({
+            name: u.name,
+            email: u.email,
+            role: u.role,
+            tenant_id: u.tenant_id ? String(u.tenant_id) : '',
+            password: '',
+            is_active: Boolean(u.is_active ?? true),
+        });
+        setShowEditUserModal(true);
+    };
+
+    const submitEditUser = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedUserToEdit) return;
+        editUserForm.put(route('saas-admin.users.update', selectedUserToEdit.id), {
+            onSuccess: () => {
+                setShowEditUserModal(false);
+                editUserForm.reset();
+            },
+        });
+    };
+
+    const handleDeleteUser = (u: any) => {
+        if (confirm(`Are you sure you want to delete user "${u.name}" (${u.email})? This action cannot be undone.`)) {
+            router.delete(route('saas-admin.users.destroy', u.id));
+        }
+    };
+
+    const handleDeleteTenant = (tenant: TenantItem) => {
+        if (confirm(`Warning: Are you sure you want to delete hotel tenant "${tenant.name}"? This will deactivate all associated user accounts and archive the hotel workspace.`)) {
+            router.delete(route('saas-admin.tenants.destroy', tenant.id));
+        }
+    };
+
     const handleToggleUserStatus = (userId: number, userName: string) => {
-        if (confirm(`Badili hali ya akaunti ya mtumiaji "${userName}"?`)) {
+        if (confirm(`Change active/suspended status for user "${userName}"?`)) {
             router.post(route('saas-admin.users.toggle', userId), {}, { preserveScroll: true });
         }
     };
@@ -1774,11 +1822,21 @@ export default function SaasAdminDashboard({
                                                             title={tenant.is_active ? 'Suspend Hotel Operations' : 'Reactivate Hotel'}
                                                             className={`p-1.5 rounded-lg transition cursor-pointer ${
                                                                 tenant.is_active
-                                                                    ? 'text-rose-500 hover:bg-rose-50'
+                                                                    ? 'text-amber-500 hover:bg-amber-50'
                                                                     : 'text-emerald-600 hover:bg-emerald-50'
                                                             }`}
                                                         >
                                                             <Power className="w-4 h-4" />
+                                                        </button>
+
+                                                        {/* Delete Tenant */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDeleteTenant(tenant)}
+                                                            title="Delete Hotel Tenant"
+                                                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
                                                         </button>
                                                     </div>
                                                 </td>
@@ -2654,17 +2712,41 @@ export default function SaasAdminDashboard({
                                                         </td>
                                                         <td className="py-3 px-4 text-slate-500">{u.created_at}</td>
                                                         <td className="py-3 px-4 text-right">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleToggleUserStatus(u.id, u.name)}
-                                                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
-                                                                    u.is_active
-                                                                        ? 'text-rose-600 hover:bg-rose-50 border border-rose-200'
-                                                                        : 'text-emerald-600 hover:bg-emerald-50 border border-emerald-200'
-                                                                }`}
-                                                            >
-                                                                {u.is_active ? 'Deactivate' : 'Activate'}
-                                                            </button>
+                                                            <div className="flex items-center justify-end gap-1.5">
+                                                                {/* Edit User */}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleOpenEditUser(u)}
+                                                                    title="Edit User Details & Password"
+                                                                    className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer"
+                                                                >
+                                                                    <Edit3 className="w-4 h-4" />
+                                                                </button>
+
+                                                                {/* Toggle Active */}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleToggleUserStatus(u.id, u.name)}
+                                                                    title={u.is_active ? 'Deactivate User' : 'Activate User'}
+                                                                    className={`px-2 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer ${
+                                                                        u.is_active
+                                                                            ? 'text-amber-700 hover:bg-amber-50 border border-amber-200'
+                                                                            : 'text-emerald-700 hover:bg-emerald-50 border border-emerald-200'
+                                                                    }`}
+                                                                >
+                                                                    {u.is_active ? 'Deactivate' : 'Activate'}
+                                                                </button>
+
+                                                                {/* Delete User */}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleDeleteUser(u)}
+                                                                    title="Delete User Account"
+                                                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 ))
@@ -2840,7 +2922,7 @@ export default function SaasAdminDashboard({
                                                                     type="button"
                                                                     onClick={() => handleRemoveSlide(idx)}
                                                                     disabled={heroSlidesList.length <= 1}
-                                                                    title="Futa Slide"
+                                                                    title="Delete Slide"
                                                                     className="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer"
                                                                 >
                                                                     <Trash2 className="w-4 h-4" />
@@ -2867,14 +2949,14 @@ export default function SaasAdminDashboard({
 
                                                                 <div className="sm:col-span-2">
                                                                     <label className="font-bold text-slate-700 block mb-1">
-                                                                        Slide Headline (Kichwa Kikuu cha Habari) *
+                                                                        Slide Headline *
                                                                     </label>
                                                                     <input
                                                                         type="text"
                                                                         required
                                                                         value={slide.title}
                                                                         onChange={(e) => handleUpdateSlideField(idx, 'title', e.target.value)}
-                                                                        placeholder="Mfano: Mfumo Kamilifu wa Kisasa wa Kusimamia Mahoteli..."
+                                                                        placeholder="e.g. Next-Generation Cloud Hospitality Management Platform..."
                                                                         className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-blue-500"
                                                                     />
                                                                 </div>
@@ -3663,31 +3745,46 @@ export default function SaasAdminDashboard({
                                 </div>
                             </div>
 
-                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-                                <span className="font-bold text-slate-800 block text-xs">General Manager Credentials</span>
-                                <div className="grid grid-cols-2 gap-3">
+                            <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/90 space-y-3">
+                                <div>
+                                    <span className="font-bold text-slate-800 block text-xs">General Manager Credentials</span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
-                                        <label className="text-[11px] text-slate-600 block mb-1">Full Name</label>
+                                        <label className="text-[11px] font-bold text-slate-700 block mb-1">Full Name *</label>
                                         <input
                                             type="text"
                                             required
                                             value={onboardForm.data.admin_name}
                                             onChange={(e) => onboardForm.setData('admin_name', e.target.value)}
                                             placeholder="Peter Mwita"
-                                            className="w-full px-3 py-1.5 rounded-lg border border-slate-300"
+                                            className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-[11px] text-slate-600 block mb-1">Email</label>
+                                        <label className="text-[11px] font-bold text-slate-700 block mb-1">Email *</label>
                                         <input
                                             type="email"
                                             required
                                             value={onboardForm.data.admin_email}
                                             onChange={(e) => onboardForm.setData('admin_email', e.target.value)}
                                             placeholder="manager@hotel.co.tz"
-                                            className="w-full px-3 py-1.5 rounded-lg border border-slate-300"
+                                            className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
                                         />
                                     </div>
+                                </div>
+                                <div>
+                                    <label className="text-[11px] font-bold text-slate-700 block mb-1">GM Login Password *</label>
+                                    <input
+                                        type="password"
+                                        required
+                                        minLength={6}
+                                        value={onboardForm.data.admin_password}
+                                        onChange={(e) => onboardForm.setData('admin_password', e.target.value)}
+                                        placeholder="Enter General Manager login password (min 6 characters)"
+                                        className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-hidden font-mono"
+                                    />
+                                    <p className="text-[10px] text-slate-500 mt-1">This password will be used by the General Manager to sign in to this hotel's workspace.</p>
                                 </div>
                             </div>
 
@@ -4014,7 +4111,7 @@ export default function SaasAdminDashboard({
                                     type="password"
                                     value={smsConfigForm.data.password}
                                     onChange={(e) => smsConfigForm.setData('password', e.target.value)}
-                                    placeholder="Weka API Key ya SwalaSMS (swl_live_...)"
+                                    placeholder="Enter SwalaSMS API Key (swl_live_...)"
                                     className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono"
                                 />
                             </div>
@@ -4881,7 +4978,7 @@ export default function SaasAdminDashboard({
                                     rows={4}
                                     value={noticeForm.data.message}
                                     onChange={(e) => noticeForm.setData('message', e.target.value)}
-                                    placeholder="Andika ujumbe rasmi unaoenda kwa mameneja wote wa hoteli..."
+                                    placeholder="Write the official announcement for hotel managers..."
                                     className="w-full px-3 py-2 rounded-xl border border-slate-300 leading-relaxed"
                                 />
                             </div>
@@ -4990,6 +5087,106 @@ export default function SaasAdminDashboard({
                                 <button type="submit" disabled={createUserForm.processing} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold flex items-center gap-1.5 shadow-xs cursor-pointer">
                                     <Check className="w-3.5 h-3.5" />
                                     <span>Create User</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL: EDIT GLOBAL SAAS USER */}
+            {showEditUserModal && selectedUserToEdit && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+                    <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 my-8">
+                        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                            <div>
+                                <h3 className="font-extrabold text-base text-slate-900">Edit SaaS / Hotel User</h3>
+                                <p className="text-xs text-slate-500">Update account details, role, hotel assignment or reset password.</p>
+                            </div>
+                            <button type="button" onClick={() => setShowEditUserModal(false)} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <form onSubmit={submitEditUser} className="space-y-4 pt-4 text-xs">
+                            <div>
+                                <label className="font-bold text-slate-700 block mb-1">Full Name *</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={editUserForm.data.name}
+                                    onChange={(e) => editUserForm.setData('name', e.target.value)}
+                                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+                                />
+                            </div>
+                            <div>
+                                <label className="font-bold text-slate-700 block mb-1">Email Address *</label>
+                                <input
+                                    type="email"
+                                    required
+                                    value={editUserForm.data.email}
+                                    onChange={(e) => editUserForm.setData('email', e.target.value)}
+                                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="font-bold text-slate-700 block mb-1">Platform Role *</label>
+                                    <select
+                                        value={editUserForm.data.role}
+                                        onChange={(e) => editUserForm.setData('role', e.target.value)}
+                                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold"
+                                    >
+                                        <option value="general_manager">General Manager</option>
+                                        <option value="super_admin">Super Administrator</option>
+                                        <option value="receptionist">Receptionist</option>
+                                        <option value="accountant">Accountant</option>
+                                        <option value="housekeeping">Housekeeping Supervisor</option>
+                                        <option value="staff">General Staff</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="font-bold text-slate-700 block mb-1">Hotel Scope</label>
+                                    <select
+                                        value={editUserForm.data.tenant_id}
+                                        onChange={(e) => editUserForm.setData('tenant_id', e.target.value)}
+                                        className="w-full px-3 py-2 rounded-xl border border-slate-300"
+                                    >
+                                        <option value="">Global / Platform User</option>
+                                        {tenants.map((t) => (
+                                            <option key={t.id} value={t.id}>{t.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="font-bold text-slate-700 block mb-1">Account Status</label>
+                                <select
+                                    value={editUserForm.data.is_active ? '1' : '0'}
+                                    onChange={(e) => editUserForm.setData('is_active', e.target.value === '1')}
+                                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold"
+                                >
+                                    <option value="1">Active</option>
+                                    <option value="0">Suspended / Deactivated</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="font-bold text-slate-700 block mb-1">Reset Password (Optional)</label>
+                                <input
+                                    type="password"
+                                    placeholder="Leave blank to keep existing password"
+                                    value={editUserForm.data.password}
+                                    onChange={(e) => editUserForm.setData('password', e.target.value)}
+                                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+                                />
+                                <p className="text-[10px] text-slate-400 mt-1">Leave blank unless you want to set a new password for this user.</p>
+                            </div>
+                            <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
+                                <button type="button" onClick={() => setShowEditUserModal(false)} className="px-4 py-2 border border-slate-200 rounded-xl font-bold text-slate-600 cursor-pointer">
+                                    Cancel
+                                </button>
+                                <button type="submit" disabled={editUserForm.processing} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold flex items-center gap-1.5 shadow-xs cursor-pointer">
+                                    <Check className="w-3.5 h-3.5" />
+                                    <span>{editUserForm.processing ? 'Saving...' : 'Save User Changes'}</span>
                                 </button>
                             </div>
                         </form>
@@ -5115,7 +5312,7 @@ export default function SaasAdminDashboard({
                                     rows={3}
                                     value={replyTicketForm.data.resolution_note}
                                     onChange={(e) => replyTicketForm.setData('resolution_note', e.target.value)}
-                                    placeholder="Eleza jinsi tatizo lilivyotatuliwa au maelekezo uliyompa meneja wa hoteli..."
+                                    placeholder="Explain how the issue was resolved or instructions provided to the hotel manager..."
                                     className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-blue-500"
                                 />
                             </div>

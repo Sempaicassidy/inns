@@ -150,6 +150,10 @@ class HousekeepingController extends Controller
                         'assigned_to_name' => $activeTask->assignee?->name ?? 'Unassigned',
                         'notes' => $activeTask->notes,
                     ] : null,
+                    'features' => $room->features ?? [],
+                    'amenities' => $room->roomType?->amenities ?? [],
+                    'description' => $room->roomType?->description,
+                    'max_occupancy' => $room->roomType?->max_adults ?? $room->roomType?->base_occupancy,
                 ];
             });
 
@@ -215,6 +219,8 @@ class HousekeepingController extends Controller
             'floor' => 'nullable|string|max:50',
             'status_occupancy' => 'nullable|in:vacant,occupied',
             'status_hk' => 'nullable|in:clean,dirty,inspected,out_of_order,out_of_service',
+            'features' => 'nullable|array',
+            'features.*' => 'string|max:60',
         ]);
 
         $user = $request->user();
@@ -229,6 +235,7 @@ class HousekeepingController extends Controller
             'floor' => $validated['floor'] ?? '1st Floor',
             'status_occupancy' => $validated['status_occupancy'] ?? 'vacant',
             'status_hk' => $validated['status_hk'] ?? 'clean',
+            'features' => $validated['features'] ?? [],
             'is_active' => true,
         ]);
 

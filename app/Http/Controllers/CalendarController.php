@@ -19,6 +19,11 @@ class CalendarController extends Controller
 {
     public function index(Request $request): Response
     {
+        return Inertia::render('Calendar/Index', $this->getCalendarData($request));
+    }
+
+    public function getCalendarData(Request $request): array
+    {
         $user = $request->user();
         $property = $user->property ?? Property::first();
 
@@ -138,7 +143,7 @@ class CalendarController extends Controller
             ];
         }
 
-        return Inertia::render('Calendar/Index', [
+        return [
             'startDate' => $startDate->toDateString(),
             'endDate' => $endDate->toDateString(),
             'businessDate' => $businessDate->toDateString(),
@@ -166,7 +171,7 @@ class CalendarController extends Controller
             'filters' => [
                 'room_type_id' => $request->input('room_type_id', ''),
             ],
-        ]);
+        ];
     }
 
     /**

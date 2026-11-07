@@ -39,6 +39,41 @@ class HrController extends Controller
     {
         [$tenantId, $property] = $this->resolveTenantAndProperty($request);
 
+        // Auto-link any hotel user account that doesn't have an employee record yet
+        $tenantUsers = User::where('tenant_id', $tenantId)->get();
+        foreach ($tenantUsers as $u) {
+            $hasEmp = Employee::where('tenant_id', $tenantId)
+                ->where(function ($q) use ($u) {
+                    $q->where('user_id', $u->id)->orWhere('email', $u->email);
+                })
+                ->exists();
+
+            if (!$hasEmp) {
+                Employee::create([
+                    'tenant_id' => $tenantId,
+                    'property_id' => $property?->id,
+                    'user_id' => $u->id,
+                    'employee_code' => 'EMP-' . strtoupper(substr(uniqid(), -4)),
+                    'full_name' => $u->name,
+                    'email' => $u->email,
+                    'phone' => $u->phone,
+                    'department' => match ($u->role) {
+                        'general_manager', 'owner', 'manager' => 'Management',
+                        'accountant' => 'Accounts',
+                        'housekeeper' => 'Housekeeping',
+                        'chef', 'waiter' => 'Food & Beverage',
+                        'receptionist' => 'Front Office',
+                        default => 'Front Office',
+                    },
+                    'position' => ucwords(str_replace('_', ' ', $u->role ?: 'Staff Member')),
+                    'salary_minor' => 0,
+                    'employment_type' => 'full_time',
+                    'hire_date' => Carbon::now()->toDateString(),
+                    'status' => ($u->status === 'active' || ($u->is_active ?? true)) ? 'active' : 'suspended',
+                ]);
+            }
+        }
+
         // 1. All Employees
         $employees = Employee::with('user')
             ->where('tenant_id', $tenantId)
@@ -356,7 +391,7 @@ class HrController extends Controller
     }
 
     /**
-     * Delete or Terminate employee.
+     * Delete or Terminate employee and associated user account.
      */
     public function destroyEmployee(Request $request, string $id): RedirectResponse
     {
@@ -364,10 +399,22 @@ class HrController extends Controller
         $employee = Employee::where('tenant_id', $tenantId)->findOrFail($id);
         $name = $employee->full_name;
 
+        // Also delete user account if linked, preventing self-deletion
+        if ($employee->user_id) {
+            $user = User::find($employee->user_id);
+            if ($user) {
+                if ($user->id === $request->user()->id) {
+                    return redirect()->back()->with('error', 'You cannot delete your own currently logged-in account.');
+                }
+                $user->update(['status' => 'inactive']);
+                $user->delete();
+            }
+        }
+
         $employee->update(['status' => 'terminated']);
         $employee->delete();
 
-        return redirect()->back()->with('success', "Employee {$name} removed from the system.");
+        return redirect()->back()->with('success', "Employee {$name} and login account removed from the system.");
     }
 
     /**

@@ -330,9 +330,7 @@ export default function GuestsIndex({
 
                     {/* VIP Guests */}
                     <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-amber-200/90 bg-amber-50/10 shadow-2xs flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-black shrink-0">
-                            <Sparkles className="w-5 h-5" />
-                        </div>
+
                         <div className="min-w-0">
                             <span className="text-[10px] sm:text-[11px] font-bold text-amber-800 uppercase tracking-wider block truncate">
                                 VIP Guests

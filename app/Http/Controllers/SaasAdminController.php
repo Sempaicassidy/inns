@@ -881,6 +881,25 @@ class SaasAdminController extends Controller
     }
 
     /**
+     * Delete a Hotel Tenant and remove user access.
+     */
+    public function destroyTenant(Request $request, Tenant $tenant): RedirectResponse
+    {
+        $tenantName = $tenant->name;
+
+        DB::transaction(function () use ($tenant) {
+            if ($tenant->activeSubscription) {
+                $tenant->activeSubscription->update(['status' => 'cancelled']);
+            }
+            User::where('tenant_id', $tenant->id)->update(['status' => 'inactive']);
+            User::where('tenant_id', $tenant->id)->delete();
+            $tenant->delete();
+        });
+
+        return redirect()->back()->with('success', "Hotel Tenant '{$tenantName}' and all associated user accounts have been deleted successfully.");
+    }
+
+    /**
      * Super Admin workspace impersonation: Access tenant hotel operations directly as their General Manager.
      */
     public function impersonateTenant(Request $request, Tenant $tenant): RedirectResponse
@@ -1424,6 +1443,58 @@ class SaasAdminController extends Controller
 
         $statusLabel = $newStatus ? 'activated' : 'deactivated';
         return redirect()->back()->with('success', "User {$user->name} has been {$statusLabel}.");
+    }
+
+    /**
+     * Update an existing Global SaaS User.
+     */
+    public function updateGlobalUser(Request $request, User $user): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:100',
+            'email' => 'required|email|max:100|unique:users,email,' . $user->id,
+            'role' => 'required|string',
+            'tenant_id' => 'nullable|exists:tenants,id',
+            'password' => 'nullable|string|min:6',
+            'is_active' => 'required|boolean',
+        ]);
+
+        $roles = [$validated['role']];
+        if ($validated['role'] === 'super_admin') {
+            $roles = ['super_admin'];
+        }
+
+        $updateData = [
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'role' => $validated['role'],
+            'roles' => $roles,
+            'tenant_id' => $validated['tenant_id'] ?: null,
+            'status' => $validated['is_active'] ? 'active' : 'inactive',
+        ];
+
+        if (!empty($validated['password'])) {
+            $updateData['password'] = Hash::make($validated['password']);
+        }
+
+        $user->update($updateData);
+
+        return redirect()->back()->with('success', "User '{$user->name}' updated successfully.");
+    }
+
+    /**
+     * Delete a Global SaaS User.
+     */
+    public function destroyGlobalUser(Request $request, User $user): RedirectResponse
+    {
+        if ($user->id === $request->user()->id) {
+            return redirect()->back()->with('error', 'You cannot delete your own account.');
+        }
+
+        $userName = $user->name;
+        $user->delete();
+
+        return redirect()->back()->with('success', "User '{$userName}' deleted successfully.");
     }
 
     /**

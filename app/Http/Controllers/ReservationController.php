@@ -158,8 +158,8 @@ class ReservationController extends Controller
         $property = $user->property ?? Property::first();
         $tenantId = $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
 
-        // Resolve room and room type intelligently if not explicitly given
-        $selectedRoomIds = ! empty($validated['room_ids']) ? $validated['room_ids'] : array_filter([$validated['room_id'] ?? null]);
+        // Strictly enforce 1 room per reservation
+        $selectedRoomIds = ! empty($validated['room_ids']) ? array_slice($validated['room_ids'], 0, 1) : array_filter([$validated['room_id'] ?? null]);
         $primaryRoomId = $selectedRoomIds[0] ?? $validated['room_id'] ?? null;
         $primaryRoom = $primaryRoomId ? Room::find($primaryRoomId) : null;
 
@@ -174,9 +174,85 @@ class ReservationController extends Controller
             ? (float) $validated['rate_price']
             : (($roomType?->base_price_minor ?? 35000000) / 100);
 
+        $checkInDate = Carbon::parse($validated['check_in'])->startOfDay();
+        $checkOutDate = Carbon::parse($validated['check_out'])->endOfDay();
+
+        // 1. Resolve guest identity if existing (to detect duplicate concurrent room bookings)
+        $targetGuestId = $validated['guest_id'] ?? null;
+        if (! $targetGuestId) {
+            // Try matching by phone
+            if (! empty($validated['phone'])) {
+                $targetGuestId = Guest::where('tenant_id', $tenantId)->where('phone', $validated['phone'])->value('id');
+            }
+            // Try matching by ID number
+            if (! $targetGuestId && ! empty($validated['id_number'])) {
+                $targetGuestId = Guest::where('tenant_id', $tenantId)->where('id_number', $validated['id_number'])->value('id');
+            }
+            // Try matching by email
+            if (! $targetGuestId && ! empty($validated['email'])) {
+                $targetGuestId = Guest::where('tenant_id', $tenantId)->where('email', $validated['email'])->value('id');
+            }
+            // Try matching by exact full name as a last resort (case-insensitive)
+            if (! $targetGuestId && ! empty($validated['first_name']) && ! empty($validated['last_name'])) {
+                $targetGuestId = Guest::where('tenant_id', $tenantId)
+                    ->whereRaw('LOWER(first_name) = ?', [strtolower(trim($validated['first_name']))])
+                    ->whereRaw('LOWER(last_name) = ?', [strtolower(trim($validated['last_name']))])
+                    ->value('id');
+            }
+        }
+
+        // 2. CONFLICT CHECK: A single guest cannot be reserved or checked into multiple rooms for overlapping dates
+        if ($targetGuestId) {
+            $guestConflict = Reservation::where('tenant_id', $tenantId)
+                ->where('guest_id', $targetGuestId)
+                ->whereIn('status', ['confirmed', 'checked_in'])
+                ->where(function ($q) use ($checkInDate, $checkOutDate) {
+                    $q->where('check_in', '<', $checkOutDate->toDateString())
+                      ->where('check_out', '>', $checkInDate->toDateString());
+                })
+                ->with(['reservationRooms.room', 'guest'])
+                ->first();
+
+            if ($guestConflict) {
+                $existingRoom = $guestConflict->reservationRooms->first()?->room?->room_number ?? 'another room';
+                $guestName = $guestConflict->guest ? ($guestConflict->guest->first_name . ' ' . $guestConflict->guest->last_name) : 'Guest';
+                $statusStr = $guestConflict->status === 'checked_in' ? 'checked-in (active stay)' : 'confirmed';
+                $inFmt = Carbon::parse($guestConflict->check_in)->format('d M Y');
+                $outFmt = Carbon::parse($guestConflict->check_out)->format('d M Y');
+
+                return back()->withErrors([
+                    'guest_id' => "Conflict: {$guestName} is {$statusStr} in Room {$existingRoom} from {$inFmt} to {$outFmt}. A guest cannot be reserved or checked into two rooms at the same time.",
+                ])->withInput();
+            }
+        }
+
+        // 3. CONFLICT CHECK: The selected Room cannot be double-booked for overlapping dates
+        if ($primaryRoomId) {
+            $roomConflict = ReservationRoom::where('tenant_id', $tenantId)
+                ->where('room_id', $primaryRoomId)
+                ->whereHas('reservation', fn ($q) => $q->where('tenant_id', $tenantId)->whereIn('status', ['confirmed', 'checked_in']))
+                ->where(function ($q) use ($checkInDate, $checkOutDate) {
+                    $q->where('check_in', '<', $checkOutDate->toDateString())
+                      ->where('check_out', '>', $checkInDate->toDateString());
+                })
+                ->with(['reservation.guest', 'room'])
+                ->first();
+
+            if ($roomConflict) {
+                $roomNum = $roomConflict->room?->room_number ?? $primaryRoom?->room_number ?? 'this room';
+                $bookedBy = $roomConflict->reservation?->guest ? ($roomConflict->reservation->guest->first_name . ' ' . $roomConflict->reservation->guest->last_name) : 'another guest';
+                $inFmt = Carbon::parse($roomConflict->check_in)->format('d M Y');
+                $outFmt = Carbon::parse($roomConflict->check_out)->format('d M Y');
+
+                return back()->withErrors([
+                    'room_id' => "Room {$roomNum} is already reserved by {$bookedBy} from {$inFmt} to {$outFmt}. Please choose an available room.",
+                ])->withInput();
+            }
+        }
+
         $createdReservation = null;
 
-        DB::transaction(function () use (&$createdReservation, $validated, $user, $property, $tenantId, $selectedRoomIds, $primaryRoomId, $roomTypeId, $ratePlanId, $ratePrice) {
+        DB::transaction(function () use (&$createdReservation, $validated, $user, $property, $tenantId, $primaryRoomId, $roomTypeId, $ratePlanId, $ratePrice) {
             // Find or create guest
             if (! empty($validated['guest_id'])) {
                 $guest = Guest::findOrFail($validated['guest_id']);
@@ -217,13 +293,12 @@ class ReservationController extends Controller
                 ]);
             }
 
-            // Calculate nights and total amount
+            // Calculate nights and total amount (strictly 1 room)
             $checkIn = Carbon::parse($validated['check_in']);
             $checkOut = Carbon::parse($validated['check_out']);
             $nights = max(1, $checkIn->diffInDays($checkOut));
             $ratePriceMinor = (int) ($ratePrice * 100);
-            $roomCount = max(1, count($selectedRoomIds));
-            $totalMinor = $ratePriceMinor * $nights * $roomCount;
+            $totalMinor = $ratePriceMinor * $nights;
             $depositMinor = ! empty($validated['deposit']) ? (int) ($validated['deposit'] * 100) : 0;
 
             // Generate guaranteed unique Ref No
@@ -275,39 +350,23 @@ class ReservationController extends Controller
 
             $createdReservation = $reservation;
 
-            // Create ReservationRoom for each room selected (or primary room)
-            $createdRooms = [];
-            if (! empty($selectedRoomIds)) {
-                foreach ($selectedRoomIds as $rId) {
-                    $rmObj = Room::find($rId);
-                    $rtId = $rmObj?->room_type_id ?? $roomTypeId;
-                    $createdRooms[] = ReservationRoom::create([
-                        'tenant_id' => $tenantId,
-                        'reservation_id' => $reservation->id,
-                        'room_type_id' => $rtId,
-                        'room_id' => $rId,
-                        'rate_plan_id' => $ratePlanId,
-                        'check_in' => $validated['check_in'],
-                        'check_out' => $validated['check_out'],
-                        'rate_price_minor' => $ratePriceMinor,
-                        'status' => $status,
-                    ]);
-                }
-            } else {
-                $createdRooms[] = ReservationRoom::create([
-                    'tenant_id' => $tenantId,
-                    'reservation_id' => $reservation->id,
-                    'room_type_id' => $roomTypeId,
-                    'room_id' => $primaryRoomId,
-                    'rate_plan_id' => $ratePlanId,
-                    'check_in' => $validated['check_in'],
-                    'check_out' => $validated['check_out'],
-                    'rate_price_minor' => $ratePriceMinor,
-                    'status' => $status,
-                ]);
-            }
+            // Create single ReservationRoom
+            $rmObj = $primaryRoomId ? Room::find($primaryRoomId) : null;
+            $rtId = $rmObj?->room_type_id ?? $roomTypeId;
+            $createdRoom = ReservationRoom::create([
+                'tenant_id' => $tenantId,
+                'reservation_id' => $reservation->id,
+                'room_type_id' => $rtId,
+                'room_id' => $primaryRoomId,
+                'rate_plan_id' => $ratePlanId,
+                'check_in' => $validated['check_in'],
+                'check_out' => $validated['check_out'],
+                'rate_price_minor' => $ratePriceMinor,
+                'status' => $status,
+            ]);
 
-            $primaryResRoom = $createdRooms[0];
+            $createdRooms = [$createdRoom];
+            $primaryResRoom = $createdRoom;
 
             // Create Folio
             $folioNumber = sprintf('FOL-%05d', Folio::count() + 1);
@@ -417,6 +476,46 @@ class ReservationController extends Controller
         $property = $user->property ?? Property::first();
         $room = Room::findOrFail($validated['room_id']);
         $tenantId = $reservation->tenant_id ?? $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
+
+        // 1a. Conflict Check: Verify guest has no OTHER active/confirmed reservation for overlapping dates
+        $existingConfirmed = Reservation::where('tenant_id', $tenantId)
+            ->where('guest_id', $reservation->guest_id)
+            ->where('id', '!=', $reservation->id)
+            ->whereIn('status', ['confirmed', 'checked_in'])
+            ->where('check_in', '<', $reservation->check_out)
+            ->where('check_out', '>', $reservation->check_in)
+            ->with(['reservationRooms.room'])
+            ->first();
+
+        if ($existingConfirmed) {
+            $otherRoom = $existingConfirmed->reservationRooms->first()?->room?->room_number ?? 'another room';
+            $inFmt = Carbon::parse($existingConfirmed->check_in)->format('d M Y');
+            $outFmt = Carbon::parse($existingConfirmed->check_out)->format('d M Y');
+            return back()->withErrors([
+                'room_id' => "Conflict: Guest already has a reservation (#{$existingConfirmed->ref_no}) in Room {$otherRoom} from {$inFmt} to {$outFmt}. Cancel or check out that reservation first.",
+            ]);
+        }
+
+        // 1b. Conflict Check: Verify guest is not already active & checked in to another room
+        $activeStay = Stay::where('guest_id', $reservation->guest_id)
+            ->whereNull('checked_out_at')
+            ->where('room_id', '!=', $room->id)
+            ->with('room')
+            ->first();
+
+        if ($activeStay) {
+            $otherRoom = $activeStay->room?->room_number ?? 'another room';
+            return back()->withErrors([
+                'room_id' => "Conflict: Guest is already checked in to Room {$otherRoom}. A guest cannot occupy multiple rooms simultaneously. Please check out the guest from Room {$otherRoom} first.",
+            ]);
+        }
+
+        // 2. Conflict Check: Target room is not currently occupied
+        if ($room->status_occupancy === 'occupied') {
+            return back()->withErrors([
+                'room_id' => "Room {$room->room_number} is currently occupied by another active guest.",
+            ]);
+        }
 
         DB::transaction(function () use ($reservation, $room, $user, $property, $tenantId) {
             $room->update(['status_occupancy' => 'occupied']);
@@ -557,6 +656,47 @@ class ReservationController extends Controller
             'room_id' => 'nullable|uuid|exists:rooms,id',
             'rate_price' => 'nullable|numeric|min:0',
         ]);
+
+        $checkIn = ! empty($validated['check_in']) ? Carbon::parse($validated['check_in'])->startOfDay() : Carbon::parse($reservation->check_in)->startOfDay();
+        $checkOut = ! empty($validated['check_out']) ? Carbon::parse($validated['check_out'])->endOfDay() : Carbon::parse($reservation->check_out)->endOfDay();
+        $targetRoomId = $validated['room_id'] ?? $reservation->reservationRooms->first()?->room_id;
+
+        // 1. Conflict Check: Guest cannot hold another active booking during these dates
+        $guestConflict = Reservation::where('tenant_id', $reservation->tenant_id)
+            ->where('id', '!=', $reservation->id)
+            ->where('guest_id', $reservation->guest_id)
+            ->whereIn('status', ['confirmed', 'checked_in'])
+            ->where(function ($q) use ($checkIn, $checkOut) {
+                $q->where('check_in', '<', $checkOut->toDateString())
+                  ->where('check_out', '>', $checkIn->toDateString());
+            })
+            ->with(['reservationRooms.room'])
+            ->first();
+
+        if ($guestConflict) {
+            $existingRoom = $guestConflict->reservationRooms->first()?->room?->room_number ?? 'another room';
+            return back()->withErrors([
+                'check_in' => "Conflict: Guest already has an active booking in Room {$existingRoom} for overlapping dates. A guest cannot be reserved in two rooms simultaneously.",
+            ]);
+        }
+
+        // 2. Conflict Check: Room cannot be double-booked
+        if ($targetRoomId) {
+            $roomConflict = ReservationRoom::where('room_id', $targetRoomId)
+                ->where('reservation_id', '!=', $reservation->id)
+                ->whereHas('reservation', fn ($q) => $q->whereIn('status', ['confirmed', 'checked_in']))
+                ->where(function ($q) use ($checkIn, $checkOut) {
+                    $q->where('check_in', '<', $checkOut->toDateString())
+                      ->where('check_out', '>', $checkIn->toDateString());
+                })
+                ->first();
+
+            if ($roomConflict) {
+                return back()->withErrors([
+                    'room_id' => "Conflict: The selected room is already booked by another reservation for overlapping dates.",
+                ]);
+            }
+        }
 
         DB::transaction(function () use ($reservation, $validated) {
             $checkIn = ! empty($validated['check_in']) ? Carbon::parse($validated['check_in']) : $reservation->check_in;

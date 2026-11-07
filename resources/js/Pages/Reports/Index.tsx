@@ -360,7 +360,7 @@ export default function ReportsIndex({
                         <Link
                             href={route('manager.notifications.index')}
                             className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#D4AF37] hover:bg-[#B8960C] text-[#1E3A5F] rounded-xl text-xs font-black shadow-xs transition active:scale-95"
-                            title="Weka namba, email na saa ya kutuma ripoti za kila siku na booking alerts kwa SMS, WhatsApp na Email"
+                            title="Configure phone number, email, and scheduled delivery times for daily reports and booking alerts via SMS, WhatsApp, and Email"
                         >
                             <span>Manager Alerts (SMS/WhatsApp/Email)</span>
                         </Link>

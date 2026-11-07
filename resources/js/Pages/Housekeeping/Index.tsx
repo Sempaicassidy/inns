@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import RoomArrangementGrid from '@/Components/RoomArrangementGrid';
 import { HousekeepingTask, PageProps, RatePlan, Room, RoomType, User } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import {
@@ -302,8 +303,9 @@ export default function HousekeepingIndex({
         room_number: '',
         room_type_id: roomTypes[0]?.id || '',
         floor: 'Ground Floor',
-        status_occupancy: 'vacant',
-        status_hk: 'clean',
+        status_occupancy: 'vacant' as 'vacant' | 'occupied',
+        status_hk: 'clean' as 'clean' | 'dirty' | 'inspected' | 'out_of_order',
+        features: [] as string[],
     });
 
     // Form for Cleaning Task Modal
@@ -365,6 +367,18 @@ export default function HousekeepingIndex({
             setTaskData('room_id', rooms[0].id);
         }
         setIsAssignTaskModalOpen(true);
+    };
+
+    // Adapter for RoomArrangementGrid — it passes GridRoomItem, we need Room
+    const handleGridTaskModal = (gridRoom: { id: string; [key: string]: any }) => {
+        const matched = rooms.find((r) => r.id === gridRoom.id);
+        if (matched) {
+            openTaskModal(matched);
+        } else {
+            // Fallback: open modal with just the id set
+            setTaskData('room_id', gridRoom.id);
+            setIsAssignTaskModalOpen(true);
+        }
     };
 
     const submitTask = (e: React.FormEvent) => {
@@ -809,255 +823,15 @@ export default function HousekeepingIndex({
                         )}
                     </div>
                 ) : viewMode === 'cards' ? (
-                    /* CARDS VIEW */
-                    <div>
-                        {filteredRooms.length === 0 ? (
-                            <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center text-slate-400">
-                                <BedDouble className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                                <p className="font-bold text-slate-700">No rooms matched search</p>
-                                <span className="text-xs text-slate-400">Try adjusting your filters or search keywords</span>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                {filteredRooms.map((room) => {
-                                    const hkBadge = getHkBadge(room.status_hk);
-                                    const occBadge = getOccupancyBadge(room.status_occupancy);
-                                    const priceMinor = room.room_type?.base_price_minor || 0;
-                                    const isOccupied = room.status_occupancy === 'occupied';
-                                    const isClean = room.status_hk === 'clean' || room.status_hk === 'inspected';
-                                    const isDirty = room.status_hk === 'dirty';
-                                    const isOutOfOrder = room.status_hk === 'out_of_order' || room.status_hk === 'out_of_service';
-
-                                    return (
-                                        <div
-                                            key={room.id}
-                                            id={`room-${room.room_number}`}
-                                            data-highlightable="true"
-                                            className={`bg-white rounded-2xl border transition-all duration-200 flex flex-col justify-between shadow-2xs hover:shadow-md ${
-                                                isOccupied
-                                                    ? 'border-sky-200/90 ring-1 ring-sky-100'
-                                                    : isDirty
-                                                    ? 'border-amber-200 ring-1 ring-amber-100'
-                                                    : 'border-slate-200/90'
-                                            }`}
-                                        >
-                                            {/* TOP ROOM CARD HEADER */}
-                                            <div className="p-4 border-b border-slate-100">
-                                                <div className="flex items-start justify-between gap-2">
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-lg font-black text-slate-900 tracking-tight">
-                                                                Room {room.room_number}
-                                                            </span>
-                                                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
-                                                                {room.floor}
-                                                            </span>
-                                                        </div>
-                                                        <span className="text-xs font-semibold text-sky-800 block mt-0.5">
-                                                            {room.room_type?.name || 'Standard Unit'}
-                                                        </span>
-                                                    </div>
-
-                                                    {/* Price Tag */}
-                                                    <div className="text-right">
-                                                        <span className="text-xs font-bold text-slate-900 block">
-                                                            {formatTsh(priceMinor)}
-                                                        </span>
-                                                        <span className="text-[10px] text-slate-400 font-semibold">per night</span>
-                                                    </div>
-                                                </div>
-
-                                                {/* STATUS PILLS */}
-                                                <div className="flex flex-wrap items-center gap-1.5 mt-3">
-                                                    <span
-                                                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] border ${occBadge.bg}`}
-                                                    >
-                                                        <span>{occBadge.label}</span>
-                                                    </span>
-
-                                                    <span
-                                                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] border font-bold ${hkBadge.bg}`}
-                                                    >
-                                                        <span className={`w-1.5 h-1.5 rounded-full ${hkBadge.dot}`} />
-                                                        <span>{hkBadge.label}</span>
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* MIDDLE BODY: GUEST OR AVAILABILITY INFO */}
-                                            <div className="p-4 flex-1 flex flex-col justify-between space-y-3 bg-slate-50/40">
-                                                {isOccupied ? (
-                                                    /* OCCUPIED DETAILS BOX */
-                                                    <div className="bg-sky-50/60 rounded-xl p-3 border border-sky-100 space-y-2">
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="text-[10px] font-bold text-sky-700 uppercase tracking-wider flex items-center gap-1">
-                                                                <UserCheck className="w-3 h-3" /> In-House Guest:
-                                                            </span>
-                                                            {room.is_due_out && (
-                                                                <span className="px-1.5 py-0.5 rounded-md bg-amber-500 text-white text-[9px] font-extrabold">
-                                                                    Due Out
-                                                                </span>
-                                                            )}
-                                                        </div>
-
-                                                        <div>
-                                                            <h4 className="text-xs font-bold text-slate-900">
-                                                                {room.current_guest || 'Occupant'}
-                                                            </h4>
-                                                            {room.current_guest_phone && (
-                                                                <span className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                                                                    <Phone className="w-3 h-3 text-slate-400" />
-                                                                    {room.current_guest_phone}
-                                                                </span>
-                                                            )}
-                                                        </div>
-
-                                                        {/* Dates */}
-                                                        <div className="pt-1 border-t border-sky-100/80 flex items-center justify-between text-[10px] text-slate-600">
-                                                            <div>
-                                                                <span className="text-slate-400 block font-medium">Arrival:</span>
-                                                                <span className="font-semibold text-slate-800">
-                                                                    {room.current_check_in || '-'}
-                                                                </span>
-                                                            </div>
-                                                            <div className="text-right">
-                                                                <span className="text-slate-400 block font-medium">Departure:</span>
-                                                                <span className="font-semibold text-slate-800">
-                                                                    {room.current_check_out || '-'}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Folio info link */}
-                                                        {room.current_folio_id && (
-                                                            <div className="pt-1 border-t border-sky-100/80 flex items-center justify-between text-[10px]">
-                                                                <span className="text-slate-500">
-                                                                    Balance: <strong className="text-rose-600">{formatTsh(room.current_folio_balance_minor || 0)}</strong>
-                                                                </span>
-                                                                <Link
-                                                                    href={route('folios.show', room.current_folio_id)}
-                                                                    className="font-bold text-sky-700 hover:text-sky-900 underline"
-                                                                >
-                                                                    Folio Ledger &rarr;
-                                                                </Link>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ) : (
-                                                    /* VACANT DETAILS BOX */
-                                                    <div className="bg-white rounded-xl p-3 border border-slate-100 flex flex-col justify-center space-y-2">
-                                                        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-                                                            {isClean ? (
-                                                                <>
-                                                                    <Check className="w-4 h-4 text-emerald-500" />
-                                                                    <span className="text-emerald-700 font-bold">Ready for Occupancy</span>
-                                                                </>
-                                                            ) : isDirty ? (
-                                                                <>
-                                                                    <AlertCircle className="w-4 h-4 text-amber-500" />
-                                                                    <span className="text-amber-800 font-bold">Cleaning Pending</span>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <Wrench className="w-4 h-4 text-rose-500" />
-                                                                    <span className="text-rose-700 font-bold">Maintenance Block</span>
-                                                                </>
-                                                            )}
-                                                        </div>
-
-                                                        {isClean && (
-                                                            <Link
-                                                                href={route('calendar.index')}
-                                                                className="text-center py-1.5 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold transition"
-                                                            >
-                                                                + Book Room
-                                                            </Link>
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                                {/* ACTIVE TASK BADGE IF ASSIGNED */}
-                                                {room.active_task && (
-                                                    <div className="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200 text-xs flex items-center justify-between">
-                                                        <div>
-                                                            <span className="text-[9px] font-bold text-amber-800 uppercase block">
-                                                                Housekeeper Assigned:
-                                                            </span>
-                                                            <span className="font-bold text-slate-800 text-[11px]">
-                                                                {room.active_task.assigned_to_name}
-                                                            </span>
-                                                            <span className="text-[10px] text-slate-500 block capitalize font-medium">
-                                                                {room.active_task.task_type.replace('_', ' ')} • {room.active_task.priority}
-                                                            </span>
-                                                        </div>
-                                                        <button
-                                                            onClick={() => handleTaskStatusChange(room.active_task!.id, 'completed')}
-                                                            className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-[10px] font-bold shadow-2xs transition"
-                                                        >
-                                                            Complete
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* BOTTOM ACTION BAR */}
-                                            <div className="p-3 border-t border-slate-100 bg-white flex flex-wrap items-center justify-between gap-1.5">
-                                                {/* Toggle HK Status button */}
-                                                <div className="flex items-center gap-1">
-                                                    {isDirty ? (
-                                                        <button
-                                                            onClick={() => handleRoomStatusChange(room.id, 'clean')}
-                                                            className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-bold transition active:scale-95 flex items-center gap-1"
-                                                            title="Mark Clean"
-                                                        >
-                                                            <Check className="w-3.5 h-3.5" />
-                                                            <span>Mark Clean</span>
-                                                        </button>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => handleRoomStatusChange(room.id, 'dirty')}
-                                                            className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg text-xs font-bold transition active:scale-95 flex items-center gap-1"
-                                                            title="Mark Dirty"
-                                                        >
-                                                            <AlertCircle className="w-3.5 h-3.5" />
-                                                            <span>Mark Dirty</span>
-                                                        </button>
-                                                    )}
-
-                                                    {/* Quick inspect button */}
-                                                    <button
-                                                        onClick={() =>
-                                                            handleRoomStatusChange(
-                                                                room.id,
-                                                                room.status_hk === 'inspected' ? 'clean' : 'inspected'
-                                                            )
-                                                        }
-                                                        className={`p-1.5 rounded-lg border transition ${
-                                                            room.status_hk === 'inspected'
-                                                                ? 'bg-blue-100 text-blue-800 border-blue-300'
-                                                                : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
-                                                        }`}
-                                                        title="Supervisor Inspection"
-                                                    >
-                                                        <Shield className="w-3.5 h-3.5" />
-                                                    </button>
-                                                </div>
-
-                                                {/* Assign Task button */}
-                                                <button
-                                                    onClick={() => openTaskModal(room)}
-                                                    className="px-2.5 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 rounded-lg text-xs font-bold transition active:scale-95 flex items-center gap-1"
-                                                >
-                                                    <Sparkles className="w-3.5 h-3.5 text-sky-600" />
-                                                    <span>Assign Task</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
+                    <RoomArrangementGrid
+                        rooms={rooms}
+                        businessDate={business_date}
+                        floors={floors}
+                        onRoomStatusChange={handleRoomStatusChange}
+                        onOpenTaskModal={handleGridTaskModal}
+                        mode="housekeeping"
+                        title="Rooms Arrangement & Availability"
+                    />
                 ) : (
                     /* TABLE VIEW */
                     <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
@@ -1333,130 +1107,267 @@ export default function HousekeepingIndex({
             {/* MODAL: ADD NEW ROOM */}
             {isAddRoomModalOpen && (
                 <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-150">
-                        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-150 overflow-hidden">
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-[#1E3A5F]/5 to-transparent">
                             <div>
-                                <h3 className="text-base font-bold text-slate-900">
-                                    Add New Room
-                                </h3>
-                                <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
-                                    Register Room Inventory
-                                </span>
+                                <h3 className="text-base font-bold text-slate-900">Add New Room</h3>
+                                <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Register Room Inventory</span>
                             </div>
-                            <button
-                                onClick={() => setIsAddRoomModalOpen(false)}
-                                className="text-slate-400 hover:text-slate-600 p-1"
-                            >
+                            <button onClick={() => setIsAddRoomModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-1">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <form onSubmit={submitAddRoom} className="space-y-4 mt-4 text-xs">
-                            {/* Room Number */}
-                            <div>
-                                <label className="block font-bold text-slate-700 mb-1">Room Number</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={roomFormData.room_number}
-                                    onChange={(e) => setRoomFormData('room_number', e.target.value)}
-                                    placeholder="e.g. 101, 204, Suite 1..."
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold focus:bg-white focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-                                />
-                            </div>
+                        <div className="flex flex-col md:flex-row">
+                            {/* LEFT: Form */}
+                            <form onSubmit={submitAddRoom} className="flex-1 p-6 space-y-4 text-xs overflow-y-auto max-h-[75vh]">
+                                {/* Room Number */}
+                                <div>
+                                    <label className="block font-bold text-slate-700 mb-1">Room Number *</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={roomFormData.room_number}
+                                        onChange={(e) => setRoomFormData('room_number', e.target.value)}
+                                        placeholder="e.g. 101, 204, Suite 1..."
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold focus:bg-white focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                                    />
+                                </div>
 
-                            {/* Room Type */}
-                            <div>
-                                <div className="flex items-center justify-between mb-1">
-                                    <label className="block font-bold text-slate-700">Room Type *</label>
+                                {/* Room Type */}
+                                <div>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="block font-bold text-slate-700">Room Type *</label>
+                                        <button
+                                            type="button"
+                                            onClick={() => { setIsAddRoomModalOpen(false); setIsRoomTypesModalOpen(true); setIsAddRoomTypeOpen(true); }}
+                                            className="text-[11px] font-bold text-sky-600 hover:text-sky-700 cursor-pointer"
+                                        >
+                                            + Add New Type
+                                        </button>
+                                    </div>
+                                    <select
+                                        value={roomFormData.room_type_id}
+                                        onChange={(e) => setRoomFormData('room_type_id', e.target.value)}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-medium focus:bg-white focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                                    >
+                                        {localRoomTypes.length === 0 ? (
+                                            <option value="">No room types found - Click &apos;+ Add New Type&apos;</option>
+                                        ) : (
+                                            localRoomTypes.map((rt) => (
+                                                <option key={rt.id} value={rt.id}>
+                                                    {rt.name} - ({formatTsh(rt.base_price_minor)})
+                                                </option>
+                                            ))
+                                        )}
+                                    </select>
+                                </div>
+
+                                {/* Floor */}
+                                <div>
+                                    <label className="block font-bold text-slate-700 mb-1">Floor / Wing</label>
+                                    <input
+                                        type="text"
+                                        value={roomFormData.floor}
+                                        onChange={(e) => setRoomFormData('floor', e.target.value)}
+                                        placeholder="e.g. Ground Floor, 1st Floor, Wing B..."
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-medium focus:bg-white focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                                    />
+                                </div>
+
+                                {/* Status */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block font-bold text-slate-700 mb-1">Occupancy</label>
+                                        <select
+                                            value={roomFormData.status_occupancy}
+                                            onChange={(e) => setRoomFormData('status_occupancy', e.target.value as 'vacant' | 'occupied')}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-medium focus:bg-white focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                                        >
+                                            <option value="vacant">Vacant</option>
+                                            <option value="occupied">Occupied</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block font-bold text-slate-700 mb-1">HK Status</label>
+                                        <select
+                                            value={roomFormData.status_hk}
+                                            onChange={(e) => setRoomFormData('status_hk', e.target.value as 'clean' | 'dirty' | 'inspected' | 'out_of_order')}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-medium focus:bg-white focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                                        >
+                                            <option value="clean">Clean</option>
+                                            <option value="dirty">Dirty</option>
+                                            <option value="inspected">Inspected</option>
+                                            <option value="out_of_order">Out of Order</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Room-Specific Features */}
+                                <div>
+                                    <label className="block font-bold text-slate-700 mb-1.5">Room-Specific Features</label>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {['Non-Smoking', 'Connecting Room', 'Accessible', 'Corner Room', 'Pool View', 'Garden View', 'Sea View', 'Mountain View', 'City View', 'High Floor', 'Ground Floor Room', 'Quiet Room'].map((feat) => {
+                                            const currentFeatures = Array.isArray(roomFormData.features) ? roomFormData.features as string[] : [];
+                                            const selected = currentFeatures.includes(feat);
+                                            return (
+                                                <button
+                                                    key={feat}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const updated = selected
+                                                            ? currentFeatures.filter((f) => f !== feat)
+                                                            : [...currentFeatures, feat];
+                                                        setRoomFormData('features', updated);
+                                                    }}
+                                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition cursor-pointer flex items-center gap-1 ${
+                                                        selected
+                                                            ? 'bg-[#1E3A5F] text-white border-[#1E3A5F] shadow-2xs'
+                                                            : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                                                    }`}
+                                                >
+                                                    <span>{selected ? '✓' : '+'}</span>
+                                                    <span>{feat}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="pt-2 flex items-center justify-end gap-2">
                                     <button
                                         type="button"
-                                        onClick={() => {
-                                            setIsAddRoomModalOpen(false);
-                                            setIsRoomTypesModalOpen(true);
-                                            setIsAddRoomTypeOpen(true);
-                                        }}
-                                        className="text-[11px] font-bold text-sky-600 hover:text-sky-700 cursor-pointer"
+                                        onClick={() => setIsAddRoomModalOpen(false)}
+                                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition"
                                     >
-                                        + Add New Type
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={addingRoom}
+                                        className="px-5 py-2 bg-[#1E3A5F] hover:bg-[#152a45] text-white rounded-xl font-bold shadow-xs transition disabled:opacity-50"
+                                    >
+                                        {addingRoom ? 'Saving...' : 'Add Room'}
                                     </button>
                                 </div>
-                                <select
-                                    value={roomFormData.room_type_id}
-                                    onChange={(e) => setRoomFormData('room_type_id', e.target.value)}
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-medium focus:bg-white focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-                                >
-                                    {localRoomTypes.length === 0 ? (
-                                        <option value="">No room types found - Click '+ Add New Type'</option>
-                                    ) : (
-                                        localRoomTypes.map((rt) => (
-                                            <option key={rt.id} value={rt.id}>
-                                                {rt.name} - ({formatTsh(rt.base_price_minor)})
-                                            </option>
-                                        ))
-                                    )}
-                                </select>
-                            </div>
+                            </form>
 
-                            {/* Floor */}
-                            <div>
-                                <label className="block font-bold text-slate-700 mb-1">Floor / Wing</label>
-                                <input
-                                    type="text"
-                                    value={roomFormData.floor}
-                                    onChange={(e) => setRoomFormData('floor', e.target.value)}
-                                    placeholder="e.g. Ground Floor, 1st Floor, Wing B..."
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-medium focus:bg-white focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-                                />
-                            </div>
+                            {/* RIGHT: Live Preview Card */}
+                            <div className="md:w-64 shrink-0 bg-slate-50 border-t md:border-t-0 md:border-l border-slate-200 p-5 flex flex-col gap-3">
+                                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Live Card Preview</div>
 
-                            {/* Initial Status */}
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block font-bold text-slate-700 mb-1">Occupancy</label>
-                                    <select
-                                        value={roomFormData.status_occupancy}
-                                        onChange={(e) => setRoomFormData('status_occupancy', e.target.value as 'vacant' | 'occupied')}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-medium focus:bg-white focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-                                    >
-                                        <option value="vacant">Vacant</option>
-                                        <option value="occupied">Occupied</option>
-                                    </select>
+                                {/* Preview card mimicking the grid tile */}
+                                {(() => {
+                                    const isOcc = roomFormData.status_occupancy === 'occupied';
+                                    const isDirty = roomFormData.status_hk === 'dirty';
+                                    const isMaint = roomFormData.status_hk === 'out_of_order';
+                                    const isInspected = roomFormData.status_hk === 'inspected';
+                                    const selectedRt = localRoomTypes.find(rt => rt.id === roomFormData.room_type_id);
+
+                                    const cardBg = isOcc ? 'bg-[#fff1f2]' : isMaint ? 'bg-[#f8fafc]' : isDirty ? 'bg-[#fffbeb]' : 'bg-[#ecfdf5]';
+                                    const cardBorder = isOcc ? 'border-[#fecdd3]' : isMaint ? 'border-[#cbd5e1]' : isDirty ? 'border-[#fde68a]' : 'border-[#a7f3d0]';
+                                    const badgeBg = isOcc ? 'bg-[#f43f5e] text-white' : isMaint ? 'bg-[#64748b] text-white' : isDirty ? 'bg-[#f59e0b] text-white' : 'bg-[#22c55e] text-white';
+                                    const statusLabel = isOcc ? 'Occupied' : isMaint ? 'Maintenance' : isDirty ? 'Dirty' : isInspected ? 'Inspected' : 'Available';
+                                    const iconColor = isOcc ? 'text-[#be123c]' : isMaint ? 'text-[#475569]' : isDirty ? 'text-[#b45309]' : 'text-[#065f46]';
+                                    const numberColor = isOcc ? 'text-[#881337]' : isMaint ? 'text-[#1e293b]' : isDirty ? 'text-[#78350f]' : 'text-[#064e3b]';
+                                    const currentFeatures = Array.isArray(roomFormData.features) ? roomFormData.features as string[] : [];
+
+                                    return (
+                                        <div className={`rounded-2xl p-4 border-2 flex flex-col items-center gap-2 min-h-[160px] justify-between ${cardBg} ${cardBorder} shadow-sm`}>
+                                            <BedDouble className={`w-7 h-7 ${iconColor}`} />
+                                            <div className="text-center">
+                                                <span className={`text-2xl font-black tracking-tight ${numberColor}`}>
+                                                    {roomFormData.room_number || '—'}
+                                                </span>
+                                                <span className="block text-[10px] font-semibold text-slate-500 truncate max-w-[130px]">
+                                                    {selectedRt?.name || 'Select Room Type'}
+                                                </span>
+                                                {roomFormData.floor && (
+                                                    <span className="block text-[9px] text-slate-400">{roomFormData.floor}</span>
+                                                )}
+                                                {/* Features micro-badges */}
+                                                {currentFeatures.length > 0 && (
+                                                    <div className="flex flex-wrap gap-0.5 justify-center mt-1">
+                                                        {currentFeatures.slice(0, 2).map((f, i) => (
+                                                            <span key={i} className="px-1 py-0.5 rounded text-[8px] font-bold bg-white/70 text-slate-600 border border-slate-200/80 leading-none">
+                                                                {f.length > 7 ? f.slice(0, 6) + '…' : f}
+                                                            </span>
+                                                        ))}
+                                                        {currentFeatures.length > 2 && (
+                                                            <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-white/70 text-slate-500 border border-slate-200/80 leading-none">
+                                                                +{currentFeatures.length - 2}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {/* Amenities from selected type */}
+                                                {selectedRt && Array.isArray(selectedRt.amenities) && selectedRt.amenities.length > 0 && (
+                                                    <div className="flex flex-wrap gap-0.5 justify-center mt-1">
+                                                        {selectedRt.amenities.slice(0, 2).map((a, i) => (
+                                                            <span key={i} className="px-1 py-0.5 rounded text-[8px] font-bold bg-white/60 text-[#1E3A5F] border border-[#1E3A5F]/20 leading-none">
+                                                                {a.length > 6 ? a.slice(0, 5) + '…' : a}
+                                                            </span>
+                                                        ))}
+                                                        {selectedRt.amenities.length > 2 && (
+                                                            <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-white/60 text-slate-500 border border-slate-200/80 leading-none">
+                                                                +{selectedRt.amenities.length - 2}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <span className={`px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider shadow-2xs ${badgeBg}`}>
+                                                {statusLabel}
+                                            </span>
+                                        </div>
+                                    );
+                                })()}
+
+                                {/* Selected type details */}
+                                {(() => {
+                                    const rt = localRoomTypes.find(r => r.id === roomFormData.room_type_id);
+                                    if (!rt) return null;
+                                    return (
+                                        <div className="text-[11px] space-y-1.5">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-slate-500 font-semibold">Nightly Rate</span>
+                                                <span className="font-extrabold text-[#1E3A5F]">{formatTsh(rt.base_price_minor)}</span>
+                                            </div>
+                                            {(rt.max_adults || rt.base_occupancy) && (
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-slate-500 font-semibold">Capacity</span>
+                                                    <span className="font-bold text-slate-700">👥 {rt.max_adults || rt.base_occupancy} Guests</span>
+                                                </div>
+                                            )}
+                                            {Array.isArray(rt.amenities) && rt.amenities.length > 0 && (
+                                                <div>
+                                                    <span className="text-slate-500 font-semibold block mb-1">Type Amenities:</span>
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {rt.amenities.slice(0, 5).map((a, i) => (
+                                                            <span key={i} className="px-1.5 py-0.5 rounded bg-[#1E3A5F]/8 text-[#1E3A5F] text-[9px] font-semibold border border-[#1E3A5F]/15">
+                                                                {a}
+                                                            </span>
+                                                        ))}
+                                                        {rt.amenities.length > 5 && (
+                                                            <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 text-[9px]">+{rt.amenities.length - 5}</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {rt.description && (
+                                                <p className="text-slate-400 italic text-[10px] line-clamp-3">{rt.description}</p>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
+
+                                <div className="text-[10px] text-slate-400 text-center mt-auto pt-2 border-t border-slate-200">
+                                    Card updates live as you fill the form
                                 </div>
-
-                                <div>
-                                    <label className="block font-bold text-slate-700 mb-1">Housekeeping Status</label>
-                                    <select
-                                        value={roomFormData.status_hk}
-                                        onChange={(e) => setRoomFormData('status_hk', e.target.value as 'clean' | 'dirty' | 'inspected' | 'out_of_order')}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-medium focus:bg-white focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-                                    >
-                                        <option value="clean">Clean</option>
-                                        <option value="dirty">Dirty</option>
-                                        <option value="inspected">Inspected</option>
-                                        <option value="out_of_order">Out of Order</option>
-                                    </select>
-                                </div>
                             </div>
-
-                            {/* Actions */}
-                            <div className="pt-2 flex items-center justify-end gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsAddRoomModalOpen(false)}
-                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={addingRoom}
-                                    className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-bold shadow-xs transition disabled:opacity-50"
-                                >
-                                    {addingRoom ? 'Saving...' : 'Add Room'}
-                                </button>
-                            </div>
-                        </form>
+                        </div>
                     </div>
                 </div>
             )}

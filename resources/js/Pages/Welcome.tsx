@@ -51,7 +51,7 @@ import {
     X,
     Zap,
 } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 interface WelcomeProps {
     canLogin?: boolean;
@@ -87,6 +87,50 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
     const [openFaq, setOpenFaq] = useState<number | null>(0);
     const [activeDeviceFocus, setActiveDeviceFocus] = useState<'all' | 'laptop' | 'tablet' | 'phone'>('all');
     const [syncedOrderActive, setSyncedOrderActive] = useState(false);
+
+    // Hero Background Slideshow with Dynamic Synchronized Texts
+    const heroSlides = useMemo(() => {
+        const customImage = cms_content?.hero_image || null;
+        const customTitle = cms_content?.hero_title || 'Mfumo Kamilifu wa Kisasa wa Kusimamia Mahoteli, Lodges & Restaurants';
+        const customSubtitle = cms_content?.hero_subtitle || 'Dhibiti vyumba, mapokezi, mikataba ya kisheria, ankara na risiti za malipo, POS ya mgahawa, na ripoti za mapato kidijitali katika mfumo mmoja unaoaminika.';
+        const customBadge = cms_content?.hero_badge || 'THE INNS • Centralized Hospitality OS 2026';
+
+        return [
+            {
+                image: customImage || 'https://images.unsplash.com/photo-1566073741257-6a1056039daa?w=1920&q=80&fit=crop',
+                badge: customBadge,
+                title: customTitle,
+                subtitle: customSubtitle,
+            },
+            {
+                image: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1920&q=80&fit=crop',
+                badge: 'SAFARI & BOUTIQUE LODGES',
+                title: 'Usimamizi wa Kisasa wa Safari Lodges, Camps & Luxury Resorts',
+                subtitle: 'Fuatilia wageni wa kitalii, uhifadhi wa vyumba (Gantt Rack), stakabadhi za malipo, na ripoti za flash za kila siku za meneja kupitia SMS na WhatsApp.',
+            },
+            {
+                image: 'https://images.unsplash.com/photo-1551882547-ff40c63fe524?w=1920&q=80&fit=crop',
+                badge: 'RESTAURANT & BAR TOUCHSCREEN POS',
+                title: 'Touchscreen POS ya Mgahawa, Grocery Minimart na Night Audit ya Haraka',
+                subtitle: 'Mfumo wa mauzo wa haraka wa wateja wa ndani na nje, jikoni KOT, usimamizi wa stoo na ripoti kamili za faida na hasara (Double-Entry GL).',
+            },
+            {
+                image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=1920&q=80&fit=crop',
+                badge: 'MULTI-PROPERTY CENTRALIZED CLOUD',
+                title: 'Dhibiti Hoteli Nyingi na Matawi Yote Kutoka Dashboard Moja Kuu',
+                subtitle: 'Unganisha matawi yote ya mikoani, linganisha mapato ya kila tawi kwa sekunde, dhibiti watumiaji kwa viwango vya madaraka, na zuia upotevu wa mapato.',
+            },
+        ];
+    }, [cms_content]);
+
+    const [heroSlideIndex, setHeroSlideIndex] = useState(0);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setHeroSlideIndex((prev) => (prev + 1) % heroSlides.length);
+        }, 6000);
+        return () => clearInterval(timer);
+    }, [heroSlides.length]);
 
     const triggerSyncDemo = () => {
         setSyncedOrderActive(true);
@@ -378,64 +422,59 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                 </div>
             </div>
 
-            {/* 3. HERO SECTION */}
-            <section className="relative overflow-hidden pt-6 pb-20 lg:pt-12 lg:pb-32 bg-white">
-                {/* Background decorative glow */}
-                <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[450px] bg-[#D4AF37]/8 blur-[120px] rounded-full pointer-events-none -z-10" />
-
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    {/* Badge */}
-
-
-                    {/* Badge */}
-                    {cms_content?.hero_badge && (
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#D4AF37]/15 text-[#B8960C] font-extrabold text-xs mb-4 border border-[#D4AF37]/30 shadow-xs">
-                            <Sparkles className="w-3.5 h-3.5" />
-                            <span>{cms_content.hero_badge}</span>
+            {/* 3. HERO SECTION WITH BACKGROUND SLIDESHOW */}
+            <section className="relative overflow-hidden pt-10 pb-20 lg:pt-16 lg:pb-28">
+                {/* Background Slideshow (Nyuma ya Maandishi) */}
+                <div className="absolute inset-0 -z-10 overflow-hidden">
+                    {heroSlides.map((slide, idx) => (
+                        <div
+                            key={idx}
+                            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                                idx === heroSlideIndex ? 'opacity-100 scale-100' : 'opacity-0 scale-105 pointer-events-none'
+                            }`}
+                            style={{ transition: 'opacity 1s ease-in-out, transform 8s ease-out' }}
+                        >
+                            <img
+                                src={slide.image}
+                                onError={(e) => {
+                                    const target = e.currentTarget;
+                                    if (slide.image && slide.image.startsWith('/uploads/') && !target.src.includes('/inns/')) {
+                                        target.src = '/inns' + slide.image;
+                                    }
+                                }}
+                                alt=""
+                                className="w-full h-full object-cover"
+                            />
+                            {/* Sophisticated gradient overlay so text is 100% crisp and readable */}
+                            <div className="absolute inset-0 bg-gradient-to-b from-white/95 via-white/88 to-white" />
                         </div>
-                    )}
+                    ))}
+                    {/* Subtle warm glow overlay */}
+                    <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[450px] bg-[#D4AF37]/12 blur-[120px] rounded-full pointer-events-none" />
+                </div>
 
-                    {/* Headline */}
-                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight max-w-5xl mx-auto leading-[1.12]">
-                        {cms_content?.hero_title ? (
-                            <span>{cms_content.hero_title}</span>
-                        ) : (
-                            <>
-                                Run Your Hotel, Lodges, Airbnb & Guest House from{' '}
-                                <span className="text-[#D4AF37]">One Seamless Cloud.</span>
-                            </>
-                        )}
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+                    {/* Badge (Dynamic per slide) */}
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#D4AF37]/20 text-[#8c7003] font-extrabold text-xs mb-4 border border-[#D4AF37]/40 shadow-xs transition-all duration-500">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>{heroSlides[heroSlideIndex].badge}</span>
+                    </div>
+
+                    {/* Headline (Dynamic per slide) */}
+                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight max-w-5xl mx-auto leading-[1.14] transition-all duration-500 min-h-[120px] sm:min-h-[140px] flex items-center justify-center">
+                        <span>{heroSlides[heroSlideIndex].title}</span>
                     </h1>
 
-                    {/* Subheadline */}
-                    <p className="mt-6 text-base sm:text-lg lg:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
-                        {cms_content?.hero_subtitle || 'Replace fragmented software with THE INNS. Unify front-desk Gantt reservations, housekeeping, independent Restaurant & Grocery POS, store inventory, and full double-entry General Ledger—crafted for boutique lodges and multi-property hotel chains.'}
+                    {/* Subheadline (Dynamic per slide) */}
+                    <p className="mt-6 text-base sm:text-lg lg:text-xl text-slate-700 font-medium max-w-3xl mx-auto leading-relaxed transition-all duration-500 min-h-[60px] flex items-center justify-center">
+                        <span>{heroSlides[heroSlideIndex].subtitle}</span>
                     </p>
-
-                    {/* HERO SECTION IMAGE (Configured by Super Admin) */}
-                    {cms_content?.hero_image && (
-                        <div className="mt-8 mb-4 max-w-3xl mx-auto">
-                            <div className="p-2 sm:p-3 bg-white rounded-3xl shadow-xl border border-slate-200/90 transition-all">
-                                <img
-                                    src={cms_content.hero_image}
-                                    onError={(e) => {
-                                        const target = e.currentTarget;
-                                        if (!target.src.includes('/inns/')) {
-                                            target.src = '/inns' + (cms_content.hero_image?.startsWith('/') ? cms_content.hero_image : '/' + cms_content.hero_image);
-                                        }
-                                    }}
-                                    alt="THE INNS Hero Visual"
-                                    className="w-full h-auto rounded-2xl object-cover max-h-[460px] mx-auto shadow-xs"
-                                />
-                            </div>
-                        </div>
-                    )}
 
                     {/* CTA Group */}
                     <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
                         <Link
                             href={user ? route('dashboard') : route('register')}
-                            className="w-full sm:w-auto px-8 py-4 bg-[#D4AF37] hover:bg-[#B8960C] text-[#1E3A5F] font-extrabold text-sm rounded-2xl shadow-xl shadow-[#D4AF37]/30 transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                            className="w-full sm:w-auto px-8 py-4 bg-[#D4AF37] hover:bg-[#B8960C] text-[#1E3A5F] font-extrabold text-sm rounded-2xl shadow-xl shadow-[#D4AF37]/30 transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer"
                         >
                             <span>{user ? 'Open Hotel Dashboard' : (cms_content?.hero_cta_text || 'Start 14-Day Free Trial')}</span>
                             <ArrowRight className="w-4 h-4 stroke-[2.5]" />
@@ -443,37 +482,46 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
 
                         <a
                             href="#preview"
-                            className="w-full sm:w-auto px-7 py-4 bg-[#1E3A5F] hover:bg-[#1E3A5F]/90 text-white font-bold text-sm rounded-2xl border border-[#D4AF37]/30 shadow-xs transition flex items-center justify-center gap-2"
+                            className="w-full sm:w-auto px-7 py-4 bg-[#1E3A5F] hover:bg-[#1E3A5F]/90 text-white font-bold text-sm rounded-2xl border border-[#D4AF37]/30 shadow-xs transition flex items-center justify-center gap-2 cursor-pointer"
                         >
                             <Activity className="w-4 h-4 text-white-600" />
                             <span>{cms_content?.demo_cta_text || 'Explore Live Modules'}</span>
                         </a>
+                    </div>
 
-                        {/* <Link
-                            href={route('login')}
-                            className="w-full sm:w-auto text-xs font-bold text-slate-500 hover:text-[#D4AF37] py-2 sm:py-0 px-2 transition flex items-center justify-center gap-1"
-                        >
-                            <span>Staff Login Portal</span>
-                            <ChevronRight className="w-3.5 h-3.5" />
-                        </Link> */}
+                    {/* Slide Navigation Indicators & Controls */}
+                    <div className="mt-8 flex items-center justify-center gap-2">
+                        {heroSlides.map((_, idx) => (
+                            <button
+                                key={idx}
+                                type="button"
+                                onClick={() => setHeroSlideIndex(idx)}
+                                className={`transition-all duration-300 rounded-full cursor-pointer ${
+                                    idx === heroSlideIndex
+                                        ? 'w-8 h-2.5 bg-[#D4AF37]'
+                                        : 'w-2.5 h-2.5 bg-slate-300 hover:bg-slate-400'
+                                }`}
+                                aria-label={`Go to slide ${idx + 1}`}
+                            />
+                        ))}
                     </div>
 
                     {/* Value highlights checklist */}
-                    <div className="mt-12 flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-xs font-bold text-slate-500">
+                    <div className="mt-10 flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-xs font-bold text-slate-600">
                         <div className="flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                             <span>Zero local server installation</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                             <span>Independent Restaurant & Grocery POS</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                             <span>Full Double-Entry Accounting</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                             <span>TRA / EFD Compliant Ready</span>
                         </div>
                     </div>

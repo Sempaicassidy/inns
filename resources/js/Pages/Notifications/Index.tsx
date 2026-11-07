@@ -161,17 +161,12 @@ export default function NotificationsIndex({
             <Head title="System Notifications & Alerts - THE INNS" />
 
             <div className="w-full max-w-6xl mx-auto space-y-6 pb-16 font-sans">
-                {/* 1. HEADER & KPI CARDS */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/90 shadow-2xs">
+                {/* 1. HEADER (Slim & Clean) */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs">
                     <div>
-                        <div className="flex items-center gap-2 text-xs font-black text-blue-600 uppercase tracking-wider">
-                            <Bell className="w-4 h-4" />
-                            <span>System Operations Hub</span>
-                        </div>
-                        <h1 className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
+                        <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
                             Notifications & Operational Alerts
                         </h1>
-                        
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">

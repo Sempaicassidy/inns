@@ -29,10 +29,12 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
+    $cachedCms = cache('cms_landing_settings', []);
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
         'user' => auth()->user(),
+        'cms_content' => $cachedCms,
     ]);
 })->name('home');
 

@@ -379,38 +379,7 @@ export default function SaasAdminDashboard({
 
     const [searchTerm, setSearchTerm] = useState('');
     const [planFilter, setPlanFilter] = useState('all');
-    const [currentSlide, setCurrentSlide] = useState(0);
 
-    const slides = [
-        {
-            image: 'https://images.unsplash.com/photo-1566073741257-6a1056039daa?w=1200&h=400&fit=crop',
-            title: 'Luxury Hotel Management',
-            description: 'Experience premium hospitality with THE INNS'
-        },
-        {
-            image: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1200&h=400&fit=crop',
-            title: 'Safari Lodge Excellence',
-            description: 'Manage your safari lodge operations seamlessly'
-        },
-        {
-            image: 'https://images.unsplash.com/photo-1551882547-ff40c63fe524?w=1200&h=400&fit=crop',
-            title: 'Restaurant POS Integration',
-            description: 'Complete restaurant and bar management system'
-        },
-    ];
-
-    const nextSlide = () => {
-        setCurrentSlide((prev) => (prev + 1) % slides.length);
-    };
-
-    const prevSlide = () => {
-        setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
-    };
-
-    React.useEffect(() => {
-        const interval = setInterval(nextSlide, 5000);
-        return () => clearInterval(interval);
-    }, []);
 
     // Sub-switchers for multi-view tabs
     const [userSubTab, setUserSubTab] = useState<'users' | 'roles'>(() => activeTab === 'roles' ? 'roles' : 'users');
@@ -462,12 +431,33 @@ export default function SaasAdminDashboard({
         expires_at: '2026-12-31',
     });
 
+    const [heroImagePreview, setHeroImagePreview] = useState<string | null>(cms_content?.hero_image || null);
+
     const liveCmsForm = useForm({
         hero_title: cms_content?.hero_title || 'Mfumo Kamilifu wa Kisasa wa Kusimamia Mahoteli, Lodges & Restaurants',
         hero_subtitle: cms_content?.hero_subtitle || 'Dhibiti vyumba, mapokezi, mikataba ya kisheria, ankara na risiti za malipo, POS ya mgahawa, na ripoti za mapato kidijitali katika mfumo mmoja unaoaminika.',
         hero_cta_text: cms_content?.hero_cta_text || 'Anza Jaribio la Siku 14 Bure',
         demo_cta_text: cms_content?.demo_cta_text || 'Omba Kuona Demo ya Mfumo',
+        hero_badge: cms_content?.hero_badge || 'THE INNS • Centralized Hospitality OS 2026',
+        demo_cta_phone: cms_content?.demo_cta_phone || '+255 744 396 220',
+        hero_image: null as File | null,
+        remove_hero_image: false,
     });
+
+    const handleHeroImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            liveCmsForm.setData('hero_image', file);
+            liveCmsForm.setData('remove_hero_image', false);
+            setHeroImagePreview(URL.createObjectURL(file));
+        }
+    };
+
+    const handleRemoveHeroImage = () => {
+        liveCmsForm.setData('hero_image', null);
+        liveCmsForm.setData('remove_hero_image', true);
+        setHeroImagePreview(null);
+    };
 
     const replyTicketForm = useForm({
         ticket_id: '',
@@ -820,6 +810,7 @@ export default function SaasAdminDashboard({
         e.preventDefault();
         liveCmsForm.post(route('saas-admin.cms.update'), {
             preserveScroll: true,
+            forceFormData: true,
         });
     };
 
@@ -872,84 +863,21 @@ export default function SaasAdminDashboard({
             <Head title="THE INNS — Super Admin Centralized SaaS Ecosystem" />
 
             <div className="space-y-6 pb-20">
-                {/* 1. TOP HEADER & SYSTEM BANNER */}
-                <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-2xs border border-slate-200/90 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                {/* 1. TOP HEADER (Slim & Clean) */}
+                <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-2xs border border-slate-200/90 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div>
-                        <div className="flex items-center gap-2.5 mb-2 flex-wrap">
-                            <span className="bg-blue-50 text-blue-700 font-bold px-2.5 py-0.5 rounded-full text-xs uppercase tracking-wider border border-blue-200 flex items-center gap-1.5">
-                                <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-                                Platform Master Authority
-                            </span>
-                            <span className="flex items-center gap-1.5 text-emerald-700 text-xs font-semibold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                All Nodes Operational (99.98% SLA)
-                            </span>
-                        </div>
-                        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2.5">
-                            <span>THE INNS Centralized SaaS Ecosystem</span>
+                        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
+                            THE INNS Centralized SaaS Ecosystem
                         </h1>
-                        
-
-                        {/* Image Slideshow */}
-                        <div className="mt-4 relative rounded-xl overflow-hidden">
-                            <div className="relative h-48 w-full">
-                                {slides.map((slide, index) => (
-                                    <div
-                                        key={index}
-                                        className={`absolute inset-0 transition-opacity duration-500 ${
-                                            index === currentSlide ? 'opacity-100' : 'opacity-0'
-                                        }`}
-                                    >
-                                        <img
-                                            src={slide.image}
-                                            alt={slide.title}
-                                            className="w-full h-full object-cover"
-                                        />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent">
-                                            <div className="absolute bottom-4 left-4 text-white">
-                                                <h3 className="text-lg font-bold">{slide.title}</h3>
-                                                <p className="text-sm opacity-90">{slide.description}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                                {/* Navigation Arrows */}
-                                <button
-                                    onClick={prevSlide}
-                                    className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full backdrop-blur-sm transition"
-                                >
-                                    <ChevronLeft className="w-5 h-5" />
-                                </button>
-                                <button
-                                    onClick={nextSlide}
-                                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full backdrop-blur-sm transition"
-                                >
-                                    <ChevronRight className="w-5 h-5" />
-                                </button>
-                                {/* Slide Indicators */}
-                                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-2">
-                                    {slides.map((_, index) => (
-                                        <button
-                                            key={index}
-                                            onClick={() => setCurrentSlide(index)}
-                                            className={`w-2 h-2 rounded-full transition-all ${
-                                                index === currentSlide ? 'bg-white' : 'bg-white/50'
-                                            }`}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
                     {/* Top Action Buttons */}
-                    <div className="flex items-center gap-2.5 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap">
                         <button
                             type="button"
                             onClick={() => setShowOnboardModal(true)}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition cursor-pointer"
+                            className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition cursor-pointer"
                         >
-                            
                             <span>Onboard Hotel</span>
                         </button>
                         <button
@@ -959,25 +887,22 @@ export default function SaasAdminDashboard({
                                 smsForm.setData('tenant_id', tenants[0]?.id || '');
                                 setShowIssueSmsModal(true);
                             }}
-                            className="inline-flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm rounded-xl border border-slate-200 transition cursor-pointer"
+                            className="inline-flex items-center px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm rounded-xl border border-slate-200 transition cursor-pointer"
                         >
-                            <Coins className="w-4 h-4 text-amber-600" />
                             <span>Issue SMS</span>
                         </button>
                         <button
                             type="button"
                             onClick={() => setShowCreateInvoiceModal(true)}
-                            className="inline-flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm rounded-xl border border-slate-200 transition cursor-pointer"
+                            className="inline-flex items-center px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm rounded-xl border border-slate-200 transition cursor-pointer"
                         >
-                            <Receipt className="w-4 h-4 text-emerald-600" />
                             <span>New Invoice</span>
                         </button>
                         <button
                             type="button"
                             onClick={() => setShowNoticeModal(true)}
-                            className="inline-flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm rounded-xl border border-slate-200 transition cursor-pointer"
+                            className="inline-flex items-center px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm rounded-xl border border-slate-200 transition cursor-pointer"
                         >
-                            <Bell className="w-4 h-4 text-indigo-600" />
                             <span>Broadcast</span>
                         </button>
                     </div>
@@ -1103,58 +1028,414 @@ export default function SaasAdminDashboard({
                     </div>
                 </div>
 
-                {/* 3. SUB-NAVIGATION TABS */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-1.5 shadow-2xs overflow-x-auto">
-                    <div className="flex items-center gap-1 min-w-max">
-                        {[
-                            { key: 'overview', label: 'Dashboard Overview', icon: Home },
-                            { key: 'tenants', label: 'Tenant Management', icon: Building2 },
-                            { key: 'subscriptions', label: 'Subscriptions', icon: CreditCard },
-                            { key: 'billing', label: 'Billing & Invoices', icon: Receipt },
-                            { key: 'contracts', label: 'Legal & Contracts', icon: FileCheck },
-                            { key: 'sms', label: 'Financial SMS', icon: MessageSquareText },
-                            { key: 'whatsapp', label: 'WhatsApp Gateway', icon: Phone },
-                            { key: 'users', label: 'Users & Roles', icon: ShieldCheck },
-                            { key: 'cms_landing', label: 'Website & CMS', icon: Globe },
-                            { key: 'marketing', label: 'Marketing & Demos', icon: Sparkles },
-                            { key: 'notices', label: 'Notices & Alerts', icon: Bell },
-                            { key: 'support', label: 'Support Desk', icon: HelpCircle },
-                            { key: 'system', label: 'System Admin', icon: Settings },
-                        ].map((tab) => {
-                            const Icon = tab.icon;
-                            const isActive =
-                                activeTab === tab.key ||
-                                (tab.key === 'subscriptions' && activeTab === 'plans') ||
-                                (tab.key === 'sms' && (activeTab === 'sms_wallets' || activeTab === 'sms_issue' || activeTab === 'sms_provider')) ||
-                                (tab.key === 'whatsapp' && (activeTab === 'whatsapp_templates' || activeTab === 'whatsapp_logs')) ||
-                                (tab.key === 'users' && (activeTab === 'roles' || activeTab === 'users')) ||
-                                (tab.key === 'cms_landing' && (activeTab === 'cms_landing' || activeTab === 'cms_pricing' || activeTab === 'cms_faqs')) ||
-                                (tab.key === 'marketing' && (activeTab === 'marketing' || activeTab === 'demos' || activeTab === 'funnel')) ||
-                                (tab.key === 'notices' && (activeTab === 'notices' || activeTab === 'system_alerts')) ||
-                                (tab.key === 'support' && activeTab === 'support');
-                            return (
-                                <button
-                                    key={tab.key}
-                                    type="button"
-                                    onClick={() => handleSwitchTab(tab.key)}
-                                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-                                        isActive
-                                            ? 'bg-blue-600 text-white shadow-xs'
-                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                                    }`}
-                                >
-                                    <Icon className="w-3.5 h-3.5" />
-                                    <span>{tab.label}</span>
-                                </button>
-                            );
-                        })}
+                {/* 3. SUB-NAVIGATION TABS (Grouped & Clean) */}
+                <div className="bg-white rounded-2xl border border-slate-200 p-2 shadow-2xs space-y-2">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                        {/* Group: Core */}
+                        <div className="flex items-center bg-slate-50 p-1 rounded-xl border border-slate-200/80">
+                            {[
+                                { key: 'overview', label: 'Command Center' },
+                                { key: 'tenants', label: `Hotels (${tenants.length})` },
+                            ].map((tab) => {
+                                const isActive = activeTab === tab.key;
+                                return (
+                                    <button
+                                        key={tab.key}
+                                        type="button"
+                                        onClick={() => handleSwitchTab(tab.key)}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                                            isActive
+                                                ? 'bg-blue-600 text-white shadow-xs'
+                                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                                        }`}
+                                    >
+                                        {tab.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Group: Subscriptions & Billing */}
+                        <div className="flex items-center bg-slate-50 p-1 rounded-xl border border-slate-200/80">
+                            {[
+                                { key: 'subscriptions', label: 'Subscriptions & Plans' },
+                                { key: 'billing', label: `Invoices (${invoices.length})` },
+                                { key: 'contracts', label: `Contracts (${contracts.length})` },
+                            ].map((tab) => {
+                                const isActive =
+                                    activeTab === tab.key ||
+                                    (tab.key === 'subscriptions' && activeTab === 'plans');
+                                return (
+                                    <button
+                                        key={tab.key}
+                                        type="button"
+                                        onClick={() => handleSwitchTab(tab.key)}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                                            isActive
+                                                ? 'bg-blue-600 text-white shadow-xs'
+                                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                                        }`}
+                                    >
+                                        {tab.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Group: Messaging */}
+                        <div className="flex items-center bg-slate-50 p-1 rounded-xl border border-slate-200/80">
+                            {[
+                                { key: 'sms', label: 'Financial SMS' },
+                                { key: 'whatsapp', label: 'WhatsApp Cloud' },
+                            ].map((tab) => {
+                                const isActive =
+                                    activeTab === tab.key ||
+                                    (tab.key === 'sms' && (activeTab === 'sms_wallets' || activeTab === 'sms_issue' || activeTab === 'sms_provider')) ||
+                                    (tab.key === 'whatsapp' && (activeTab === 'whatsapp_templates' || activeTab === 'whatsapp_logs'));
+                                return (
+                                    <button
+                                        key={tab.key}
+                                        type="button"
+                                        onClick={() => handleSwitchTab(tab.key)}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                                            isActive
+                                                ? 'bg-blue-600 text-white shadow-xs'
+                                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                                        }`}
+                                    >
+                                        {tab.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Group: Website & Marketing */}
+                        <div className="flex items-center bg-slate-50 p-1 rounded-xl border border-slate-200/80">
+                            {[
+                                { key: 'cms_landing', label: 'Website & CMS' },
+                                { key: 'marketing', label: `Demos & Leads (${demo_requests.length})` },
+                            ].map((tab) => {
+                                const isActive =
+                                    activeTab === tab.key ||
+                                    (tab.key === 'cms_landing' && (activeTab === 'cms_landing' || activeTab === 'cms_pricing' || activeTab === 'cms_faqs')) ||
+                                    (tab.key === 'marketing' && (activeTab === 'marketing' || activeTab === 'demos' || activeTab === 'funnel'));
+                                return (
+                                    <button
+                                        key={tab.key}
+                                        type="button"
+                                        onClick={() => handleSwitchTab(tab.key)}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                                            isActive
+                                                ? 'bg-blue-600 text-white shadow-xs'
+                                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                                        }`}
+                                    >
+                                        {tab.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Group: Platform Admin */}
+                        <div className="flex items-center bg-slate-50 p-1 rounded-xl border border-slate-200/80">
+                            {[
+                                { key: 'notices', label: `Alerts (${notices.length})` },
+                                { key: 'support', label: `Support (${support_tickets.length})` },
+                                { key: 'users', label: 'Users & Roles' },
+                                { key: 'system', label: 'System Admin' },
+                            ].map((tab) => {
+                                const isActive =
+                                    activeTab === tab.key ||
+                                    (tab.key === 'notices' && (activeTab === 'notices' || activeTab === 'system_alerts')) ||
+                                    (tab.key === 'support' && activeTab === 'support') ||
+                                    (tab.key === 'users' && (activeTab === 'roles' || activeTab === 'users')) ||
+                                    (tab.key === 'system' && activeTab === 'system');
+                                return (
+                                    <button
+                                        key={tab.key}
+                                        type="button"
+                                        onClick={() => handleSwitchTab(tab.key)}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                                            isActive
+                                                ? 'bg-blue-600 text-white shadow-xs'
+                                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                                        }`}
+                                    >
+                                        {tab.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
 
                 {/* 4. TAB CONTENTS */}
 
-                {/* TAB 1: OVERVIEW & TENANTS LIST */}
-                {(activeTab === 'overview' || activeTab === 'tenants') && (
+                {/* TAB 1: EXECUTIVE COMMAND CENTER OVERVIEW */}
+                {activeTab === 'overview' && (
+                    <div className="space-y-6">
+                        {/* Executive Summary Cards (6 KPIs) */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5 sm:gap-4">
+                            <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Est. Platform ARR</span>
+                                <div className="text-base sm:text-lg font-black text-slate-900 mt-1 truncate">
+                                    TZS {new Intl.NumberFormat('en-TZ').format(kpis.monthly_revenue * 12)}
+                                </div>
+                                <span className="text-[10px] font-bold text-emerald-600 mt-0.5 block">Annual Run Rate</span>
+                            </div>
+
+                            <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Monthly MRR</span>
+                                <div className="text-base sm:text-lg font-black text-emerald-700 mt-1 truncate">
+                                    TZS {new Intl.NumberFormat('en-TZ').format(kpis.monthly_revenue)}
+                                </div>
+                                <span className="text-[10px] font-bold text-slate-500 mt-0.5 block">Active Recurring</span>
+                            </div>
+
+                            <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Hotels Active</span>
+                                <div className="text-base sm:text-lg font-black text-blue-700 mt-1">
+                                    {kpis.active_subscriptions} <span className="text-xs text-slate-400 font-semibold">/ {kpis.total_tenants}</span>
+                                </div>
+                                <span className="text-[10px] font-bold text-blue-600 mt-0.5 block">{kpis.trial_tenants} Trials • {kpis.suspended_tenants} Paused</span>
+                            </div>
+
+                            <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Rooms</span>
+                                <div className="text-base sm:text-lg font-black text-slate-900 mt-1">
+                                    {system_health?.total_rooms || 240}
+                                </div>
+                                <span className="text-[10px] font-bold text-slate-500 mt-0.5 block">In Network</span>
+                            </div>
+
+                            <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">SMS Master Balance</span>
+                                <div className="text-base sm:text-lg font-black text-amber-700 mt-1 truncate">
+                                    {new Intl.NumberFormat('en-TZ').format(kpis.sms_balance)}
+                                </div>
+                                <span className="text-[10px] font-bold text-slate-500 mt-0.5 block">SwalaSMS Credits</span>
+                            </div>
+
+                            <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Pending Actions</span>
+                                <div className="text-base sm:text-lg font-black text-indigo-700 mt-1">
+                                    {demo_requests.length} Leads
+                                </div>
+                                <span className="text-[10px] font-bold text-rose-600 mt-0.5 block">{support_tickets.filter((t: any) => t.status === 'open').length} Open Tickets</span>
+                            </div>
+                        </div>
+
+                        {/* Mid Section: Quick Action Launchpad & Infrastructure Cluster */}
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                            {/* Left: Quick Actions & Plan Distribution (7 Cols) */}
+                            <div className="lg:col-span-7 space-y-5">
+                                {/* Quick Actions */}
+                                <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-2xs space-y-3">
+                                    <h3 className="font-extrabold text-sm text-slate-900">Executive Quick Actions</h3>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowOnboardModal(true)}
+                                            className="p-3 rounded-xl bg-blue-50/80 hover:bg-blue-100 text-blue-800 text-left transition border border-blue-100"
+                                        >
+                                            <span className="font-bold text-xs block">+ Onboard Hotel</span>
+                                            <span className="text-[10px] text-blue-600 block mt-0.5">Setup new property</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowCreateQuotationModal(true)}
+                                            className="p-3 rounded-xl bg-emerald-50/80 hover:bg-emerald-100 text-emerald-800 text-left transition border border-emerald-100"
+                                        >
+                                            <span className="font-bold text-xs block">Create Quotation</span>
+                                            <span className="text-[10px] text-emerald-600 block mt-0.5">Pro-forma contract</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (tenants.length > 0) handleOpenIssueSms(tenants[0].id);
+                                            }}
+                                            className="p-3 rounded-xl bg-amber-50/80 hover:bg-amber-100 text-amber-800 text-left transition border border-amber-100"
+                                        >
+                                            <span className="font-bold text-xs block">Top-up SMS</span>
+                                            <span className="text-[10px] text-amber-600 block mt-0.5">Hotel credit wallet</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowNoticeModal(true)}
+                                            className="p-3 rounded-xl bg-purple-50/80 hover:bg-purple-100 text-purple-800 text-left transition border border-purple-100"
+                                        >
+                                            <span className="font-bold text-xs block">Broadcast Alert</span>
+                                            <span className="text-[10px] text-purple-600 block mt-0.5">System message to GMs</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleSwitchTab('cms_landing')}
+                                            className="p-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-left transition border border-slate-200"
+                                        >
+                                            <span className="font-bold text-xs block">Landing Hero CMS</span>
+                                            <span className="text-[10px] text-slate-500 block mt-0.5">Upload hero image</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={handleClearCache}
+                                            className="p-3 rounded-xl bg-rose-50/80 hover:bg-rose-100 text-rose-800 text-left transition border border-rose-100"
+                                        >
+                                            <span className="font-bold text-xs block">Flush System Cache</span>
+                                            <span className="text-[10px] text-rose-600 block mt-0.5">Optimize speed</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Plan Breakdown */}
+                                <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-2xs space-y-3.5">
+                                    <h3 className="font-extrabold text-sm text-slate-900">SaaS Plan Distribution</h3>
+                                    <div className="space-y-2.5">
+                                        <div>
+                                            <div className="flex items-center justify-between text-xs mb-1">
+                                                <span className="font-bold text-slate-800">Safari Pro (Multi-Branch)</span>
+                                                <span className="text-slate-500 font-semibold">{tenants.filter(t => t.plan === 'pro' || t.plan === 'safari_pro').length} Hotels</span>
+                                            </div>
+                                            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                                                <div className="h-full bg-blue-600 rounded-full" style={{ width: `${Math.max(15, (tenants.filter(t => t.plan === 'pro' || t.plan === 'safari_pro').length / Math.max(1, tenants.length)) * 100)}%` }} />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center justify-between text-xs mb-1">
+                                                <span className="font-bold text-slate-800">Luxury Enterprise</span>
+                                                <span className="text-slate-500 font-semibold">{tenants.filter(t => t.plan === 'enterprise').length} Hotels</span>
+                                            </div>
+                                            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                                                <div className="h-full bg-purple-600 rounded-full" style={{ width: `${Math.max(15, (tenants.filter(t => t.plan === 'enterprise').length / Math.max(1, tenants.length)) * 100)}%` }} />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center justify-between text-xs mb-1">
+                                                <span className="font-bold text-slate-800">Boutique Starter</span>
+                                                <span className="text-slate-500 font-semibold">{tenants.filter(t => t.plan === 'starter' || t.plan === 'boutique_starter').length} Hotels</span>
+                                            </div>
+                                            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                                                <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.max(15, (tenants.filter(t => t.plan === 'starter' || t.plan === 'boutique_starter').length / Math.max(1, tenants.length)) * 100)}%` }} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right: Infrastructure & Telephony Status (5 Cols) */}
+                            <div className="lg:col-span-5 bg-white rounded-2xl p-5 border border-slate-200/90 shadow-2xs space-y-4">
+                                <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+                                    <h3 className="font-extrabold text-sm text-slate-900">Platform Infrastructure Status</h3>
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        100% Operational
+                                    </span>
+                                </div>
+
+                                <div className="divide-y divide-slate-100 text-xs">
+                                    <div className="py-2.5 flex items-center justify-between">
+                                        <span className="text-slate-500">App Environment</span>
+                                        <span className="font-mono font-bold text-slate-900">WAMP Production Node</span>
+                                    </div>
+                                    <div className="py-2.5 flex items-center justify-between">
+                                        <span className="text-slate-500">PHP Version</span>
+                                        <span className="font-mono font-bold text-slate-900">{system_health?.php_version || 'PHP 8.3'}</span>
+                                    </div>
+                                    <div className="py-2.5 flex items-center justify-between">
+                                        <span className="text-slate-500">Laravel Framework</span>
+                                        <span className="font-mono font-bold text-slate-900">{system_health?.laravel_version || '12.0'}</span>
+                                    </div>
+                                    <div className="py-2.5 flex items-center justify-between">
+                                        <span className="text-slate-500">Database Engine</span>
+                                        <span className="font-mono font-bold text-slate-900">{system_health?.database_status || 'MySQL InnoDB'}</span>
+                                    </div>
+                                    <div className="py-2.5 flex items-center justify-between">
+                                        <span className="text-slate-500">Financial SMS Gateway</span>
+                                        <span className="font-bold text-emerald-700">SwalaSMS Active (SWALATECH)</span>
+                                    </div>
+                                    <div className="py-2.5 flex items-center justify-between">
+                                        <span className="text-slate-500">Automated Daily Backups</span>
+                                        <span className="font-semibold text-slate-700">Active (03:00 AM)</span>
+                                    </div>
+                                </div>
+
+                                <div className="pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleSwitchTab('tenants')}
+                                        className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition"
+                                    >
+                                        Go to Full Tenant Directory →
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Recent Onboarded Hotels */}
+                        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
+                            <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+                                <h3 className="font-extrabold text-sm text-slate-900">Recently Onboarded Hotel Properties</h3>
+                                <button
+                                    type="button"
+                                    onClick={() => handleSwitchTab('tenants')}
+                                    className="text-xs font-bold text-blue-600 hover:underline"
+                                >
+                                    View All ({tenants.length}) →
+                                </button>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-xs">
+                                    <thead>
+                                        <tr className="bg-slate-50/80 text-slate-500 uppercase tracking-wider font-bold text-[10px] border-b border-slate-100">
+                                            <th className="py-2.5 px-4">Hotel Group</th>
+                                            <th className="py-2.5 px-3">Plan</th>
+                                            <th className="py-2.5 px-3">Branches</th>
+                                            <th className="py-2.5 px-3">SMS Wallet</th>
+                                            <th className="py-2.5 px-3">Status</th>
+                                            <th className="py-2.5 px-4 text-right">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {tenants.slice(0, 5).map((t) => (
+                                            <tr key={t.id} className="hover:bg-slate-50/60 transition">
+                                                <td className="py-3 px-4">
+                                                    <span className="font-bold text-slate-900 block">{t.name}</span>
+                                                    <span className="text-[10px] text-slate-400 font-mono">{t.subdomain}.theinns.com</span>
+                                                </td>
+                                                <td className="py-3 px-3">
+                                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 uppercase">
+                                                        {t.plan_name || t.plan}
+                                                    </span>
+                                                </td>
+                                                <td className="py-3 px-3 font-semibold text-slate-700">
+                                                    {t.properties_count} Properties
+                                                </td>
+                                                <td className="py-3 px-3 font-mono font-bold text-slate-800">
+                                                    {new Intl.NumberFormat('en-TZ').format(t.sms_balance)} cr
+                                                </td>
+                                                <td className="py-3 px-3">
+                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${t.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+                                                        {t.is_active ? 'Active' : 'Suspended'}
+                                                    </span>
+                                                </td>
+                                                <td className="py-3 px-4 text-right">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleImpersonate(t.id, t.name)}
+                                                        className="px-2.5 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold text-xs rounded-lg transition"
+                                                    >
+                                                        Access
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* TAB 1B: DEDICATED HOTEL TENANTS DIRECTORY */}
+                {activeTab === 'tenants' && (
                     <div className="space-y-6">
                         {/* Filters and search header */}
                         <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -2352,6 +2633,53 @@ export default function SaasAdminDashboard({
                                             />
                                         </div>
                                     </div>
+
+                                    {/* HERO IMAGE UPLOAD SECTION */}
+                                    <div className="pt-2 border-t border-slate-100">
+                                        <label className="font-bold text-slate-900 block mb-1">Hero Section Showcase Image / Screenshot</label>
+                                        <p className="text-[11px] text-slate-500 mb-2.5">Upload an official screenshot or banner image to be displayed in the Hero section of the landing page.</p>
+
+                                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
+                                            {heroImagePreview ? (
+                                                <div className="relative w-28 h-20 rounded-xl overflow-hidden border border-slate-300 shadow-xs shrink-0 group bg-slate-900">
+                                                    <img src={heroImagePreview} alt="Hero Preview" className="w-full h-full object-cover" />
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleRemoveHeroImage}
+                                                        className="absolute inset-0 bg-black/70 text-white font-bold text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="w-28 h-20 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 text-[10px] shrink-0 bg-white">
+                                                    <span className="font-bold text-slate-500">No Image</span>
+                                                    <span className="text-[9px] text-slate-400">Using 3D Mockup</span>
+                                                </div>
+                                            )}
+
+                                            <div className="flex-1 space-y-1">
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={handleHeroImageChange}
+                                                    className="block w-full text-xs text-slate-500 file:mr-2.5 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
+                                                />
+                                                <div className="flex items-center justify-between text-[10px] text-slate-500 pt-0.5">
+                                                    <span>Supports PNG, JPG, WebP up to 5MB</span>
+                                                    {heroImagePreview && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleRemoveHeroImage}
+                                                            className="text-rose-600 font-bold hover:underline cursor-pointer"
+                                                        >
+                                                            Reset to 3D Stage
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div className="pt-2 flex justify-end">
                                         <button
                                             type="submit"
@@ -2383,6 +2711,25 @@ export default function SaasAdminDashboard({
                                             <span className="px-4 py-2 bg-white/10 text-white font-bold rounded-xl text-xs border border-white/20">
                                                 {liveCmsForm.data.demo_cta_text}
                                             </span>
+                                        </div>
+
+                                        {/* Dynamic Image Preview */}
+                                        <div className="mt-4 pt-3 border-t border-slate-800">
+                                            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1.5">Hero Media Status</span>
+                                            {heroImagePreview ? (
+                                                <div className="rounded-xl overflow-hidden border border-slate-700 bg-slate-900 shadow-md">
+                                                    <div className="bg-slate-800 px-2.5 py-1 flex items-center justify-between text-[9px] text-slate-400">
+                                                        <span>Custom Uploaded Hero Image</span>
+                                                        <span className="text-emerald-400 font-bold">Active</span>
+                                                    </div>
+                                                    <img src={heroImagePreview} alt="Hero Banner Preview" className="w-full h-auto max-h-36 object-cover" />
+                                                </div>
+                                            ) : (
+                                                <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-[10px] text-slate-400 flex items-center justify-between">
+                                                    <span>Dynamic 3D Multi-Device Animated Mockup</span>
+                                                    <span className="text-blue-400 font-bold">Default</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="mt-8 pt-4 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">

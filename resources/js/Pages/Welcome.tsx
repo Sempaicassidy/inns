@@ -68,9 +68,17 @@ interface WelcomeProps {
             role: string;
         };
     };
+    cms_content?: {
+        hero_badge?: string;
+        hero_title?: string;
+        hero_subtitle?: string;
+        hero_cta_text?: string;
+        demo_cta_text?: string;
+        hero_image?: string | null;
+    };
 }
 
-export default function Welcome({ auth, canLogin = true, canRegister = true, user: propUser }: WelcomeProps) {
+export default function Welcome({ auth, canLogin = true, canRegister = true, user: propUser, cms_content }: WelcomeProps) {
     const user = propUser || auth?.user;
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -379,15 +387,29 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                     {/* Badge */}
 
 
+                    {/* Badge */}
+                    {cms_content?.hero_badge && (
+                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#D4AF37]/15 text-[#B8960C] font-extrabold text-xs mb-4 border border-[#D4AF37]/30 shadow-xs">
+                            <Sparkles className="w-3.5 h-3.5" />
+                            <span>{cms_content.hero_badge}</span>
+                        </div>
+                    )}
+
                     {/* Headline */}
                     <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight max-w-5xl mx-auto leading-[1.12]">
-                        Run Your Hotel, Lodges, Airbnb & Guest House from{' '}
-                        <span className="text-[#D4AF37]">One Seamless Cloud.</span>
+                        {cms_content?.hero_title ? (
+                            <span>{cms_content.hero_title}</span>
+                        ) : (
+                            <>
+                                Run Your Hotel, Lodges, Airbnb & Guest House from{' '}
+                                <span className="text-[#D4AF37]">One Seamless Cloud.</span>
+                            </>
+                        )}
                     </h1>
 
                     {/* Subheadline */}
                     <p className="mt-6 text-base sm:text-lg lg:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
-                        Replace fragmented software with THE INNS. Unify front-desk Gantt reservations, housekeeping, independent Restaurant & Grocery POS, store inventory, and full double-entry General Ledger—crafted for boutique lodges and multi-property hotel chains.
+                        {cms_content?.hero_subtitle || 'Replace fragmented software with THE INNS. Unify front-desk Gantt reservations, housekeeping, independent Restaurant & Grocery POS, store inventory, and full double-entry General Ledger—crafted for boutique lodges and multi-property hotel chains.'}
                     </p>
 
                     {/* CTA Group */}
@@ -396,7 +418,7 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                             href={user ? route('dashboard') : route('register')}
                             className="w-full sm:w-auto px-8 py-4 bg-[#D4AF37] hover:bg-[#B8960C] text-[#1E3A5F] font-extrabold text-sm rounded-2xl shadow-xl shadow-[#D4AF37]/30 transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
                         >
-                            <span>{user ? 'Open Hotel Dashboard' : 'Start 14-Day Free Trial'}</span>
+                            <span>{user ? 'Open Hotel Dashboard' : (cms_content?.hero_cta_text || 'Start 14-Day Free Trial')}</span>
                             <ArrowRight className="w-4 h-4 stroke-[2.5]" />
                         </Link>
 
@@ -405,7 +427,7 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                             className="w-full sm:w-auto px-7 py-4 bg-[#1E3A5F] hover:bg-[#1E3A5F]/90 text-white font-bold text-sm rounded-2xl border border-[#D4AF37]/30 shadow-xs transition flex items-center justify-center gap-2"
                         >
                             <Activity className="w-4 h-4 text-white-600" />
-                            <span>Explore Live Modules</span>
+                            <span>{cms_content?.demo_cta_text || 'Explore Live Modules'}</span>
                         </a>
 
                         {/* <Link
@@ -438,8 +460,33 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                     </div>
                 </div>
 
-                {/* 4. MULTI-DEVICE 3D ANIMATED SHOWCASE (Computer, Tablet & Smartphone) */}
+                {/* 4. MULTI-DEVICE 3D ANIMATED SHOWCASE (Computer, Tablet & Smartphone) OR CUSTOM HERO IMAGE */}
                 <div id="preview" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-16">
+                    {cms_content?.hero_image ? (
+                        <div className="bg-gradient-to-b from-white via-slate-50 to-[#D4AF37]/5 rounded-3xl p-3 sm:p-5 shadow-2xl border border-slate-200/90 relative overflow-hidden group">
+                            <div className="rounded-2xl overflow-hidden border border-slate-200/90 shadow-xl bg-slate-950">
+                                <div className="bg-slate-900 px-4 py-3 flex items-center justify-between border-b border-slate-800 text-xs">
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-3 h-3 rounded-full bg-rose-500 inline-block" />
+                                        <span className="w-3 h-3 rounded-full bg-amber-500 inline-block" />
+                                        <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" />
+                                        <span className="ml-2 font-mono text-slate-400 text-xs hidden sm:inline">
+                                            app.theinns.com • Live Hospitality Management System
+                                        </span>
+                                    </div>
+                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                        Cloud Active
+                                    </span>
+                                </div>
+                                <img
+                                    src={cms_content.hero_image}
+                                    alt="THE INNS Enterprise Hospitality System"
+                                    className="w-full h-auto object-cover max-h-[720px] transition-transform duration-700 group-hover:scale-[1.01]"
+                                />
+                            </div>
+                        </div>
+                    ) : (
+                        <>
                     <style>{`
                         @keyframes floatLaptop {
                             0%, 100% { transform: translateY(0px) rotate(-0.5deg); }
@@ -760,6 +807,8 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                             </Link>
                         </div>
                     </div>
+                    </>
+                    )}
                 </div>
             </section>
 

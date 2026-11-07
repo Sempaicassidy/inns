@@ -495,7 +495,8 @@ class SaasAdminController extends Controller
         ];
 
         // 16. Live Website & CMS Content Data
-        $cmsContent = [
+        $cachedCms = cache('cms_landing_settings', []);
+        $cmsContent = array_merge([
             'hero_badge' => 'THE INNS • Centralized Hospitality OS 2026',
             'hero_title' => 'Mfumo Kamilifu wa Kisasa wa Kusimamia Mahoteli, Lodges & Restaurants',
             'hero_subtitle' => 'Dhibiti vyumba, mapokezi, mikataba ya kisheria, ankara na risiti za malipo, POS ya mgahawa, na ripoti za mapato kidijitali katika mfumo mmoja unaoaminika.',
@@ -504,6 +505,7 @@ class SaasAdminController extends Controller
             'demo_cta_text' => 'Omba Kuona Demo ya Mfumo',
             'demo_cta_phone' => '+255 744 396 220',
             'display_annual_discount' => 'Pata punguzo la 20% kwa kulipa mwaka mzima',
+            'hero_image' => null,
             'features' => [
                 ['title' => 'Front Desk & Room Rack', 'description' => 'Real-time check-ins, check-outs, and Gantt availability view.'],
                 ['title' => 'POS Restaurant & Grocery', 'description' => 'Full touchscreen ordering, kitchen tickets, and retail grocery barcode.'],
@@ -1398,9 +1400,28 @@ class SaasAdminController extends Controller
             'hero_subtitle' => 'required|string|max:500',
             'hero_cta_text' => 'required|string|max:100',
             'demo_cta_text' => 'required|string|max:100',
+            'hero_badge' => 'nullable|string|max:100',
+            'demo_cta_phone' => 'nullable|string|max:50',
+            'hero_image' => 'nullable',
         ]);
 
-        cache()->put('cms_landing_settings', $validated, now()->addMonths(6));
+        $currentSettings = cache('cms_landing_settings', []);
+
+        if ($request->hasFile('hero_image')) {
+            $file = $request->file('hero_image');
+            $filename = 'hero_' . time() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('uploads/cms'), $filename);
+            $validated['hero_image'] = '/uploads/cms/' . $filename;
+        } elseif ($request->filled('hero_image') && is_string($request->input('hero_image'))) {
+            $validated['hero_image'] = $request->input('hero_image');
+        } elseif ($request->has('remove_hero_image') && $request->boolean('remove_hero_image')) {
+            $validated['hero_image'] = null;
+        } else {
+            $validated['hero_image'] = $currentSettings['hero_image'] ?? null;
+        }
+
+        $allSettings = array_merge($currentSettings, $validated);
+        cache()->put('cms_landing_settings', $allSettings, now()->addMonths(6));
 
         return redirect()->back()->with('success', 'Website & CMS landing page content updated successfully.');
     }

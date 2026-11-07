@@ -729,17 +729,9 @@ export default function Dashboard({
                     {/* 1. Header & Filter Bar (Compact & Sleek) */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-2xs">
                         <div>
-                            <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                                <span>Overview</span>
-                                <span>•</span>
-                                <span className="text-blue-600">Executive Management</span>
-                            </div>
-                            <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 mt-0.5">
+                            <h1 className="text-lg sm:text-xl font-extrabold text-slate-900">
                                 Hotel Operations Dashboard
                             </h1>
-                            <p className="text-xs text-slate-500 mt-0.5">
-                                Business Date: <span className="font-semibold text-slate-700">{safeStats.current_business_date}</span>
-                            </p>
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">

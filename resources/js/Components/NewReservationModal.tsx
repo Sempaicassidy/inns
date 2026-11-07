@@ -90,6 +90,11 @@ export default function NewReservationModal({
     const [expandedFloors, setExpandedFloors] = useState<Record<string, boolean>>({});
     const [submitErrors, setSubmitErrors] = useState<Record<string, string>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [autoReceiptNo, setAutoReceiptNo] = useState(() => {
+        const yymm = new Date().toISOString().slice(2, 7).replace('-', '');
+        const rand = Math.floor(1000 + Math.random() * 9000);
+        return `RCT-${yymm}-${rand}`;
+    });
 
     // Dynamic Rate Plans & Meal Basis Management
     const [localRatePlans, setLocalRatePlans] = useState<RatePlan[]>(ratePlans);
@@ -112,7 +117,7 @@ export default function NewReservationModal({
     const initialRoomObj = rooms.find(r => String(r.id) === String(effectiveRoomId));
     const initialRtId = initialRoomObj?.room_type_id || initialRoomObj?.roomType?.id || roomTypes[0]?.id || '';
     const initialRpId = (localRatePlans[0]?.id || ratePlans[0]?.id) || '';
-    const initialPriceMinor = initialRoomObj?.roomType?.base_price_minor || initialRoomObj?.room_type?.base_price_minor || 35000000;
+    const initialPriceMinor = initialRoomObj?.roomType?.base_price_minor || initialRoomObj?.room_type?.base_price_minor || 0;
 
     const { data, setData, post, processing, reset, errors } = useForm({
         // Section 1: Stay & Room Details
@@ -154,7 +159,7 @@ export default function NewReservationModal({
 
         // Section 4: Billing, Payments & Receipt
         discount_minor: 0,
-        deposit: (initialPriceMinor / 100),
+        deposit: 0,
         payment_method: 'cash',
         receipt_no: '',
 
@@ -178,7 +183,7 @@ export default function NewReservationModal({
             const rObj = rooms.find(r => String(r.id) === String(effRoomId));
             const rtId = rObj?.room_type_id || rObj?.roomType?.id || rObj?.room_type?.id || roomTypes[0]?.id || '';
             const rpId = ratePlans[0]?.id || '';
-            const basePriceMinor = rObj?.roomType?.base_price_minor || rObj?.room_type?.base_price_minor || 35000000;
+            const basePriceMinor = rObj?.roomType?.base_price_minor || rObj?.room_type?.base_price_minor || 0;
 
             if (effRoomId) {
                 setSelectedRoomIds([effRoomId]);
@@ -190,11 +195,17 @@ export default function NewReservationModal({
             }
 
             const targetGuest = initialGuestId ? guests.find(g => String(g.id) === String(initialGuestId)) : null;
+            const yymm = new Date().toISOString().slice(2, 7).replace('-', '');
+            const rand = Math.floor(1000 + Math.random() * 9000);
+            const freshReceiptNo = `RCT-${yymm}-${rand}`;
+            setAutoReceiptNo(freshReceiptNo);
 
             setData(prev => ({
                 ...prev,
                 check_in: inDate,
                 check_out: outDate,
+                deposit: 0,
+                receipt_no: freshReceiptNo,
                 room_ids: effRoomId ? [effRoomId] : (prev.room_ids.length > 0 ? prev.room_ids : (rooms[0]?.id ? [rooms[0].id] : [])),
                 room_id: effRoomId || prev.room_id || (rooms[0]?.id ?? ''),
                 room_type_id: rtId || prev.room_type_id,
@@ -225,7 +236,7 @@ export default function NewReservationModal({
             const firstRoomId = selectedRoomIds[0];
             const roomObj = rooms.find(r => String(r.id) === String(firstRoomId));
             const rtId = roomObj?.room_type_id || roomObj?.roomType?.id || roomObj?.room_type?.id || roomTypes[0]?.id || '';
-            const rtPriceMinor = roomObj?.roomType?.base_price_minor || roomObj?.room_type?.base_price_minor || 35000000;
+            const rtPriceMinor = roomObj?.roomType?.base_price_minor || roomObj?.room_type?.base_price_minor || 0;
 
             setData(prev => ({
                 ...prev,
@@ -421,12 +432,13 @@ export default function NewReservationModal({
         const primaryRoom = rooms.find(r => String(r.id) === String(primaryRoomId));
         const rtId = primaryRoom?.room_type_id || primaryRoom?.roomType?.id || primaryRoom?.room_type?.id || roomTypes[0]?.id || '';
         const rpId = data.rate_plan_id || ratePlans[0]?.id || '';
-        const rtPrice = (primaryRoom?.roomType?.base_price_minor || primaryRoom?.room_type?.base_price_minor || 35000000) / 100;
+        const rtPrice = (primaryRoom?.roomType?.base_price_minor || primaryRoom?.room_type?.base_price_minor || 0) / 100;
 
         const payload: Record<string, any> = {
             ...data,
             age: data.age ? Number(data.age) : null,
             deposit: data.deposit ? Number(data.deposit) : 0,
+            receipt_no: Number(data.deposit) > 0 ? (autoReceiptNo || data.receipt_no) : null,
             guest_id: data.guest_id ? data.guest_id : null,
             room_id: primaryRoomId || null,
             room_ids: selectedRoomIds,
@@ -1274,19 +1286,29 @@ export default function NewReservationModal({
 
                                 {/* Advance Deposit / Amount Paid */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
-                                        <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
-                                        Advance Amount Paid (TZS)
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                                        <span className="flex items-center gap-1.5">
+                                            <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
+                                            Advance Amount Paid (TZS)
+                                        </span>
+                                        <span className="text-[10px] text-slate-400 font-normal">
+                                            Default: 0
+                                        </span>
                                     </label>
                                     <input
                                         type="number"
                                         min="0"
-                                        value={data.deposit}
-                                        onChange={e => setData('deposit', Number(e.target.value))}
+                                        value={data.deposit === 0 ? '' : data.deposit}
+                                        onChange={e => {
+                                            const val = e.target.value === '' ? 0 : Math.max(0, Number(e.target.value));
+                                            setData('deposit', val);
+                                        }}
                                         placeholder="0"
-                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-bold text-emerald-700"
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500"
                                     />
-                                    <span className="text-[10px] text-slate-400 mt-1 block">Enter 0 if paying upon check-out</span>
+                                    <span className="text-[10px] text-slate-400 mt-1 block">
+                                        Weka kiasi ikiwa mgeni amelipa advance (Baki ni 0 kama analipa check-out)
+                                    </span>
                                 </div>
 
                                 {/* Payment Method */}
@@ -1311,18 +1333,32 @@ export default function NewReservationModal({
 
                                 {/* Receipt Number */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
-                                        <Receipt className="w-3.5 h-3.5 text-blue-600" />
-                                        Receipt Reference #
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                                        <span className="flex items-center gap-1.5">
+                                            <Receipt className="w-3.5 h-3.5 text-blue-600" />
+                                            Receipt Reference #
+                                        </span>
+                                        <span className="text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded font-bold border border-blue-200">
+                                            Auto-Generated
+                                        </span>
                                     </label>
-                                    <input
-                                        type="text"
-                                        value={data.receipt_no}
-                                        onChange={e => setData('receipt_no', e.target.value)}
-                                        placeholder="Auto-generated if blank"
-                                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-mono font-semibold"
-                                    />
-                                    <span className="text-[10px] text-slate-400 mt-1 block">Generated automatically if left empty</span>
+                                    {Number(data.deposit) > 0 ? (
+                                        <div className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 flex items-center justify-between shadow-2xs">
+                                            <span className="text-emerald-700 font-extrabold">{autoReceiptNo}</span>
+                                            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-sans font-bold border border-emerald-200">
+                                                <Check className="w-3 h-3 text-emerald-600" /> System Locked
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <div className="w-full bg-slate-50/70 border border-slate-200/80 rounded-xl px-3 py-2 text-xs font-mono text-slate-400 flex items-center justify-between">
+                                            <span>Inatolewa akilipa advance</span>
+                                            <span className="text-[10px] text-slate-400 font-sans italic">Hakuna Advance</span>
+                                        </div>
+                                    )}
+                                    <span className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+                                        <Lock className="w-3 h-3 text-slate-400 shrink-0" />
+                                        <span>Namba ya risiti inazalishwa kiotomatiki na mfumo (Hairekebishwi na mtumiaji).</span>
+                                    </span>
                                 </div>
                             </div>
                         </div>

@@ -235,9 +235,16 @@ class ReservationController extends Controller
             $status = ! empty($validated['check_in_now']) ? 'checked_in' : 'confirmed';
 
             // Generate receipt number if advance paid
-            $receiptNo = $validated['receipt_no'] ?? null;
-            if (empty($receiptNo) && $depositMinor > 0) {
-                $receiptNo = sprintf('RCT-%s-%04d', now()->format('ym'), rand(1000, 9999));
+            $receiptNo = null;
+            if ($depositMinor > 0) {
+                $candidate = ! empty($validated['receipt_no']) && str_starts_with($validated['receipt_no'], 'RCT-')
+                    ? $validated['receipt_no']
+                    : sprintf('RCT-%s-%04d', now()->format('ym'), rand(1000, 9999));
+
+                while (Reservation::where('receipt_no', $candidate)->where('property_id', $property->id)->exists()) {
+                    $candidate = sprintf('RCT-%s-%04d', now()->format('ym'), rand(1000, 9999));
+                }
+                $receiptNo = $candidate;
             }
 
             $reservation = Reservation::create([
@@ -426,7 +433,7 @@ class ReservationController extends Controller
                     'rate_plan_id' => RatePlan::first()?->id ?? '',
                     'check_in' => $reservation->check_in,
                     'check_out' => $reservation->check_out,
-                    'rate_price_minor' => $room->roomType?->base_price_minor ?? 35000000,
+                    'rate_price_minor' => $room->roomType?->base_price_minor ?? 0,
                     'status' => 'checked_in',
                 ]);
             } else {

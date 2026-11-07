@@ -547,7 +547,7 @@ class SaasAdminController extends Controller
                     'answer' => 'Mfumo unakupa siku 5 za ziada (Grace Period) ukiendelea kutumia mfumo huku ukikukumbusha. Ukilipa, huduma inajifungua yenyewe papo hapo bila kupoteza data.',
                 ],
             ],
-        ];
+        ], is_array($cachedCms) ? $cachedCms : []);
 
         // 17. Marketing Campaigns, Promo Codes & Funnel Analytics
         $marketingData = [

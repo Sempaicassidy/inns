@@ -448,50 +448,56 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
             </div>
 
             {/* 3. HERO SECTION WITH BACKGROUND SLIDESHOW */}
-            <section className="relative overflow-hidden pt-10 pb-20 lg:pt-16 lg:pb-28">
-                {/* Background Slideshow (Nyuma ya Maandishi) */}
-                <div className="absolute inset-0 -z-10 overflow-hidden">
-                    {heroSlides.map((slide: any, idx: number) => (
-                        <div
-                            key={idx}
-                            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-                                idx === heroSlideIndex ? 'opacity-100 scale-100' : 'opacity-0 scale-105 pointer-events-none'
-                            }`}
-                            style={{ transition: 'opacity 1s ease-in-out, transform 8s ease-out' }}
-                        >
-                            <img
-                                src={slide.image}
-                                onError={(e) => {
-                                    const target = e.currentTarget;
-                                    if (slide.image && slide.image.startsWith('/uploads/') && !target.src.includes('/inns/')) {
-                                        target.src = '/inns' + slide.image;
-                                    }
-                                }}
-                                alt=""
-                                className="w-full h-full object-cover"
-                            />
-                            {/* Sophisticated gradient overlay so text is 100% crisp and readable */}
-                            <div className="absolute inset-0 bg-gradient-to-b from-white/95 via-white/88 to-white" />
-                        </div>
-                    ))}
+            <section className="relative isolate overflow-hidden pt-10 pb-20 lg:pt-16 lg:pb-28">
+                {/* Background Slideshow (Nyuma ya Maandishi - Explicitly in front of body canvas) */}
+                <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+                    {heroSlides.map((slide: any, idx: number) => {
+                        const resolvedSrc = slide.image?.startsWith('/uploads/') && typeof window !== 'undefined' && window.location.pathname.startsWith('/inns')
+                            ? '/inns' + slide.image
+                            : slide.image;
+
+                        return (
+                            <div
+                                key={slide.id || idx}
+                                className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                                    idx === heroSlideIndex ? 'opacity-100 scale-100' : 'opacity-0 scale-105 pointer-events-none'
+                                }`}
+                                style={{ transition: 'opacity 1s ease-in-out, transform 8s ease-out' }}
+                            >
+                                <img
+                                    src={resolvedSrc}
+                                    onError={(e) => {
+                                        const target = e.currentTarget;
+                                        if (slide.image && !target.src.includes('/inns/')) {
+                                            target.src = '/inns' + (slide.image.startsWith('/') ? slide.image : '/' + slide.image);
+                                        }
+                                    }}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                />
+                                {/* Balanced overlay gradient: Keeps the image clearly visible while guaranteeing crisp text readability */}
+                                <div className="absolute inset-0 bg-gradient-to-b from-white/60 via-white/35 to-white" />
+                            </div>
+                        );
+                    })}
                     {/* Subtle warm glow overlay */}
-                    <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[450px] bg-[#D4AF37]/12 blur-[120px] rounded-full pointer-events-none" />
+                    <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[450px] bg-[#D4AF37]/15 blur-[120px] rounded-full pointer-events-none" />
                 </div>
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
                     {/* Badge (Dynamic per slide) */}
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#D4AF37]/20 text-[#8c7003] font-extrabold text-xs mb-4 border border-[#D4AF37]/40 shadow-xs transition-all duration-500">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/90 backdrop-blur-md text-[#8c7003] font-black text-xs mb-4 border border-[#D4AF37]/50 shadow-xs transition-all duration-500">
                         <Sparkles className="w-3.5 h-3.5" />
                         <span>{currentSlide.badge}</span>
                     </div>
 
                     {/* Headline (Dynamic per slide) */}
-                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight max-w-5xl mx-auto leading-[1.14] transition-all duration-500 min-h-[120px] sm:min-h-[140px] flex items-center justify-center">
+                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-950 tracking-tight max-w-5xl mx-auto leading-[1.14] transition-all duration-500 min-h-[120px] sm:min-h-[140px] flex items-center justify-center drop-shadow-xs">
                         <span>{currentSlide.title}</span>
                     </h1>
 
                     {/* Subheadline (Dynamic per slide) */}
-                    <p className="mt-6 text-base sm:text-lg lg:text-xl text-slate-700 font-medium max-w-3xl mx-auto leading-relaxed transition-all duration-500 min-h-[60px] flex items-center justify-center">
+                    <p className="mt-6 text-base sm:text-lg lg:text-xl text-slate-800 font-semibold max-w-3xl mx-auto leading-relaxed transition-all duration-500 min-h-[60px] flex items-center justify-center drop-shadow-2xs">
                         <span>{currentSlide.subtitle}</span>
                     </p>
 

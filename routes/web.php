@@ -147,6 +147,7 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
         Route::get('/housekeeping/status', [HousekeepingController::class, 'index'])->name('housekeeping.status');
         Route::post('/housekeeping/rooms', [HousekeepingController::class, 'storeRoom'])->name('housekeeping.rooms.store');
         Route::post('/housekeeping/rooms/{room}/status', [HousekeepingController::class, 'updateRoomStatus'])->name('housekeeping.rooms.status');
+        Route::delete('/housekeeping/rooms/{room}', [HousekeepingController::class, 'destroyRoom'])->name('housekeeping.rooms.destroy');
         Route::post('/housekeeping/tasks', [HousekeepingController::class, 'createTask'])->name('housekeeping.tasks.store');
         Route::post('/housekeeping/tasks/{task}/status', [HousekeepingController::class, 'updateTaskStatus'])->name('housekeeping.tasks.status');
     });

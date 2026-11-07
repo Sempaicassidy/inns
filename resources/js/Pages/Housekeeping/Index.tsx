@@ -292,6 +292,21 @@ export default function HousekeepingIndex({
         }
     };
 
+    const handleDeleteRoom = (room: Room) => {
+        if (room.status_occupancy === 'occupied') {
+            alert(`Cannot delete Room "${room.room_number}" because it is currently OCCUPIED. Please check out the guest or reassign them to another room first.`);
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to permanently delete Room "${room.room_number}" from this lodge? This action will remove the room from the housekeeping list.`)) {
+            return;
+        }
+
+        router.delete(route('housekeeping.rooms.destroy', room.id), {
+            preserveScroll: true,
+        });
+    };
+
     // Form for Add Room
     const {
         data: roomFormData,
@@ -997,7 +1012,7 @@ export default function HousekeepingIndex({
                                                             <span className="text-slate-400 text-[11px]">-</span>
                                                         )}
                                                     </td>
-                                                    <td className="py-3 px-4 text-right space-x-1.5">
+                                                    <td className="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
                                                         {isDirty ? (
                                                             <button
                                                                 onClick={() => handleRoomStatusChange(room.id, 'clean')}
@@ -1018,6 +1033,14 @@ export default function HousekeepingIndex({
                                                             className="px-2 py-1 bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 rounded-md text-[11px] font-bold transition"
                                                         >
                                                             Assign Task
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDeleteRoom(room)}
+                                                            title={`Delete Room ${room.room_number}`}
+                                                            className="p-1 bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 rounded-md text-[11px] font-bold transition inline-flex items-center cursor-pointer"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
                                                         </button>
                                                     </td>
                                                 </tr>

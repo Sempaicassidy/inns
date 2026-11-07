@@ -20,6 +20,7 @@ import {
     Search,
     Shield,
     Sparkles,
+    Trash2,
     User,
     UserCheck,
     Users,
@@ -112,6 +113,35 @@ export default function RoomArrangementGrid({
     const [maintenanceNotes, setMaintenanceNotes] = useState<string>('');
     const [submittingMaintenance, setSubmittingMaintenance] = useState(false);
     const [maintenanceSuccess, setMaintenanceSuccess] = useState<string | null>(null);
+
+    // Room Deletion State
+    const [isDeletingRoom, setIsDeletingRoom] = useState(false);
+
+    const handleDeleteRoom = (room: GridRoomItem) => {
+        if (room.status_occupancy === 'occupied') {
+            alert(`Cannot delete Room "${room.room_number}" because it is currently OCCUPIED. Please check out the guest or reassign them to another room first.`);
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to permanently delete Room "${room.room_number}" from this lodge? This action will remove the room from the room arrangement grid.`)) {
+            return;
+        }
+
+        setIsDeletingRoom(true);
+        router.delete(route('housekeeping.rooms.destroy', room.id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                setActiveRoom(null);
+                setIsDeletingRoom(false);
+            },
+            onError: () => {
+                setIsDeletingRoom(false);
+            },
+            onFinish: () => {
+                setIsDeletingRoom(false);
+            },
+        });
+    };
 
     const formatTsh = (amountMinor: number) => {
         return `TSh ${Number(amountMinor || 0).toLocaleString()}`;
@@ -535,6 +565,19 @@ export default function RoomArrangementGrid({
                                             : ''
                                     }`}
                                 >
+                                    {/* Quick Delete Button on Card Hover */}
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteRoom(room);
+                                        }}
+                                        title={`Delete Room ${room.room_number}`}
+                                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-white/90 hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200/60 shadow-xs transition-opacity duration-150 opacity-0 group-hover:opacity-100 cursor-pointer z-10"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+
                                     {/* 1. Top Icon matching Image 2 */}
                                     <div className="pt-1 flex items-center justify-center transition-transform duration-200 group-hover:scale-110">
                                         {isMaintenance ? (
@@ -824,6 +867,19 @@ export default function RoomArrangementGrid({
                                         <span>Assign Cleaning Task</span>
                                     </button>
                                 )}
+
+                                {/* Delete Room (Manager / Owner Control) */}
+                                <div className="pt-2 border-t border-slate-100">
+                                    <button
+                                        type="button"
+                                        disabled={isDeletingRoom}
+                                        onClick={() => handleDeleteRoom(activeRoom)}
+                                        className="w-full py-2.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                                        <span>{isDeletingRoom ? 'Deleting Room...' : `Delete Room ${activeRoom.room_number}`}</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -242,6 +242,51 @@ class HousekeepingController extends Controller
         return redirect()->back()->with('success', "Room {$validated['room_number']} added successfully.");
     }
 
+    /**
+     * Delete a room from the property/lodge.
+     */
+    public function destroyRoom(Request $request, Room $room): RedirectResponse
+    {
+        $user = $request->user();
+
+        // 1. Authorization: General Manager, Manager, Owner, or Super Admin
+        $canDelete = $user->isSuperAdmin()
+            || session()->has('impersonating_original_superadmin_id')
+            || in_array($user->role, ['general_manager', 'manager', 'owner', 'admin'])
+            || in_array($user->active_role, ['general_manager', 'manager', 'owner', 'admin']);
+
+        if (!$canDelete) {
+            return redirect()->back()->with('error', 'Only General Managers or Property Owners have permission to delete rooms.');
+        }
+
+        // 2. Safety Check: Occupied room or active stay
+        if ($room->status_occupancy === 'occupied') {
+            return redirect()->back()->with('error', "Cannot delete Room {$room->room_number} because it is currently marked as OCCUPIED. Please check out the guest or update the room status first.");
+        }
+
+        $hasActiveStay = $room->stays()->whereNull('checked_out_at')->exists();
+        if ($hasActiveStay) {
+            return redirect()->back()->with('error', "Cannot delete Room {$room->room_number} because a guest is currently checked in. Please check out the guest first.");
+        }
+
+        // 3. Safety Check: Active reservations for today or future
+        $hasActiveReservations = $room->reservationRooms()
+            ->whereHas('reservation', function ($q) {
+                $q->whereIn('status', ['confirmed', 'checked_in'])
+                  ->where('check_out', '>=', now()->toDateString());
+            })
+            ->exists();
+
+        if ($hasActiveReservations) {
+            return redirect()->back()->with('error', "Cannot delete Room {$room->room_number} because it has active upcoming reservations. Please reassign or cancel those reservations first.");
+        }
+
+        $roomNumber = $room->room_number;
+        $room->delete(); // Soft-deleted safely
+
+        return redirect()->back()->with('success', "Room {$roomNumber} has been deleted successfully.");
+    }
+
     public function updateRoomStatus(Request $request, Room $room): RedirectResponse
     {
         $validated = $request->validate([

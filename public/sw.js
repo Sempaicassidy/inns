@@ -1,9 +1,13 @@
-const CACHE_NAME = 'the-inns-pwa-v6';
-const STATIC_ASSETS = [
+const CACHE_NAME = 'the-inns-pwa-v8';
+const OFFLINE_URL = './offline.html';
+
+const STATIC_PRECACHE = [
     './favicon.png',
     './favicon.ico',
     './apple-touch-icon.png',
+    './logo.png',
     './images/logo.png',
+    './offline.html',
     './pwa-icons/icon-192x192.png',
     './pwa-icons/icon-512x512.png',
     './pwa-icons/maskable-icon-192x192.png'
@@ -14,9 +18,9 @@ self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             return Promise.all(
-                STATIC_ASSETS.map((asset) => {
+                STATIC_PRECACHE.map((asset) => {
                     return cache.add(asset).catch((err) => {
-                        console.warn('[SW] Non-fatal asset cache error:', asset, err);
+                        console.warn('[SW] Non-fatal precache error:', asset, err);
                     });
                 })
             );
@@ -25,83 +29,145 @@ self.addEventListener('install', (event) => {
     self.skipWaiting();
 });
 
-// Activate event: purge outdated caches immediately
+// Activate event: purge outdated caches immediately and claim clients
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((keys) => {
             return Promise.all(
-                keys.map((key) => caches.delete(key))
+                keys.map((key) => {
+                    if (key !== CACHE_NAME) {
+                        return caches.delete(key);
+                    }
+                })
             );
         }).then(() => self.clients.claim())
     );
 });
 
-// Fetch event
+// Fetch event: smart caching router
 self.addEventListener('fetch', (event) => {
-    const url = new URL(event.request.url);
+    const req = event.request;
+    const url = new URL(req.url);
 
-    // Only handle GET HTTP requests
-    if (event.request.method !== 'GET' || !url.protocol.startsWith('http')) {
-        return;
-    }
+    // Only intercept HTTP/HTTPS requests
+    if (!url.protocol.startsWith('http')) return;
 
-    // Never intercept or cache landing, html pages, or vite build assets to avoid stale UI
-    if (
-        url.pathname === '/' || 
-        url.pathname.endsWith('/public') || 
-        url.pathname.endsWith('/public/') ||
-        url.pathname.endsWith('/index.php') ||
-        url.pathname.includes('/build/')
-    ) {
-        return;
-    }
-
-    // Static assets: cache-first with network fallback
-    if (
-        url.pathname.includes('/pwa-icons/') ||
-        url.pathname.includes('/images/') ||
-        url.pathname.endsWith('.png') ||
-        url.pathname.endsWith('.ico') ||
-        url.pathname.endsWith('.woff2')
-    ) {
+    // 1. Navigation requests (HTML pages like /dashboard, /calendar, /housekeeping, /reservations)
+    if (req.mode === 'navigate') {
         event.respondWith(
-            caches.match(event.request).then((cached) => {
-                if (cached) {
-                    return cached;
-                }
-                return fetch(event.request).then((res) => {
-                    if (res && res.status === 200) {
-                        const copy = res.clone();
-                        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+            fetch(req)
+                .then((networkRes) => {
+                    if (networkRes && networkRes.status === 200) {
+                        const copy = networkRes.clone();
+                        caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
                     }
-                    return res;
-                }).catch(() => cached);
+                    return networkRes;
+                })
+                .catch(() => {
+                    // Offline fallback: check if requested page was cached, else serve offline.html
+                    return caches.match(req).then((cached) => {
+                        if (cached) return cached;
+                        return caches.match(OFFLINE_URL);
+                    });
+                })
+        );
+        return;
+    }
+
+    // Only handle GET requests for remaining caching logic
+    if (req.method !== 'GET') {
+        return;
+    }
+
+    // 2. Vite Build Assets (CSS, JS, Web Workers, Images in /build/)
+    // Strategy: Stale-While-Revalidate (Instant offline response + background cache update)
+    if (url.pathname.includes('/build/')) {
+        event.respondWith(
+            caches.open(CACHE_NAME).then((cache) => {
+                return cache.match(req).then((cachedRes) => {
+                    const fetchPromise = fetch(req)
+                        .then((networkRes) => {
+                            if (networkRes && networkRes.status === 200) {
+                                cache.put(req, networkRes.clone());
+                            }
+                            return networkRes;
+                        })
+                        .catch(() => cachedRes);
+
+                    // Return cached asset immediately if available, else wait for network
+                    return cachedRes || fetchPromise;
+                });
             })
         );
         return;
     }
 
-    // Navigation & API requests: network-first, fallback to cache if offline
+    // 3. Static Assets & Images (logo, favicon, PWA icons, Google Fonts, Bootstrap CDN)
+    if (
+        url.pathname.includes('/pwa-icons/') ||
+        url.pathname.includes('/images/') ||
+        url.pathname.endsWith('.png') ||
+        url.pathname.endsWith('.jpg') ||
+        url.pathname.endsWith('.jpeg') ||
+        url.pathname.endsWith('.svg') ||
+        url.pathname.endsWith('.ico') ||
+        url.pathname.endsWith('.woff2') ||
+        url.pathname.endsWith('.woff') ||
+        url.hostname.includes('fonts.googleapis.com') ||
+        url.hostname.includes('fonts.gstatic.com') ||
+        url.hostname.includes('cdn.jsdelivr.net')
+    ) {
+        event.respondWith(
+            caches.match(req).then((cached) => {
+                if (cached) return cached;
+
+                return fetch(req)
+                    .then((networkRes) => {
+                        if (networkRes && networkRes.status === 200) {
+                            const copy = networkRes.clone();
+                            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+                        }
+                        return networkRes;
+                    })
+                    .catch(() => cached);
+            })
+        );
+        return;
+    }
+
+    // 4. Default GET requests: Network first with cache fallback
     event.respondWith(
-        fetch(event.request)
+        fetch(req)
             .then((networkRes) => {
                 if (networkRes && networkRes.status === 200 && networkRes.type === 'basic') {
                     const copy = networkRes.clone();
-                    caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+                    caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
                 }
                 return networkRes;
             })
             .catch(() => {
-                return caches.match(event.request);
+                return caches.match(req);
             })
     );
+});
+
+// Background Sync Event (when connection is re-established)
+self.addEventListener('sync', (event) => {
+    if (event.tag === 'the-inns-sync-queue' || event.tag === 'the-inns-offline-sync') {
+        event.waitUntil(
+            self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+                clients.forEach((client) => {
+                    client.postMessage({ type: 'TRIGGER_OFFLINE_SYNC' });
+                });
+            })
+        );
+    }
 });
 
 // ============================================================
 // PWA NOTIFICATION POPUP HANDLERS
 // ============================================================
 
-// Listen for message events from client to display native PWA notification popup
 self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
         const title = event.data.title || 'THE INNS Notification';

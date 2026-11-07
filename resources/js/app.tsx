@@ -54,6 +54,13 @@ router.on('navigate', (event) => {
     }
 });
 
+router.on('exception', (event) => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        event.preventDefault();
+        console.warn('[THE INNS PWA] Network exception suppressed in offline mode.');
+    }
+});
+
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) =>

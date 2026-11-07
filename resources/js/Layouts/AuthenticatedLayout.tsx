@@ -3,6 +3,7 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import PwaInstallButton from '@/Components/PwaInstallButton';
 import PwaNotificationManager from '@/Components/PwaNotificationManager';
+import OfflineSyncManager from '@/Components/OfflineSyncManager';
 import {
     Activity,
     ArrowDownRight,
@@ -952,6 +953,7 @@ export default function AuthenticatedLayout({
     return (
         <div className="min-h-screen bg-slate-50/70 text-slate-900 flex flex-col md:flex-row font-sans antialiased">
             <PwaNotificationManager />
+            <OfflineSyncManager />
             {/* MOBILE TOP BAR */}
             <div className="md:hidden sticky top-0 z-50 bg-[#1E3A5F] border-b border-[#D4AF37]/30 px-4 h-14 flex items-center justify-between shadow-xs">
                 <button

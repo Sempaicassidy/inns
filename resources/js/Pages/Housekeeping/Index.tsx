@@ -334,13 +334,55 @@ export default function HousekeepingIndex({
         if (newOccupancy) {
             payload.status_occupancy = newOccupancy;
         }
+
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+            import('@/Services/offlineSync').then(({ default: offlineSync }) => {
+                const targetRoom = rooms.find((r) => r.id === roomId);
+                offlineSync.queueOfflineAction({
+                    url: route('housekeeping.rooms.status', roomId),
+                    method: 'POST',
+                    data: payload,
+                    title: `Update Room ${targetRoom?.room_number || ''} to ${newHkStatus.toUpperCase()}`,
+                    module: 'housekeeping',
+                });
+            });
+            return;
+        }
+
         router.post(route('housekeeping.rooms.status', roomId), payload, {
             preserveScroll: true,
+            onError: () => {
+                if (typeof navigator !== 'undefined' && !navigator.onLine) {
+                    import('@/Services/offlineSync').then(({ default: offlineSync }) => {
+                        const targetRoom = rooms.find((r) => r.id === roomId);
+                        offlineSync.queueOfflineAction({
+                            url: route('housekeeping.rooms.status', roomId),
+                            method: 'POST',
+                            data: payload,
+                            title: `Update Room ${targetRoom?.room_number || ''} to ${newHkStatus.toUpperCase()}`,
+                            module: 'housekeeping',
+                        });
+                    });
+                }
+            },
         });
     };
 
     // Task status change
     const handleTaskStatusChange = (taskId: string, newStatus: string) => {
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+            import('@/Services/offlineSync').then(({ default: offlineSync }) => {
+                offlineSync.queueOfflineAction({
+                    url: route('housekeeping.tasks.status', taskId),
+                    method: 'POST',
+                    data: { status: newStatus },
+                    title: `Housekeeping Task Status: ${newStatus.toUpperCase()}`,
+                    module: 'housekeeping',
+                });
+            });
+            return;
+        }
+
         router.post(
             route('housekeeping.tasks.status', taskId),
             { status: newStatus },
@@ -383,6 +425,23 @@ export default function HousekeepingIndex({
 
     const submitTask = (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+            import('@/Services/offlineSync').then(({ default: offlineSync }) => {
+                const targetRoom = rooms.find((r) => r.id === taskData.room_id);
+                offlineSync.queueOfflineAction({
+                    url: route('housekeeping.tasks.store'),
+                    method: 'POST',
+                    data: taskData,
+                    title: `Assign Cleaning Task: Room ${targetRoom?.room_number || ''}`,
+                    module: 'housekeeping',
+                });
+                setIsAssignTaskModalOpen(false);
+                resetTask();
+            });
+            return;
+        }
+
         postTask(route('housekeeping.tasks.store'), {
             onSuccess: () => {
                 setIsAssignTaskModalOpen(false);

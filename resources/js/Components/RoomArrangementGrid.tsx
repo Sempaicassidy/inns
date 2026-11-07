@@ -143,6 +143,26 @@ export default function RoomArrangementGrid({
                 setSubmittingMaintenance(false);
             }, 1200);
         } else {
+            if (typeof navigator !== 'undefined' && !navigator.onLine) {
+                import('@/Services/offlineSync').then(({ default: offlineSync }) => {
+                    offlineSync.queueOfflineAction({
+                        url: route('housekeeping.rooms.status', maintenanceRoomId),
+                        method: 'POST',
+                        data: { status_hk: maintenanceStatusType },
+                        title: `Maintenance: Room ${targetRoom?.room_number || ''} (${maintenanceStatusType})`,
+                        module: 'housekeeping',
+                    });
+                    setMaintenanceSuccess(`Room ${targetRoom?.room_number || ''} queued locally (Offline Mode). Maintenance requested!`);
+                    setTimeout(() => {
+                        setMaintenanceSuccess(null);
+                        setIsMaintenanceModalOpen(false);
+                        setMaintenanceNotes('');
+                        setSubmittingMaintenance(false);
+                    }, 1200);
+                });
+                return;
+            }
+
             router.post(route('housekeeping.rooms.status', maintenanceRoomId), {
                 status_hk: maintenanceStatusType,
             }, {

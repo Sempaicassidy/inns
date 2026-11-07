@@ -453,6 +453,24 @@ export default function NewReservationModal({
         setIsSubmitting(true);
         setSubmitErrors({});
 
+        // Offline Data Collection Mode: If disconnected, store into IndexedDB offline queue
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+            import('@/Services/offlineSync').then(({ default: offlineSync }) => {
+                const guestName = `${data.first_name || ''} ${data.last_name || ''}`.trim() || 'New Guest';
+                offlineSync.queueOfflineAction({
+                    url: route('reservations.store'),
+                    method: 'POST',
+                    data: payload,
+                    title: `Register Guest: ${guestName} (Room ${primaryRoom?.room_number || 'Unassigned'})`,
+                    module: 'reservation',
+                });
+                setIsSubmitting(false);
+                reset();
+                onClose();
+            });
+            return;
+        }
+
         router.post(route('reservations.store'), payload, {
             preserveScroll: true,
             onSuccess: () => {
@@ -462,6 +480,21 @@ export default function NewReservationModal({
             },
             onError: (errs) => {
                 setIsSubmitting(false);
+                if (typeof navigator !== 'undefined' && !navigator.onLine) {
+                    import('@/Services/offlineSync').then(({ default: offlineSync }) => {
+                        const guestName = `${data.first_name || ''} ${data.last_name || ''}`.trim() || 'New Guest';
+                        offlineSync.queueOfflineAction({
+                            url: route('reservations.store'),
+                            method: 'POST',
+                            data: payload,
+                            title: `Register Guest: ${guestName} (Room ${primaryRoom?.room_number || 'Unassigned'})`,
+                            module: 'reservation',
+                        });
+                        reset();
+                        onClose();
+                    });
+                    return;
+                }
                 setSubmitErrors(errs);
             },
             onFinish: () => {

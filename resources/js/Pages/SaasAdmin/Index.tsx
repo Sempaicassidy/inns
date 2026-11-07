@@ -3070,24 +3070,24 @@ export default function SaasAdminDashboard({
                                                                 className="w-full h-full object-cover"
                                                             />
                                                             {/* Exact Soft Overlay Gradient from Welcome.tsx */}
-                                                            <div className="absolute inset-0 bg-gradient-to-b from-white/95 via-white/88 to-white" />
+                                                            <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-white/15 to-white/65" />
                                                         </div>
 
                                                         {/* Simulated Live Content */}
                                                         <div className="space-y-3.5 text-center relative z-10 my-auto">
                                                             {/* Badge */}
-                                                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#D4AF37]/20 text-[#8c7003] font-black text-[10px] border border-[#D4AF37]/40 shadow-xs">
+                                                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/95 backdrop-blur-md text-[#8c7003] font-black text-[10px] border border-[#D4AF37]/50 shadow-xs">
                                                                 <Sparkles className="w-3 h-3" />
                                                                 <span>{currentPreview.badge || 'THE INNS • OS'}</span>
                                                             </div>
 
                                                             {/* Headline */}
-                                                            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-snug">
+                                                            <h2 className="text-xl sm:text-2xl font-black text-slate-950 tracking-tight leading-snug drop-shadow-[0_2px_8px_rgba(255,255,255,0.9)]">
                                                                 {currentPreview.title || 'Slide Headline'}
                                                             </h2>
 
                                                             {/* Subtitle */}
-                                                            <p className="text-xs text-slate-700 font-medium leading-relaxed max-w-sm mx-auto">
+                                                            <p className="text-xs text-slate-900 font-bold leading-relaxed max-w-sm mx-auto drop-shadow-[0_1px_6px_rgba(255,255,255,0.9)]">
                                                                 {currentPreview.subtitle || 'Slide Subtitle'}
                                                             </p>
 

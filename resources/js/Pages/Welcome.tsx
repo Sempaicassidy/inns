@@ -475,29 +475,27 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                                     alt=""
                                     className="w-full h-full object-cover"
                                 />
-                                {/* Balanced overlay gradient: Keeps the image clearly visible while guaranteeing crisp text readability */}
-                                <div className="absolute inset-0 bg-gradient-to-b from-white/60 via-white/35 to-white" />
+                                {/* Tuned overlay: Not too faint, not glaring - balanced photo visibility with crisp text */}
+                                <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-white/15 to-white/65" />
                             </div>
                         );
                     })}
-                    {/* Subtle warm glow overlay */}
-                    <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[450px] bg-[#D4AF37]/15 blur-[120px] rounded-full pointer-events-none" />
                 </div>
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
                     {/* Badge (Dynamic per slide) */}
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/90 backdrop-blur-md text-[#8c7003] font-black text-xs mb-4 border border-[#D4AF37]/50 shadow-xs transition-all duration-500">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/95 backdrop-blur-md text-[#8c7003] font-black text-xs mb-4 border border-[#D4AF37]/60 shadow-xs transition-all duration-500">
                         <Sparkles className="w-3.5 h-3.5" />
                         <span>{currentSlide.badge}</span>
                     </div>
 
-                    {/* Headline (Dynamic per slide) */}
-                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-950 tracking-tight max-w-5xl mx-auto leading-[1.14] transition-all duration-500 min-h-[120px] sm:min-h-[140px] flex items-center justify-center drop-shadow-xs">
+                    {/* Headline (Dynamic per slide) with subtle ambient shadow for perfect contrast */}
+                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-950 tracking-tight max-w-5xl mx-auto leading-[1.14] transition-all duration-500 min-h-[120px] sm:min-h-[140px] flex items-center justify-center drop-shadow-[0_2px_12px_rgba(255,255,255,0.9)]">
                         <span>{currentSlide.title}</span>
                     </h1>
 
                     {/* Subheadline (Dynamic per slide) */}
-                    <p className="mt-6 text-base sm:text-lg lg:text-xl text-slate-800 font-semibold max-w-3xl mx-auto leading-relaxed transition-all duration-500 min-h-[60px] flex items-center justify-center drop-shadow-2xs">
+                    <p className="mt-6 text-base sm:text-lg lg:text-xl text-slate-900 font-bold max-w-3xl mx-auto leading-relaxed transition-all duration-500 min-h-[60px] flex items-center justify-center drop-shadow-[0_1px_8px_rgba(255,255,255,0.9)]">
                         <span>{currentSlide.subtitle}</span>
                     </p>
 
@@ -540,7 +538,7 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                     )}
 
                     {/* Value highlights checklist */}
-                    <div className="mt-10 flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-xs font-bold text-slate-600">
+                    <div className="mt-10 flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-xs font-black text-slate-800 bg-white/80 backdrop-blur-md px-6 py-3 rounded-full border border-slate-200/80 shadow-xs max-w-fit mx-auto">
                         <div className="flex items-center gap-2">
                             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                             <span>Zero local server installation</span>

@@ -55,6 +55,38 @@ Route::get('/sw.js', function () {
     ]);
 });
 
+// Logo & Static Asset Fallbacks for Production / cPanel Deployment
+Route::get('/logo.png', function () {
+    $path = public_path('logo.png');
+    if (!file_exists($path)) {
+        $path = base_path('logo.png');
+    }
+    return file_exists($path) ? response()->file($path, ['Content-Type' => 'image/png']) : abort(404);
+});
+
+Route::get('/images/logo.png', function () {
+    $path = public_path('images/logo.png');
+    if (!file_exists($path)) {
+        $path = public_path('logo.png');
+    }
+    return file_exists($path) ? response()->file($path, ['Content-Type' => 'image/png']) : abort(404);
+});
+
+Route::get('/inns/logo.png', function () {
+    $path = public_path('logo.png');
+    return file_exists($path) ? response()->file($path, ['Content-Type' => 'image/png']) : abort(404);
+});
+
+Route::get('/inns/images/{file}', function ($file) {
+    $path = public_path('images/' . $file);
+    return file_exists($path) ? response()->file($path) : abort(404);
+})->where('file', '.*');
+
+Route::get('/inns/build/assets/{file}', function ($file) {
+    $path = public_path('build/assets/' . $file);
+    return file_exists($path) ? response()->file($path) : abort(404);
+})->where('file', '.*');
+
 Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     // 1. Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

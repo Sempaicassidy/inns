@@ -9,7 +9,11 @@
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
+    # Transparently handle /inns/ subfolder requests on cPanel root domain
+    RewriteRule ^inns/(.*)$ $1 [L,NC]
+
     # Serve public static assets directly from public/
+    RewriteRule ^logo\.(.*)$ public/logo.$1 [L]
     RewriteRule ^uploads/(.*)$ public/uploads/$1 [L]
     RewriteRule ^build/(.*)$ public/build/$1 [L]
     RewriteRule ^storage/(.*)$ public/storage/$1 [L]

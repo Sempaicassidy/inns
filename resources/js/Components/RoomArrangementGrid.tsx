@@ -144,7 +144,8 @@ export default function RoomArrangementGrid({
     };
 
     const formatTsh = (amountMinor: number) => {
-        return `TSh ${Number(amountMinor || 0).toLocaleString()}`;
+        const shillings = Math.round(Number(amountMinor || 0) / 100);
+        return `TSh ${shillings.toLocaleString()}`;
     };
 
     const openMaintenanceModal = (roomId?: string) => {

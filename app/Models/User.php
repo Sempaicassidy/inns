@@ -272,6 +272,19 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Determine if the user has verified their email address.
+     * Super admins are always considered verified to avoid being locked out.
+     */
+    public function hasVerifiedEmail(): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        return ! is_null($this->email_verified_at);
+    }
+
+    /**
      * Role checking helpers (evaluates against active role and assigned roles).
      */
     public function isSuperAdmin(): bool

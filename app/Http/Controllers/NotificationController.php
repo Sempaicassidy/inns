@@ -191,27 +191,38 @@ class NotificationController extends Controller
             return response()->json(['unread_count' => 0, 'notifications' => []]);
         }
 
-        $notifications = SystemNotification::where('tenant_id', $user->tenant_id)
-            ->forUser($user)
-            ->unread()
-            ->latest()
-            ->take(10)
-            ->get()
-            ->map(fn ($n) => [
-                'id' => $n->id,
-                'title' => $n->title,
-                'message' => $n->message,
-                'category' => $n->category,
-                'severity' => $n->severity,
-                'action_url' => $n->resolved_action_url ?: route('dashboard'),
-                'go_url' => route('notifications.go', $n->id),
-                'created_at' => $n->created_at->diffForHumans(),
-                'timestamp' => $n->created_at->timestamp,
-            ]);
+        try {
+            $query = SystemNotification::query();
+            if ($user->tenant_id) {
+                $query->where('tenant_id', $user->tenant_id);
+            }
 
-        return response()->json([
-            'unread_count' => SystemNotification::where('tenant_id', $user->tenant_id)->forUser($user)->unread()->count(),
-            'notifications' => $notifications,
-        ]);
+            $notifications = (clone $query)
+                ->forUser($user)
+                ->unread()
+                ->latest()
+                ->take(10)
+                ->get()
+                ->map(fn ($n) => [
+                    'id' => $n->id,
+                    'title' => $n->title,
+                    'message' => $n->message,
+                    'category' => $n->category,
+                    'severity' => $n->severity,
+                    'action_url' => $n->resolved_action_url ?: route('dashboard'),
+                    'go_url' => route('notifications.go', $n->id),
+                    'created_at' => $n->created_at ? $n->created_at->diffForHumans() : 'Just now',
+                    'timestamp' => $n->created_at ? $n->created_at->timestamp : time(),
+                ]);
+
+            $unreadCount = (clone $query)->forUser($user)->unread()->count();
+
+            return response()->json([
+                'unread_count' => $unreadCount,
+                'notifications' => $notifications,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['unread_count' => 0, 'notifications' => []]);
+        }
     }
 }

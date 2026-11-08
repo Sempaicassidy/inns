@@ -38,12 +38,15 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // Clear any stale impersonation flags upon fresh login
+        $request->session()->forget(['impersonating_original_superadmin_id', 'impersonated_tenant_name']);
+
         if ($request->filled('branch_id')) {
             session(['current_property_id' => $request->branch_id]);
             $request->user()->update(['property_id' => $request->branch_id]);
         }
 
-        $user = $request->user();
+        $user = $request->user() ?: Auth::user();
 
         if ($user && $user->isSuperAdmin()) {
             session(['active_role' => 'super_admin']);

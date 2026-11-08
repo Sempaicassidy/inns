@@ -31,6 +31,7 @@ class Property extends Model
         'phone',
         'email',
         'is_active',
+        'monthly_target_revenue_minor',
     ];
 
     protected function casts(): array
@@ -39,6 +40,7 @@ class Property extends Model
             'is_main' => 'boolean',
             'is_active' => 'boolean',
             'tax_config' => 'array',
+            'monthly_target_revenue_minor' => 'integer',
         ];
     }
 
@@ -70,5 +72,25 @@ class Property extends Model
     public function businessDate(): HasOne
     {
         return $this->hasOne(BusinessDate::class);
+    }
+
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class);
+    }
+
+    public function ownerDirectives(): HasMany
+    {
+        return $this->hasMany(OwnerDirective::class);
+    }
+
+    public function ownerRequisitions(): HasMany
+    {
+        return $this->hasMany(OwnerRequisition::class);
+    }
+
+    public function ownerDrawings(): HasMany
+    {
+        return $this->hasMany(OwnerDrawing::class);
     }
 }

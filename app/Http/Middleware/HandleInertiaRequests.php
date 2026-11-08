@@ -273,6 +273,8 @@ class HandleInertiaRequests extends Middleware
                 'unread_notifications_count' => count($persistentNotifications ?? []),
                 'is_impersonating' => $request->session()->has('impersonating_original_superadmin_id'),
                 'impersonated_tenant_name' => $request->session()->get('impersonated_tenant_name'),
+                'is_owner_inspecting' => $request->session()->has('owner_inspecting_property_id'),
+                'owner_inspecting_property_name' => $request->session()->get('owner_inspecting_property_name'),
             ],
             'flash' => [
                 'success' => $request->session()->get('success'),

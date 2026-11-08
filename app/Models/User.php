@@ -153,11 +153,13 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return match ($role) {
             'super_admin' => 'saas-admin.index',
+            'owner' => 'owner.index',
             'housekeeper', 'housekeeping_supervisor' => 'housekeeping.index',
             'pos_cashier', 'cashier', 'waiter', 'bartender' => 'pos.index',
             'accountant' => 'accounting.index',
             'night_auditor' => 'night-audit.index',
             'hr_manager' => 'hr.index',
+            'general_manager', 'manager' => 'dashboard',
             'receptionist', 'front_desk', 'front_office_manager' => 'dashboard',
             default => 'dashboard',
         };
@@ -169,6 +171,28 @@ class User extends Authenticatable implements MustVerifyEmail
     public static function getRoleMetadata(string $role): array
     {
         return match ($role) {
+            'owner' => [
+                'role' => 'owner',
+                'title' => 'Property Owner / Director',
+                'title_sw' => 'Mmiliki / Mkurugenzi wa Hoteli',
+                'description' => 'Multi-branch executive oversight, chain of command, financial governance & approvals.',
+                'description_sw' => 'Usimamizi mkuu wa matawi yote, idhini za matumizi, na maelekezo ya kiutendaji.',
+                'badge' => 'Owner',
+                'color' => 'amber',
+                'route' => 'owner.index',
+                'icon' => 'Crown',
+            ],
+            'super_admin' => [
+                'role' => 'super_admin',
+                'title' => 'SaaS Platform Admin',
+                'title_sw' => 'Msimamizi Mkuu wa SaaS',
+                'description' => 'Global tenant ecosystem, subscription billing, SMS gateways and system health.',
+                'description_sw' => 'Usimamizi wa mfumo mzima wa SaaS na upangaji wa hoteli.',
+                'badge' => 'SuperAdmin',
+                'color' => 'rose',
+                'route' => 'saas-admin.index',
+                'icon' => 'Shield',
+            ],
             'general_manager', 'manager' => [
                 'role' => $role,
                 'title' => 'General Manager',
@@ -246,17 +270,6 @@ class User extends Authenticatable implements MustVerifyEmail
                 'route' => 'hr.index',
                 'icon' => 'UserCheck',
             ],
-            'owner', 'super_admin' => [
-                'role' => $role,
-                'title' => 'Property Owner / Director',
-                'title_sw' => 'Mkurugenzi / Mmiliki',
-                'description' => 'Multi-branch oversight, financial health, and strategic growth.',
-                'description_sw' => 'Usimamizi mkuu wa matawi yote na mwelekeo wa biashara.',
-                'badge' => 'Director',
-                'color' => 'rose',
-                'route' => 'dashboard',
-                'icon' => 'Shield',
-            ],
             default => [
                 'role' => $role,
                 'title' => ucwords(str_replace('_', ' ', $role)),
@@ -302,13 +315,21 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function isOwner(): bool
     {
-        return in_array($this->active_role, ['owner', 'super_admin']) || in_array('owner', $this->roles_list);
+        return $this->role === 'owner'
+            || $this->active_role === 'owner'
+            || (is_array($this->roles) && in_array('owner', $this->roles))
+            || in_array('owner', $this->roles_list);
     }
 
     public function isManager(): bool
     {
-        return in_array($this->active_role, ['manager', 'general_manager', 'front_office_manager', 'owner', 'super_admin'])
-            || count(array_intersect(['manager', 'general_manager', 'owner', 'super_admin'], $this->roles_list)) > 0;
+        // When active role is explicitly owner, do not treat as manager
+        if ($this->active_role === 'owner') {
+            return false;
+        }
+
+        return in_array($this->active_role, ['manager', 'general_manager', 'front_office_manager', 'super_admin'])
+            || count(array_intersect(['manager', 'general_manager', 'super_admin'], $this->roles_list)) > 0;
     }
 
     public function isReceptionist(): bool

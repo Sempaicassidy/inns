@@ -6,6 +6,9 @@ use App\Models\BusinessDate;
 use App\Models\Expense;
 use App\Models\Folio;
 use App\Models\FolioLine;
+use App\Models\OwnerDirective;
+use App\Models\OwnerRequisition;
+use App\Models\SystemNotification;
 use App\Models\Payment;
 use App\Models\PosOrder;
 use App\Models\Property;
@@ -17,6 +20,7 @@ use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -30,11 +34,20 @@ class DashboardController extends Controller
             return redirect()->route('saas-admin.index');
         }
 
+        // If user active role is Owner and not inspecting a specific lodge, redirect to Owner Portal
+        if ($user && ($user->active_role === 'owner' || ($user->role === 'owner' && !session()->has('active_role'))) && !session()->has('owner_inspecting_property_id')) {
+            return redirect()->route('owner.index');
+        }
+
         if ($user && in_array($user->role, ['accountant', 'senior_accountant', 'finance_officer'])) {
             return app(AccountingController::class)->index($request);
         }
 
         $property = $user->property ?? Property::first();
+        if (session()->has('owner_inspecting_property_id')) {
+            $inspectingId = session('owner_inspecting_property_id');
+            $property = Property::find($inspectingId) ?? $property;
+        }
 
         $bDateRecord = $property ? BusinessDate::where('property_id', $property->id)->first() : null;
         $currentDate = $bDateRecord ? Carbon::parse($bDateRecord->current_business_date) : Carbon::today();
@@ -244,7 +257,122 @@ class DashboardController extends Controller
                     'is_due_out' => ($stay?->expected_check_out && Carbon::parse($stay->expected_check_out)->toDateString() === $currentDate->toDateString()),
                 ];
             })->values()->all(),
+            'ownerDirectives' => OwnerDirective::where('tenant_id', $user->tenant_id)
+                ->where(function ($q) use ($property) {
+                    $q->whereNull('property_id');
+                    if ($property) {
+                        $q->orWhere('property_id', $property->id);
+                    }
+                })
+                ->where('status', '!=', 'completed')
+                ->orderBy('created_at', 'desc')
+                ->take(5)
+                ->get(),
+            'myRequisitions' => OwnerRequisition::where('tenant_id', $user->tenant_id)
+                ->where('property_id', $property?->id)
+                ->orderBy('created_at', 'desc')
+                ->take(8)
+                ->get(),
+            'isOwnerInspecting' => session()->has('owner_inspecting_property_id'),
+            'ownerInspectingPropertyName' => session('owner_inspecting_property_name'),
         ]);
+    }
+
+    /**
+     * General Manager submits a requisition to the Owner.
+     */
+    public function storeRequisition(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        $property = $user->property ?? Property::where('tenant_id', $user->tenant_id)->first();
+
+        if (! $property) {
+            return redirect()->back()->with('error', 'Hakuna tawi lililounganishwa na akaunti yako.');
+        }
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'category' => 'required|string|in:maintenance,supplies,equipment,renovation,utilities,staff,other',
+            'amount' => 'required|numeric|min:1',
+            'urgency' => 'required|in:routine,priority,emergency',
+            'justification' => 'required|string',
+            'vendor_name' => 'nullable|string|max:255',
+        ]);
+
+        $amountMinor = (int) round($validated['amount'] * 100);
+        $reqNo = 'REQ-' . date('Ym') . '-' . strtoupper(Str::random(4));
+
+        $requisition = OwnerRequisition::create([
+            'tenant_id' => $user->tenant_id,
+            'property_id' => $property->id,
+            'requested_by' => $user->id,
+            'requisition_no' => $reqNo,
+            'title' => $validated['title'],
+            'category' => $validated['category'],
+            'amount_minor' => $amountMinor,
+            'urgency' => $validated['urgency'],
+            'justification' => $validated['justification'],
+            'vendor_name' => $validated['vendor_name'] ?? null,
+            'status' => 'pending_owner',
+        ]);
+
+        // Send notification to Owner(s)
+        $owners = User::where('tenant_id', $user->tenant_id)
+            ->where(function ($q) {
+                $q->where('role', 'owner')
+                  ->orWhereJsonContains('roles', 'owner');
+            })
+            ->get();
+
+        foreach ($owners as $owner) {
+            SystemNotification::create([
+                'tenant_id' => $user->tenant_id,
+                'user_id' => $owner->id,
+                'target_role' => 'owner',
+                'title' => "Ombi Jipya la Idhini ({$reqNo}) kutoka kwa {$user->name}",
+                'message' => "Tawi: {$property->name} — Kiasi: TZS " . number_format($validated['amount'], 0) . " — {$validated['title']}",
+                'category' => 'governance',
+                'severity' => $validated['urgency'] === 'emergency' ? 'high' : 'info',
+                'action_url' => route('owner.index', ['tab' => 'approvals']),
+            ]);
+        }
+
+        return redirect()->back()->with('success', "Ombi la Idhini {$reqNo} limetumwa kwa Mmiliki wa Hoteli kwa ukaguzi.");
+    }
+
+    /**
+     * General Manager acknowledges receipt of an Owner Directive.
+     */
+    public function acknowledgeDirective(Request $request, OwnerDirective $directive): RedirectResponse
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        $directive->update([
+            'status' => 'acknowledged',
+            'acknowledged_at' => now(),
+            'acknowledged_by' => $user->id,
+            'acknowledgement_notes' => $validated['notes'] ?? 'Imethibitishwa na Meneja.',
+        ]);
+
+        // Notify the Owner who created it
+        if ($directive->created_by) {
+            SystemNotification::create([
+                'tenant_id' => $directive->tenant_id,
+                'user_id' => $directive->created_by,
+                'target_role' => 'owner',
+                'title' => "Mwongozo Umepokelewa na Meneja ({$user->name})",
+                'message' => "Meneja amethibitisha kupokea maelekezo ya: \"{$directive->title}\"",
+                'category' => 'governance',
+                'severity' => 'info',
+                'action_url' => route('owner.index', ['tab' => 'directives']),
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Umethibitisha kupokea mwongozo wa mmiliki.');
     }
 
     // ─────────────────────────────────────────────────────────────────────────

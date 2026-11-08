@@ -24,6 +24,8 @@ import {
     Clock,
     Coins,
     CreditCard,
+    Crown,
+    CheckSquare,
     DollarSign,
     FileCheck,
     FileCheck2,
@@ -43,6 +45,7 @@ import {
     Menu,
     MessageSquare,
     MessageSquareText,
+    Moon,
     Package,
     Percent,
     Phone,
@@ -52,8 +55,10 @@ import {
     RotateCcw,
     Scale,
     Search,
+    Send,
     Server,
     Settings,
+    ShieldAlert,
     ShieldCheck,
     ShoppingBag,
     Sparkles,
@@ -182,13 +187,19 @@ export default function AuthenticatedLayout({
             (Array.isArray(user?.roles) && user.roles.includes('super_admin')) ||
             route().current('saas-admin.*')
         );
-    const isAccountant = !isSuperAdmin && (
+    const isOwner = !isSuperAdmin && (
+        ['owner', 'director', 'investor', 'proprietor'].includes(activeRole) ||
+        ['owner', 'director', 'investor', 'proprietor'].includes(user?.role) ||
+        (Array.isArray(user?.roles) && user.roles.includes('owner') && (activeRole === 'owner' || route().current('owner.*'))) ||
+        route().current('owner.*')
+    );
+    const isAccountant = !isSuperAdmin && !isOwner && (
         ['accountant', 'senior_accountant', 'finance_officer', 'auditor'].includes(activeRole) ||
         ['accountant', 'senior_accountant', 'finance_officer', 'auditor'].includes(user?.role)
     );
-    const isManager = !isSuperAdmin && !isAccountant && (
-        ['general_manager', 'manager', 'owner', 'admin'].includes(activeRole) ||
-        ['general_manager', 'manager', 'owner', 'admin'].includes(user?.role)
+    const isManager = !isSuperAdmin && !isAccountant && !isOwner && (
+        ['general_manager', 'manager', 'admin'].includes(activeRole) ||
+        ['general_manager', 'manager', 'admin'].includes(user?.role)
     );
     const isReceptionist = !isSuperAdmin && !isAccountant && !isManager && (
         ['receptionist', 'front_desk', 'front_office', 'front_office_manager', 'staff'].includes(activeRole) ||
@@ -829,6 +840,72 @@ export default function AuthenticatedLayout({
         },
     ];
 
+    // Hotel Owner Executive Navigation Items
+    const ownerNavItems = [
+        {
+            name: 'Executive Dashboard',
+            href: route('owner.index', { tab: 'overview' }),
+            icon: Crown,
+            active: route().current('owner.*') && (currentTab === 'overview' || !currentTab),
+        },
+        {
+            name: 'Multi-Branch Matrix',
+            href: route('owner.index', { tab: 'branches' }),
+            icon: Building2,
+            active: route().current('owner.*') && currentTab === 'branches',
+        },
+        {
+            name: 'Approvals & Requisitions',
+            href: route('owner.index', { tab: 'approvals' }),
+            icon: CheckSquare,
+            active: route().current('owner.*') && currentTab === 'approvals',
+        },
+        {
+            name: 'Executive Directives',
+            href: route('owner.index', { tab: 'directives' }),
+            icon: Send,
+            active: route().current('owner.*') && currentTab === 'directives',
+        },
+        {
+            name: 'Loss Prevention & Audit',
+            href: route('owner.index', { tab: 'audit' }),
+            icon: ShieldAlert,
+            active: route().current('owner.*') && currentTab === 'audit',
+        },
+        {
+            name: 'Consolidated Financials',
+            href: route('owner.index', { tab: 'financials' }),
+            icon: DollarSign,
+            active: route().current('owner.*') && currentTab === 'financials',
+        },
+        {
+            name: 'Properties & Branches',
+            href: route('branches.index'),
+            icon: Layers,
+            active: route().current('branches.*'),
+        },
+        {
+            name: 'Hotel Reports & Analytics',
+            href: route('reports.index'),
+            icon: BarChart3,
+            active: route().current('reports.*'),
+            feature: 'hotel_reports',
+        },
+        {
+            name: 'Night Audit Ledger',
+            href: route('night-audit.index'),
+            icon: Moon,
+            active: route().current('night-audit.*'),
+        },
+        {
+            name: 'Branding & Profile',
+            href: route('tenant.settings'),
+            icon: Settings,
+            active: route().current('tenant.settings*'),
+        },
+        { name: 'Sign Out', icon: LogOut, isLogout: true },
+    ];
+
     // Admin/Manager Navigation Items
     const adminNavItems = [
         { name: 'Dashboard', href: route('dashboard'), icon: Home, active: route().current('dashboard') },
@@ -886,16 +963,24 @@ export default function AuthenticatedLayout({
             .filter(Boolean);
     };
 
-    const baseNav = isSuperAdmin ? superAdminNavItems : (isReceptionist ? receptionistNavItems : (isAccountant ? accountantNavItems : adminNavItems));
-    const navItems = isSuperAdmin ? baseNav : filterItemsByFeature(baseNav);
+    const baseNav = isSuperAdmin
+        ? superAdminNavItems
+        : (isOwner
+            ? ownerNavItems
+            : (isReceptionist
+                ? receptionistNavItems
+                : (isAccountant
+                    ? accountantNavItems
+                    : adminNavItems)));
+    const navItems = (isSuperAdmin || isOwner) ? baseNav : filterItemsByFeature(baseNav);
 
     const getRoleTitle = (role?: string) => {
         if ((auth as any)?.is_impersonating) return 'Support Manager (Temporary)';
         const r = (auth as any)?.active_role || user?.active_role || role;
         if (!r) return 'Staff';
         if (r === 'super_admin') return 'Super Admin (SaaS)';
+        if (r === 'owner') return 'Hotel Owner / Director';
         if (r === 'general_manager' || r === 'manager') return 'General Manager';
-        if (r === 'owner') return 'Hotel Owner';
         if (r === 'accountant' || r === 'senior_accountant' || r === 'finance_officer') return 'Accountant';
         if (r === 'receptionist' || r === 'front_desk' || r === 'front_office' || r === 'front_office_manager' || r === 'staff') return 'Front Desk Receptionist';
         if (r === 'housekeeper') return 'Housekeeping';
@@ -1173,6 +1258,29 @@ export default function AuthenticatedLayout({
                         </Link>
                     </div>
                 )}
+                {/* Hotel Owner Branch Inspection Banner */}
+                {((auth as any)?.is_owner_inspecting || (auth as any)?.owner_inspecting_property_name) && (
+                    <div className="bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-slate-950 px-4 sm:px-6 py-2.5 font-bold text-xs sm:text-sm flex items-center justify-between sticky top-0 z-50 shadow-md border-b border-amber-600">
+                        <div className="flex items-center gap-2.5">
+                            <span className="relative flex h-3 w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-900 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-slate-950"></span>
+                            </span>
+                            <span>
+                                Unakagua tawi la: <strong className="font-black text-slate-950">{(auth as any)?.owner_inspecting_property_name || 'Tawi la Hoteli'}</strong> kama <strong className="font-black text-slate-950">Mmiliki wa Hoteli (Owner Mode)</strong>.
+                            </span>
+                        </div>
+                        <Link
+                            href={route('owner.inspect.leave')}
+                            method="post"
+                            as="button"
+                            className="px-3.5 py-1.5 bg-[#1E3A5F] hover:bg-[#152a45] text-white rounded-xl text-xs font-black shadow-xs transition flex items-center gap-1.5"
+                        >
+                            <Crown className="w-3.5 h-3.5 text-amber-300" />
+                            Rudi kwenye Portal ya Mmiliki
+                        </Link>
+                    </div>
+                )}
                 {/* TOP HEADER */}
                 <header className="px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between bg-white border-b border-slate-100 shadow-2xs">
                     {/* Left: Mobile hamburger & Workspace Context */}
@@ -1238,6 +1346,28 @@ export default function AuthenticatedLayout({
                             >
                                 <ShieldCheck className="w-3.5 h-3.5" />
                                 <span className="hidden sm:inline">SaaS Portal</span>
+                            </Link>
+                        )}
+
+                        {/* Top Action Button - Hotel Owner Jump Buttons */}
+                        {isOwner && !route().current('owner.*') && (
+                            <Link
+                                href={route('owner.index')}
+                                className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-3.5 py-1.5 rounded-xl font-bold text-xs shadow-xs hover:shadow-md transition-all flex items-center gap-1.5"
+                                title="Fungua Portal ya Mmiliki wa Hoteli"
+                            >
+                                <Crown className="w-3.5 h-3.5 text-amber-200" />
+                                <span className="hidden sm:inline">Owner Portal</span>
+                            </Link>
+                        )}
+                        {isOwner && route().current('owner.*') && (
+                            <Link
+                                href={route('dashboard')}
+                                className="bg-[#1E3A5F] hover:bg-[#152a45] text-white px-3.5 py-1.5 rounded-xl font-bold text-xs shadow-xs hover:shadow-md transition-all flex items-center gap-1.5"
+                                title="Tazama Dashibodi ya Tawi kama Meneja"
+                            >
+                                <Building2 className="w-3.5 h-3.5 text-[#D4AF37]" />
+                                <span className="hidden sm:inline">Manager View</span>
                             </Link>
                         )}
 

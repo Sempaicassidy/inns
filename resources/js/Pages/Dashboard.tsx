@@ -2,7 +2,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import RoomArrangementGrid from '@/Components/RoomArrangementGrid';
 import RoomAvailabilityCalendar, { CalendarProps } from '@/Components/RoomAvailabilityCalendar';
 import { PageProps } from '@/types';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import {
     Activity,
     AlertCircle,
@@ -15,8 +15,10 @@ import {
     CalendarDays,
     Check,
     CheckCircle2,
+    CheckSquare,
     ChevronRight,
     Clock,
+    Crown,
     DollarSign,
     DoorClosed,
     DoorOpen,
@@ -26,12 +28,14 @@ import {
     Info,
     LogOut,
     Luggage,
+    Megaphone,
     MessageSquare,
     Phone,
     Plus,
     Receipt,
     RefreshCw,
     Search,
+    Send,
     Sparkles,
     User,
     UserCheck,
@@ -110,6 +114,10 @@ interface DashboardProps extends PageProps {
     departures?: GuestMovement[];
     inHouseStays?: GuestMovement[];
     revenueTrend?: Array<{ date: string; amount: number }>;
+    ownerDirectives?: Array<any>;
+    myRequisitions?: Array<any>;
+    isOwnerInspecting?: boolean;
+    ownerInspectingPropertyName?: string;
 }
 
 export default function Dashboard({
@@ -123,6 +131,10 @@ export default function Dashboard({
     pendingFoliosCount = 0,
     allRooms = [],
     calendarData,
+    ownerDirectives = [],
+    myRequisitions = [],
+    isOwnerInspecting = false,
+    ownerInspectingPropertyName,
 }: DashboardProps) {
     const activeRole = (auth as any)?.active_role || auth?.user?.active_role || auth?.user?.role || '';
     const isManagerRole = ['general_manager', 'manager', 'owner', 'super_admin'].includes(activeRole);
@@ -135,6 +147,32 @@ export default function Dashboard({
     );
     const [searchQuery, setSearchQuery] = useState('');
     const [roomRackFilter, setRoomRackFilter] = useState<'all' | 'clean' | 'occupied' | 'dirty' | 'maintenance'>('all');
+    const [showRequisitionModal, setShowRequisitionModal] = useState(false);
+
+    const requisitionForm = useForm({
+        title: '',
+        category: 'maintenance',
+        amount: '',
+        urgency: 'routine',
+        justification: '',
+        vendor_name: '',
+    });
+
+    const handleAcknowledgeDirective = (directiveId: string) => {
+        router.post(route('manager.directives.acknowledge', directiveId), {}, {
+            preserveScroll: true,
+        });
+    };
+
+    const handleRequisitionSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        requisitionForm.post(route('manager.requisitions.store'), {
+            onSuccess: () => {
+                setShowRequisitionModal(false);
+                requisitionForm.reset();
+            },
+        });
+    };
 
     const defaultStats = {
         current_business_date: 'Today',
@@ -651,6 +689,17 @@ export default function Dashboard({
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+                            {/* Submit Requisition to Owner Button */}
+                            <button
+                                type="button"
+                                onClick={() => setShowRequisitionModal(true)}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-xs rounded-xl shadow-xs transition cursor-pointer"
+                                title="Omba idhini ya matumizi au vifaa kwa Mmiliki wa Hoteli"
+                            >
+                                <CheckSquare className="w-3.5 h-3.5" />
+                                <span>Omba Idhini kwa Mmiliki</span>
+                            </button>
+
                             {/* Range Select */}
                             <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-700">
                                 <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -675,6 +724,54 @@ export default function Dashboard({
                             </Link>
                         </div>
                     </div>
+
+                    {/* 1.1 Executive Directives from Property Owner (Chain of Command Alert) */}
+                    {ownerDirectives && ownerDirectives.length > 0 && (
+                        <div className="space-y-2.5">
+                            {ownerDirectives.map((dir: any) => (
+                                <div
+                                    key={dir.id}
+                                    className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-[#1E3A5F] to-slate-900 text-white border border-[#D4AF37]/50 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4AF37] to-amber-600 text-slate-950 flex items-center justify-center shrink-0 shadow">
+                                            <Crown className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950">
+                                                    Mwongozo wa Mmiliki
+                                                </span>
+                                                <span className="text-[11px] font-bold text-amber-300 uppercase">
+                                                    [{dir.category}] • {dir.priority} priority
+                                                </span>
+                                            </div>
+                                            <h4 className="text-sm font-black text-white mt-1">{dir.title}</h4>
+                                            <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">{dir.directive_text}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                                        {dir.status === 'acknowledged' ? (
+                                            <span className="px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center gap-1">
+                                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                                <span>Imethibitishwa</span>
+                                            </span>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleAcknowledgeDirective(dir.id)}
+                                                className="px-3.5 py-1.5 rounded-xl bg-[#D4AF37] hover:bg-[#B8960C] text-slate-950 font-black text-xs shadow transition flex items-center gap-1.5 cursor-pointer"
+                                            >
+                                                <Check className="w-4 h-4" />
+                                                <span>Thibitisha Kupokea</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
 
                     {/* 2. Top Summary Metrics Cards (Executive View) */}
                     <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-3.5">
@@ -934,6 +1031,130 @@ export default function Dashboard({
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Requisition Submission Modal for Managers */}
+            {showRequisitionModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+                    <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 relative">
+                        <button
+                            type="button"
+                            onClick={() => setShowRequisitionModal(false)}
+                            className="absolute top-5 right-5 text-slate-400 hover:text-slate-800"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+
+                        <div className="flex items-center gap-3 mb-5">
+                            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
+                                <CheckSquare className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-black text-slate-900">Tuma Ombi la Idhini kwa Mmiliki</h3>
+                                <p className="text-xs text-slate-500">Ombi la ununuzi, vifaa au matengenezo yanayohitaji idhini</p>
+                            </div>
+                        </div>
+
+                        <form onSubmit={handleRequisitionSubmit} className="space-y-4 text-xs">
+                            <div>
+                                <label className="block text-slate-700 font-bold mb-1">Kichwa cha Ombi (Title):</label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder="Mfano: Ununuzi wa jenereta mpya au mashuka ya akiba"
+                                    value={requisitionForm.data.title}
+                                    onChange={e => requisitionForm.setData('title', e.target.value)}
+                                    className="w-full rounded-xl border-slate-200 p-2.5 text-xs text-slate-900 focus:ring-2 focus:ring-amber-500"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-slate-700 font-bold mb-1">Kategoria:</label>
+                                    <select
+                                        value={requisitionForm.data.category}
+                                        onChange={e => requisitionForm.setData('category', e.target.value)}
+                                        className="w-full rounded-xl border-slate-200 p-2.5 text-xs text-slate-900"
+                                    >
+                                        <option value="maintenance">Matengenezo (Maintenance)</option>
+                                        <option value="supplies">Vifaa vya Kazi (Supplies)</option>
+                                        <option value="equipment">Mitungi / Mashine (Equipment)</option>
+                                        <option value="renovation">Maboresho ya Vyumba (Renovation)</option>
+                                        <option value="utilities">Bili & Nishati (Utilities)</option>
+                                        <option value="staff">Wafanyakazi (Staff Welfare)</option>
+                                        <option value="other">Mengineyo (Other)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-slate-700 font-bold mb-1">Kipaumbele (Urgency):</label>
+                                    <select
+                                        value={requisitionForm.data.urgency}
+                                        onChange={e => requisitionForm.setData('urgency', e.target.value as any)}
+                                        className="w-full rounded-xl border-slate-200 p-2.5 text-xs text-slate-900"
+                                    >
+                                        <option value="routine">Kawaida (Routine)</option>
+                                        <option value="priority">Kipaumbele (Priority)</option>
+                                        <option value="emergency">Dharura (Emergency)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-slate-700 font-bold mb-1">Kiasi Kinachoombwa (TZS):</label>
+                                    <input
+                                        type="number"
+                                        required
+                                        min="1"
+                                        placeholder="Kiasi kwa TZS"
+                                        value={requisitionForm.data.amount}
+                                        onChange={e => requisitionForm.setData('amount', e.target.value)}
+                                        className="w-full rounded-xl border-slate-200 p-2.5 text-xs font-bold text-slate-900"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-slate-700 font-bold mb-1">Jina la Msambazaji (Vendor):</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Hiari / Optional"
+                                        value={requisitionForm.data.vendor_name}
+                                        onChange={e => requisitionForm.setData('vendor_name', e.target.value)}
+                                        className="w-full rounded-xl border-slate-200 p-2.5 text-xs text-slate-900"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-slate-700 font-bold mb-1">Sababu & Ufafanuzi (Justification):</label>
+                                <textarea
+                                    rows={3}
+                                    required
+                                    placeholder="Eleza kwa nini gharama hii inahitajika na faida yake kwa uendeshaji wa tawi..."
+                                    value={requisitionForm.data.justification}
+                                    onChange={e => requisitionForm.setData('justification', e.target.value)}
+                                    className="w-full rounded-xl border-slate-200 p-2.5 text-xs text-slate-900"
+                                />
+                            </div>
+
+                            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowRequisitionModal(false)}
+                                    className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition"
+                                >
+                                    Ghairi
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={requisitionForm.processing}
+                                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black shadow transition"
+                                >
+                                    Tuma Ombi kwa Mmiliki
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

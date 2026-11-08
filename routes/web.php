@@ -15,6 +15,7 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ManagerNotificationController;
 use App\Http\Controllers\NightAuditController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\OwnerPortalController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RatePlanController;
@@ -90,6 +91,22 @@ Route::get('/inns/build/assets/{file}', function ($file) {
 Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     // 1. Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // 1.01 Hotel Owner Executive Portal & Chain of Command
+    Route::get('/owner', [OwnerPortalController::class, 'index'])->name('owner.index');
+    Route::post('/owner/directives', [OwnerPortalController::class, 'storeDirective'])->name('owner.directives.store');
+    Route::put('/owner/directives/{directive}', [OwnerPortalController::class, 'updateDirective'])->name('owner.directives.update');
+    Route::delete('/owner/directives/{directive}', [OwnerPortalController::class, 'deleteDirective'])->name('owner.directives.destroy');
+    Route::post('/owner/requisitions/{requisition}/approve', [OwnerPortalController::class, 'approveRequisition'])->name('owner.requisitions.approve');
+    Route::post('/owner/requisitions/{requisition}/reject', [OwnerPortalController::class, 'rejectRequisition'])->name('owner.requisitions.reject');
+    Route::post('/owner/properties/{property}/target', [OwnerPortalController::class, 'updateBranchTarget'])->name('owner.properties.target');
+    Route::post('/owner/drawings', [OwnerPortalController::class, 'recordDrawing'])->name('owner.drawings.store');
+    Route::post('/owner/inspect/{property}', [OwnerPortalController::class, 'inspectBranch'])->name('owner.inspect');
+    Route::post('/owner/inspect-leave', [OwnerPortalController::class, 'leaveInspectBranch'])->name('owner.inspect.leave');
+
+    // Manager Chain of Command Actions
+    Route::post('/manager/requisitions', [DashboardController::class, 'storeRequisition'])->name('manager.requisitions.store');
+    Route::post('/manager/directives/{directive}/acknowledge', [DashboardController::class, 'acknowledgeDirective'])->name('manager.directives.acknowledge');
 
     // 2. Room Availability Gantt Calendar
     Route::middleware('tenant.feature:calendar')->group(function () {

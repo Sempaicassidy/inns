@@ -18,9 +18,13 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        $user = $request->user();
+        $isPrivileged = $user->isSuperAdmin() || in_array($user->role, ['general_manager', 'owner', 'manager', 'admin']);
+
         return Inertia::render('Profile/Edit', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => session('status'),
+            'canDeleteAccount' => !$isPrivileged,
         ]);
     }
 
@@ -45,11 +49,16 @@ class ProfileController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        $user = $request->user();
+
+        // Prevent Super Admins and Hotel Managers/Owners from self-deleting accounts
+        if ($user->isSuperAdmin() || in_array($user->role, ['general_manager', 'owner', 'manager', 'admin'])) {
+            return Redirect::back()->with('error', 'Administrator and Manager accounts cannot be self-deleted to maintain operational continuity and financial audit logs.');
+        }
+
         $request->validate([
             'password' => ['required', 'current_password'],
         ]);
-
-        $user = $request->user();
 
         Auth::logout();
 

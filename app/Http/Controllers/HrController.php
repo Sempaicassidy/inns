@@ -425,12 +425,21 @@ class HrController extends Controller
         [$tenantId] = $this->resolveTenantAndProperty($request);
         $employee = Employee::where('tenant_id', $tenantId)->findOrFail($id);
         $name = $employee->full_name;
+        $currentUser = $request->user();
 
-        // Also delete user account if linked, preventing self-deletion
+        // 1. Strictly prevent self-deletion by user ID or email
+        if (
+            ($employee->user_id && $employee->user_id === $currentUser->id)
+            || (!empty($employee->email) && strtolower($employee->email) === strtolower($currentUser->email))
+        ) {
+            return redirect()->back()->with('error', 'You cannot delete your own currently logged-in account.');
+        }
+
+        // 2. Also delete user account if linked
         if ($employee->user_id) {
             $user = User::find($employee->user_id);
             if ($user) {
-                if ($user->id === $request->user()->id) {
+                if ($user->id === $currentUser->id) {
                     return redirect()->back()->with('error', 'You cannot delete your own currently logged-in account.');
                 }
                 $user->update(['status' => 'inactive']);

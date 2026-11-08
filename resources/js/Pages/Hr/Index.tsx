@@ -384,6 +384,16 @@ export default function HrIndex({
     };
 
     const handleDeleteEmployee = (emp: Employee) => {
+        const isCurrentUser = Boolean(
+            (emp.user?.id && auth?.user?.id && emp.user.id === auth.user.id) ||
+            (emp.email && auth?.user?.email && emp.email.toLowerCase() === auth.user.email.toLowerCase())
+        );
+
+        if (isCurrentUser) {
+            alert("You cannot delete your own active administrator account.");
+            return;
+        }
+
         if (confirm(`Are you sure you want to remove employee "${emp.full_name}" and delete their system login account? This action cannot be undone.`)) {
             router.delete(route('hr.employees.destroy', emp.id));
         }
@@ -783,13 +793,25 @@ export default function HrIndex({
                                                             <Edit3 className="w-3.5 h-3.5 text-emerald-600" />
                                                             <span>Edit</span>
                                                         </button>
-                                                        <button
-                                                            onClick={() => handleDeleteEmployee(emp)}
-                                                            title="Delete Employee & Login Account"
-                                                            className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
-                                                        >
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </button>
+                                                        {Boolean(
+                                                            (emp.user?.id && auth?.user?.id && emp.user.id === auth.user.id) ||
+                                                            (emp.email && auth?.user?.email && emp.email.toLowerCase() === auth.user.email.toLowerCase())
+                                                        ) ? (
+                                                            <span
+                                                                title="Current logged-in account (protected)"
+                                                                className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200"
+                                                            >
+                                                                You
+                                                            </span>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handleDeleteEmployee(emp)}
+                                                                title="Delete Employee & Login Account"
+                                                                className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>

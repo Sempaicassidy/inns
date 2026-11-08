@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { PageProps } from '@/types';
 import { Head } from '@inertiajs/react';
+import { ShieldCheck } from 'lucide-react';
 import DeleteUserForm from './Partials/DeleteUserForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
@@ -8,12 +9,13 @@ import UpdateProfileInformationForm from './Partials/UpdateProfileInformationFor
 export default function Edit({
     mustVerifyEmail,
     status,
-}: PageProps<{ mustVerifyEmail: boolean; status?: string }>) {
+    canDeleteAccount = true,
+}: PageProps<{ mustVerifyEmail: boolean; status?: string; canDeleteAccount?: boolean }>) {
     return (
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                    Profile
+                    Profile Settings
                 </h2>
             }
         >
@@ -34,7 +36,19 @@ export default function Edit({
                     </div>
 
                     <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800">
-                        <DeleteUserForm className="max-w-xl" />
+                        {canDeleteAccount ? (
+                            <DeleteUserForm className="max-w-xl" />
+                        ) : (
+                            <div className="max-w-xl space-y-3">
+                                <div className="flex items-center gap-2 text-slate-900 dark:text-slate-100 font-bold text-base">
+                                    <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                                    <span>Protected Administrator Account</span>
+                                </div>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                    This account is registered with General Management / Administrative privileges for the property. Self-deletion is disabled to safeguard ongoing room reservations, financial audit trails, and staff rosters. If this account needs to be decommissioned or reassigned, please contact the SaaS Platform Administrator or Property Owner.
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

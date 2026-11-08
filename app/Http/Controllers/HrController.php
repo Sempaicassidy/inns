@@ -228,6 +228,7 @@ class HrController extends Controller
             'bank_name' => 'nullable|string|max:80',
             'bank_account' => 'nullable|string|max:50',
             'create_user_account' => 'nullable|boolean',
+            'username' => 'nullable|string|max:60|regex:/^[a-zA-Z0-9_\.\-]+$/|unique:users,username',
             'password' => 'nullable|string|min:6',
             'system_role' => 'nullable|string|max:50',
             'pin_code' => 'nullable|string|max:10',
@@ -261,6 +262,22 @@ class HrController extends Controller
                 }
             }
 
+            // Resolve or generate unique username
+            $cleanUsername = trim($validated['username'] ?? '');
+            if (empty($cleanUsername)) {
+                $baseUsername = Str::lower(preg_replace('/[^a-zA-Z0-9_]/', '_', explode(' ', trim($validated['full_name']))[0]));
+                if (empty($baseUsername)) {
+                    $baseUsername = 'staff';
+                }
+                $candidate = $baseUsername;
+                $counter = 1;
+                while (User::where('username', $candidate)->exists()) {
+                    $candidate = $baseUsername . '_' . $counter;
+                    $counter++;
+                }
+                $cleanUsername = $candidate;
+            }
+
             // Check if user already exists
             $user = User::where('email', $validated['email'])->first();
             if ($user) {
@@ -268,6 +285,7 @@ class HrController extends Controller
                     'tenant_id' => $tenantId,
                     'property_id' => $property?->id,
                     'name' => $validated['full_name'],
+                    'username' => $user->username ?: $cleanUsername,
                     'phone' => $validated['phone'] ?? $user->phone,
                     'password' => Hash::make($validated['password']),
                     'role' => $systemRole,
@@ -279,6 +297,7 @@ class HrController extends Controller
                     'tenant_id' => $tenantId,
                     'property_id' => $property?->id,
                     'name' => $validated['full_name'],
+                    'username' => $cleanUsername,
                     'email' => $validated['email'],
                     'phone' => $validated['phone'] ?? null,
                     'password' => Hash::make($validated['password']),
@@ -360,6 +379,7 @@ class HrController extends Controller
             'address' => 'nullable|string|max:200',
             'bank_name' => 'nullable|string|max:80',
             'bank_account' => 'nullable|string|max:50',
+            'username' => 'nullable|string|max:60|regex:/^[a-zA-Z0-9_\.\-]+$/|unique:users,username,' . ($employee->user_id ?? 'NULL'),
             'password' => 'nullable|string|min:6',
             'system_role' => 'nullable|string|max:50',
             'pin_code' => 'nullable|string|max:10',
@@ -386,6 +406,9 @@ class HrController extends Controller
                 'phone' => $validated['phone'] ?? $employee->user->phone,
                 'status' => $validated['status'] === 'active' ? 'active' : 'inactive',
             ];
+            if ($request->filled('username')) {
+                $userUpdateData['username'] = $validated['username'];
+            }
             if (!empty($systemRole)) {
                 $userUpdateData['role'] = $systemRole;
             }
@@ -398,12 +421,25 @@ class HrController extends Controller
             $employee->user->update($userUpdateData);
         } elseif (!empty($password) && !empty($validated['email'])) {
             // Create user account if password is provided
+            $cleanUsername = trim($validated['username'] ?? '');
+            if (empty($cleanUsername)) {
+                $baseUsername = Str::lower(preg_replace('/[^a-zA-Z0-9_]/', '_', explode(' ', trim($validated['full_name']))[0]));
+                $candidate = $baseUsername ?: 'staff';
+                $c = 1;
+                while (User::where('username', $candidate)->exists()) {
+                    $candidate = ($baseUsername ?: 'staff') . '_' . $c;
+                    $c++;
+                }
+                $cleanUsername = $candidate;
+            }
+
             $user = User::where('email', $validated['email'])->first();
             if ($user) {
                 $user->update([
                     'tenant_id' => $tenantId,
                     'property_id' => $property?->id,
                     'name' => $validated['full_name'],
+                    'username' => $user->username ?: $cleanUsername,
                     'phone' => $validated['phone'] ?? $user->phone,
                     'password' => Hash::make($password),
                     'role' => $systemRole ?: 'staff',
@@ -415,6 +451,7 @@ class HrController extends Controller
                     'tenant_id' => $tenantId,
                     'property_id' => $property?->id,
                     'name' => $validated['full_name'],
+                    'username' => $cleanUsername,
                     'email' => $validated['email'],
                     'phone' => $validated['phone'] ?? null,
                     'password' => Hash::make($password),

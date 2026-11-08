@@ -28,9 +28,18 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
+            'login' => ['sometimes', 'string'],
+            'email' => ['sometimes', 'string'],
             'password' => ['required', 'string'],
         ];
+    }
+
+    /**
+     * Get the resolved login identifier (username or email).
+     */
+    public function getLoginIdentifier(): string
+    {
+        return trim((string) ($this->input('login') ?: $this->input('email')));
     }
 
     /**
@@ -42,7 +51,21 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        $login = $this->getLoginIdentifier();
+        if (empty($login)) {
+            throw ValidationException::withMessages([
+                'email' => ['Username or email is required.'],
+            ]);
+        }
+
+        $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+
+        $credentials = [
+            $field => $login,
+            'password' => $this->input('password'),
+        ];
+
+        if (! Auth::attempt($credentials, $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
@@ -81,6 +104,6 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        return Str::transliterate(Str::lower($this->getLoginIdentifier()).'|'.$this->ip());
     }
 }

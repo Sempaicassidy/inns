@@ -24,6 +24,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'tenant_id',
         'property_id',
         'name',
+        'username',
         'email',
         'phone',
         'password',
@@ -43,6 +44,7 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $appends = [
         'active_role',
         'roles_list',
+        'hotel_name',
     ];
 
     /**
@@ -330,5 +332,29 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         return (bool) $this->can_manage_branches;
+    }
+
+    /**
+     * Get the hotel / tenant name associated with this user.
+     */
+    public function getHotelNameAttribute(): string
+    {
+        return $this->property?->name ?: ($this->tenant?->name ?: config('app.name', 'Hotel Management'));
+    }
+
+    /**
+     * Send the password reset notification with tenant/hotel branding.
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new \App\Notifications\TenantResetPasswordNotification($token));
+    }
+
+    /**
+     * Send the email verification notification with tenant/hotel branding.
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new \App\Notifications\TenantVerifyEmailNotification());
     }
 }

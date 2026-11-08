@@ -4,7 +4,7 @@ import {
     Eye,
     EyeOff,
     Lock,
-    Mail,
+    User as UserIcon,
 } from 'lucide-react';
 import { FormEventHandler, useState } from 'react';
 import GuestLayout from '@/Layouts/GuestLayout';
@@ -48,20 +48,20 @@ export default function Login({
 
             {/* Form */}
             <form onSubmit={submit} className="space-y-4 pt-1" autoComplete="off">
-                {/* Email Input */}
+                {/* Username or Email Input */}
                 <div className="space-y-1.5">
                     <label className="block text-xs font-semibold text-slate-700">
-                        Email Address
+                        Username or Email
                     </label>
                     <div className="relative">
-                        <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <UserIcon className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                         <input
-                            type="email"
+                            type="text"
                             required
                             value={data.email}
                             onChange={(e) => setData('email', e.target.value)}
-                            placeholder="sample@theinns.com"
-                            autoComplete="off"
+                            placeholder="Enter username or email"
+                            autoComplete="username"
                             className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:border-[#D4AF37] focus:ring-4 focus:ring-[#D4AF37]/20 transition"
                         />
                     </div>

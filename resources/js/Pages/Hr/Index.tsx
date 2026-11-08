@@ -760,8 +760,8 @@ export default function HrIndex({
                                                 <td className="py-3 px-4">
                                                     {emp.user ? (
                                                         <div className="space-y-1">
-                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                                                                <Key className="w-3 h-3 text-blue-600" />
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#1E3A5F]/10 text-[#1E3A5F] border border-[#1E3A5F]/20">
+                                                                <Key className="w-3 h-3 text-[#1E3A5F]" />
                                                                 {emp.user.role || 'User'}
                                                             </span>
                                                             {emp.user.email_verified_at ? (
@@ -771,7 +771,7 @@ export default function HrIndex({
                                                                 </div>
                                                             ) : (
                                                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md">
+                                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md">
                                                                         <Clock className="w-3 h-3 text-amber-600" />
                                                                         <span>Unverified</span>
                                                                     </span>
@@ -779,7 +779,7 @@ export default function HrIndex({
                                                                         type="button"
                                                                         onClick={() => handleResendVerification(emp)}
                                                                         title="Resend activation & verification email"
-                                                                        className="text-[10px] text-blue-600 hover:text-blue-800 underline font-bold cursor-pointer"
+                                                                        className="text-[10px] text-[#1E3A5F] hover:text-[#D4AF37] underline font-extrabold cursor-pointer transition-colors"
                                                                     >
                                                                         Resend
                                                                     </button>

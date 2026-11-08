@@ -5,6 +5,7 @@ import TextInput from '@/Components/TextInput';
 import { Transition } from '@headlessui/react';
 import { Link, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
+import { Clock, CheckCircle2, MailCheck } from 'lucide-react';
 
 export default function UpdateProfileInformation({
     mustVerifyEmail,
@@ -75,23 +76,30 @@ export default function UpdateProfileInformation({
                 </div>
 
                 {mustVerifyEmail && user.email_verified_at === null && (
-                    <div>
-                        <p className="mt-2 text-sm text-gray-800 dark:text-gray-200">
-                            Your email address is unverified.
+                    <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-2xl space-y-2.5">
+                        <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
+                            <Clock className="w-4 h-4 text-amber-600" />
+                            <span>Your email address is unverified</span>
+                        </div>
+                        <p className="text-xs text-amber-700 leading-relaxed">
+                            Please verify your email address to ensure full account access and security.
+                        </p>
+                        <div>
                             <Link
                                 href={route('verification.send')}
                                 method="post"
                                 as="button"
-                                className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 dark:text-gray-400 dark:hover:text-gray-100 dark:focus:ring-offset-gray-800"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1E3A5F] hover:bg-[#1E3A5F]/90 text-[#D4AF37] text-xs font-bold transition shadow-xs cursor-pointer border border-[#D4AF37]/30"
                             >
-                                Click here to re-send the verification email.
+                                <MailCheck className="w-3.5 h-3.5" />
+                                <span>Re-send Verification Email</span>
                             </Link>
-                        </p>
+                        </div>
 
                         {status === 'verification-link-sent' && (
-                            <div className="mt-2 text-sm font-medium text-green-600 dark:text-green-400">
-                                A new verification link has been sent to your
-                                email address.
+                            <div className="flex items-center gap-2 mt-2 text-xs font-semibold text-emerald-800 bg-emerald-100/80 p-2.5 rounded-xl border border-emerald-300">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                                <span>A new verification link has been sent to your email address.</span>
                             </div>
                         )}
                     </div>

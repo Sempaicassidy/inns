@@ -402,19 +402,19 @@ class SaasAdminController extends Controller
             ],
             [
                 'role' => 'owner',
-                'title' => 'Hotel Owner / Director (Mmiliki wa Hoteli)',
+                'title' => 'Hotel Owner / Director',
                 'badge' => 'Executive Ownership',
                 'scope' => 'Multi-Branch Oversight & Executive Approvals',
-                'description' => 'Usimamizi wa kiwango cha juu: mapato ya matawi yote (Multi-Property), kuidhinisha maombi ya fedha (Requisitions), kutoa miongozo ya kiutendaji (Directives), kuzuia mianya ya hasara (Loss Prevention), na mikopo/gawio la mwekezaji (Drawings).',
+                'description' => 'High-level multi-property oversight, manager expenditure approvals, operational directives, loss prevention audit, and owner dividend drawings.',
                 'users_count' => User::where('role', 'owner')->orWhere('roles', 'like', '%"owner"%')->count(),
                 'permissions' => ['Executive Directives', 'Requisition Approvals', 'Multi-Branch Financials', 'Loss Prevention Audit', 'Owner Dividends/Drawings', 'Branch Switcher & Inspection'],
             ],
             [
                 'role' => 'general_manager',
-                'title' => 'General Manager (Meneja Mkuu)',
+                'title' => 'General Manager',
                 'badge' => 'Operations Executive',
                 'scope' => 'Property Daily Operations & Leadership',
-                'description' => 'Udhibiti wa uendeshaji wa hoteli husika: mapato ya kila siku, night audit, ununuzi wa dharura na stoo, kuratibu watumishi, na kutekeleza maagizo ya mwenye hoteli.',
+                'description' => 'Day-to-day hotel operations management: daily revenue, night audit, store purchasing, staff coordination, and executing owner directives.',
                 'users_count' => User::where('role', 'general_manager')->orWhere('roles', 'like', '%"general_manager"%')->count(),
                 'permissions' => ['Property Operations', 'Night Audit', 'Staff & Roster', 'Inventory & Stores', 'Guest Folios', 'Submit Requisitions to Owner'],
             ],
@@ -423,7 +423,7 @@ class SaasAdminController extends Controller
                 'title' => 'Front Desk Receptionist',
                 'badge' => 'Operations Desk',
                 'scope' => 'Front Desk & Guest Care',
-                'description' => 'Kupokea wageni, kurekodi reservation mpya, check-in, check-out, room rack view, na kutoa bili za wageni.',
+                'description' => 'Guest check-in, check-out, room reservations, Gantt rack management, and guest folio billing.',
                 'users_count' => User::where('role', 'receptionist')->count(),
                 'permissions' => ['New Booking', 'Check-In / Out', 'Gantt Calendar', 'Folio Payments', 'Guest CRM'],
             ],
@@ -432,7 +432,7 @@ class SaasAdminController extends Controller
                 'title' => 'Hotel Accountant / Finance Officer',
                 'badge' => 'Finance & Audit',
                 'scope' => 'Accounting & Revenue Audit',
-                'description' => 'Kurekodi matumizi, uhakiki wa shift za cashier, taarifa za mapato ya POS, madeni ya wateja, na kodi.',
+                'description' => 'Expense vouchers, cashier shift reconciliation, POS revenue audits, accounts receivable, and tax compliance.',
                 'users_count' => User::where('role', 'accountant')->orWhere('role', 'senior_accountant')->count(),
                 'permissions' => ['Cashier Shifts', 'Expense Vouchers', 'Financial Ledgers', 'Tax & Invoicing'],
             ],
@@ -441,7 +441,7 @@ class SaasAdminController extends Controller
                 'title' => 'Housekeeping Supervisor',
                 'badge' => 'Room Sanitation',
                 'scope' => 'Room Sanitation & Status',
-                'description' => 'Kukagua usafi wa vyumba, kubadili hali ya chumba (Dirty kwenda Clean/Inspected), na kuripoti vifaa vinavyohitaji ukarabati.',
+                'description' => 'Room cleanliness inspection, room housekeeping status updates, and maintenance request logging.',
                 'users_count' => User::where('role', 'housekeeping')->count(),
                 'permissions' => ['Room Status Update', 'Maintenance Logging', 'Housekeeping Roster'],
             ],
@@ -450,7 +450,7 @@ class SaasAdminController extends Controller
                 'title' => 'Restaurant & Bar Cashier',
                 'badge' => 'Point of Sale',
                 'scope' => 'Restaurant & Beverage POS',
-                'description' => 'Kupokea maagizo ya mezani, kutuma KOT jikoni, kukusanya malipo ya chakula/vinywaji, na uhamisho wa bili chumbani.',
+                'description' => 'Table orders, KOT kitchen tickets dispatch, food and beverage payment processing, and room charge transfers.',
                 'users_count' => User::where('role', 'restaurant_cashier')->orWhere('role', 'pos_cashier')->count() ?: 3,
                 'permissions' => ['Table Ordering', 'KOT Dispatch', 'Cash / Card / Room Charge', 'Shift Closing'],
             ],
@@ -1646,7 +1646,7 @@ class SaasAdminController extends Controller
         $allSettings = array_merge($currentSettings, $validated);
         cache()->put('cms_landing_settings', $allSettings, now()->addMonths(6));
 
-        return redirect()->back()->with('success', 'Hero Slides na mipangilio ya Website CMS vimehifadhiwa kikamilifu na viko hewani sasa.');
+        return redirect()->back()->with('success', 'Hero slides and Website CMS settings have been saved successfully and are now live.');
     }
 
     /**

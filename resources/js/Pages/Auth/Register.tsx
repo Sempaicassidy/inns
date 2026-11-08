@@ -25,7 +25,7 @@ export default function Register() {
     return (
         <GuestLayout
             title="Create Account"
-            subtitle="Jisajili kuanza kutumia mfumo wa THE INNS"
+            subtitle="Sign up to get started with THE INNS"
             cardMaxWidth="max-w-md"
         >
             <Head title="Register - THE INNS" />
@@ -134,7 +134,7 @@ export default function Register() {
                     disabled={processing}
                     className="w-full py-3.5 px-4 rounded-2xl bg-[#D4AF37] hover:bg-[#B8960C] text-[#1E3A5F] font-bold text-sm shadow-md shadow-[#D4AF37]/30 active:scale-[0.99] transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                    <span>{processing ? 'Inasajili...' : 'Register Account'}</span>
+                    <span>{processing ? 'Registering...' : 'Register Account'}</span>
                     <ArrowRight className="w-4 h-4 stroke-[2.5]" />
                 </button>
 
@@ -150,7 +150,7 @@ export default function Register() {
 
             <div className="text-center pt-2">
                 <p className="text-[11px] text-slate-400 font-medium">
-                    Secure System Access • THE INNS
+                    Secure System Access | THE INNS
                 </p>
             </div>
         </GuestLayout>

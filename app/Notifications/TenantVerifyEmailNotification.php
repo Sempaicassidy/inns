@@ -42,40 +42,40 @@ class TenantVerifyEmailNotification extends Notification
         }
 
         $username = $notifiable->username ?? $notifiable->email;
-        $phone = $notifiable->phone ?? 'Bado haijawekwa';
+        $phone = $notifiable->phone ?? 'Not specified';
 
         $verificationUrl = $this->verificationUrl($notifiable);
         $expire = Config::get('auth.verification.expire', 60);
 
         $hasSpecificHotel = ($hotelName !== $systemName);
-        $propertyLabel = $hasSpecificHotel ? 'Hotel / Property' : 'Mfumo / Platform';
+        $propertyLabel = $hasSpecificHotel ? 'Hotel / Property' : 'Platform';
 
         $mail = (new MailMessage)
             ->from(config('mail.from.address', 'info@haulaenterprises.co.tz'), $hotelName)
-            ->subject("[{$hotelName}] Uanzishwaji wa Akaunti / Account Activation")
-            ->greeting("Habari {$notifiable->name},");
+            ->subject("[{$hotelName}] Account Activation")
+            ->greeting("Hello {$notifiable->name},");
 
         if ($hasSpecificHotel) {
-            $mail->line("Hongera na karibu kwenye mfumo wa **{$hotelName}** ({$systemName})! Akaunti yako ya kazi imesajiliwa kikamilifu.")
-                ->line("Taarifa za kuingia na kuwezesha akaunti:")
-                ->line("• **{$propertyLabel}:** {$hotelName}")
-                ->line("• **Mfumo:** {$systemName}")
-                ->line("• **Username ya Kuingilia:** {$username}")
-                ->line("• **Simu ya Mawasiliano:** {$phone}");
+            $mail->line("Welcome to **{$hotelName}** ({$systemName})! Your employee account has been successfully registered.")
+                ->line("Account login and activation details:")
+                ->line("- **{$propertyLabel}:** {$hotelName}")
+                ->line("- **Platform:** {$systemName}")
+                ->line("- **Username:** {$username}")
+                ->line("- **Contact Phone:** {$phone}");
         } else {
-            $mail->line("Hongera na karibu kwenye mfumo wa **{$systemName}**! Akaunti yako ya kazi imesajiliwa kikamilifu.")
-                ->line("Taarifa za kuingia na kuwezesha akaunti:")
-                ->line("• **{$propertyLabel}:** {$systemName}")
-                ->line("• **Username ya Kuingilia:** {$username}")
-                ->line("• **Simu ya Mawasiliano:** {$phone}");
+            $mail->line("Welcome to **{$systemName}**! Your employee account has been successfully registered.")
+                ->line("Account login and activation details:")
+                ->line("- **{$propertyLabel}:** {$systemName}")
+                ->line("- **Username:** {$username}")
+                ->line("- **Contact Phone:** {$phone}");
         }
 
         return $mail
-            ->line("Kabla ya kuanza kufanya kazi kwenye mfumo, tafadhali thibitisha barua pepe yako kwa kubonyeza kitufe hapa chini ili kuwezesha (activate) akaunti yako:")
-            ->action("Washa Akaunti Yangu ({$hotelName})", $verificationUrl)
-            ->line("Kiungo hiki cha uthibitishaji kitakuwa hai kwa dakika {$expire}.")
-            ->line("Ikiwa hukuwa umesajiliwa na uongozi wa {$hotelName}, tafadhali wasiliana na ofisi ya usimamizi.")
-            ->salutation("Uongozi wa {$hotelName}");
+            ->line("Before accessing your workspace, please verify your email address by clicking the button below to activate your account:")
+            ->action("Activate My Account ({$hotelName})", $verificationUrl)
+            ->line("This verification link will remain active for {$expire} minutes.")
+            ->line("If you were not registered by the management of {$hotelName}, please contact system administration.")
+            ->salutation("Management at {$hotelName}");
     }
 
     /**

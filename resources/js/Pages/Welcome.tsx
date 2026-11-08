@@ -37,7 +37,6 @@ import {
     ShieldCheck,
     ShoppingBag,
     Smartphone,
-    Sparkles,
     Star,
     Tablet,
     TrendingUp,
@@ -99,28 +98,24 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
     const defaultSlides = useMemo(() => [
         {
             id: 'slide_1',
-            badge: cms_content?.hero_badge || 'THE INNS • Centralized Hospitality OS 2026',
             title: cms_content?.hero_title || 'Complete Modern Cloud PMS for Hotels, Lodges & Resorts',
             subtitle: cms_content?.hero_subtitle || 'Manage rooms, front desk, reservations, legal contracts, invoices, payment receipts, POS, and financial reporting seamlessly on one unified cloud platform.',
             image: cms_content?.hero_image || '/uploads/cms/hero_1794042362.png',
         },
         {
             id: 'slide_2',
-            badge: 'SAFARI & BOUTIQUE LODGES',
             title: 'Modern Operations for Safari Lodges, Camps & Luxury Boutique Resorts',
             subtitle: 'Track guest stays, room calendar Gantt racks, folios and payments, with automated daily manager flash reports via SMS and WhatsApp.',
             image: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1920&q=80&fit=crop',
         },
         {
             id: 'slide_3',
-            badge: 'RESTAURANT & BAR TOUCHSCREEN POS',
             title: 'Touchscreen Restaurant POS, Grocery Minimart & Automated Night Audit',
             subtitle: 'Fast sales ordering for resident and walk-in guests, kitchen KOT tickets, inventory stock management, and double-entry accounting ledger.',
             image: 'https://images.unsplash.com/photo-1551882547-ff40c63fe524?w=1920&q=80&fit=crop',
         },
         {
             id: 'slide_4',
-            badge: 'MULTI-PROPERTY CENTRALIZED CLOUD',
             title: 'Manage Multiple Hotel Properties & Branches From a Single Command Hub',
             subtitle: 'Consolidate multiple branches across regions, benchmark property revenue performance in real-time, enforce RBAC permissions, and eliminate revenue leakage.',
             image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=1920&q=80&fit=crop',
@@ -152,7 +147,6 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
     }, [heroSlides.length]);
 
     const currentSlide = heroSlides[heroSlideIndex] || heroSlides[0] || {
-        badge: 'THE INNS • Centralized Hospitality OS 2026',
         title: 'Complete Modern Cloud PMS for Hotels, Lodges & Resorts',
         subtitle: 'Manage rooms, front desk, reservations, legal contracts, invoices, payment receipts, POS, and financial reporting seamlessly on one unified cloud platform.',
     };
@@ -483,12 +477,6 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                 </div>
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-                    {/* Badge (Dynamic per slide) */}
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/95 backdrop-blur-md text-[#8c7003] font-black text-xs mb-4 border border-[#D4AF37]/60 shadow-xs transition-all duration-500">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>{currentSlide.badge}</span>
-                    </div>
-
                     {/* Headline (Dynamic per slide) with subtle ambient shadow for perfect contrast */}
                     <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-950 tracking-tight max-w-5xl mx-auto leading-[1.14] transition-all duration-500 min-h-[120px] sm:min-h-[140px] flex items-center justify-center drop-shadow-[0_2px_12px_rgba(255,255,255,0.9)]">
                         <span>{currentSlide.title}</span>
@@ -591,8 +579,7 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                         {/* Top Bar with Live Cloud Sync Pulse & Interactive Trigger */}
                         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-200/70 pb-6 relative z-10">
                             <div>
-                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D4AF37]/10 text-[#B8960C] text-xs font-bold border border-[#D4AF37]/30">
-                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#D4AF37]/10 text-[#B8960C] text-xs font-bold border border-[#D4AF37]/30">
                                     <span>Real-Time Cloud Synchronization</span>
                                 </div>
                                 <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-2 tracking-tight">
@@ -681,7 +668,7 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                                                     <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-bold border-b border-slate-100 pb-1.5 gap-1">
                                                         <span className="text-slate-800 flex items-center gap-1 sm:gap-1.5 truncate">
                                                             <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#D4AF37] shrink-0" />
-                                                            <span className="truncate">Room 101 • Safari Suite</span>
+                                                            <span className="truncate">Room 101 - Safari Suite</span>
                                                         </span>
                                                         <span className="px-1.5 sm:px-2 py-0.5 rounded bg-[#D4AF37]/15 text-[#B8960C] text-[8px] sm:text-[9px] font-extrabold shrink-0">
                                                             Dr. Mhando
@@ -726,7 +713,7 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                                             <div className="bg-emerald-600 text-white px-3 py-2 flex items-center justify-between font-bold">
                                                 <div className="flex items-center gap-1.5">
                                                     <Utensils className="w-3.5 h-3.5" />
-                                                    <span className="text-[11px]">Table 04 • Poolside</span>
+                                                    <span className="text-[11px]">Table 04 - Poolside</span>
                                                 </div>
                                                 <span className="text-[9px] bg-emerald-700 px-1.5 py-0.5 rounded font-mono">
                                                     KOT #108
@@ -1527,9 +1514,9 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
 
                     <div className="mt-8 text-xs text-slate-400 flex items-center justify-center gap-6">
                         <span>No credit card required</span>
-                        <span>•</span>
+                        <span className="text-slate-600">|</span>
                         <span>Instant cloud setup</span>
-                        <span>•</span>
+                        <span className="text-slate-600">|</span>
                         <span>24/7 Local Support</span>
                     </div>
                 </div>

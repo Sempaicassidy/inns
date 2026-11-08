@@ -49,7 +49,7 @@ class TenantResetPasswordNotification extends Notification
         }
 
         $username = $notifiable->username ?? $notifiable->email;
-        $phone = $notifiable->phone ?? 'Bado haijawekwa';
+        $phone = $notifiable->phone ?? 'Not specified';
 
         $url = url(route('password.reset', [
             'token' => $this->token,
@@ -59,21 +59,21 @@ class TenantResetPasswordNotification extends Notification
         $expire = config('auth.passwords.'.config('auth.defaults.passwords').'.expire', 60);
 
         $hasSpecificHotel = ($hotelName !== $systemName);
-        $propertyLabel = $hasSpecificHotel ? 'Hotel / Property' : 'Mfumo / Platform';
+        $propertyLabel = $hasSpecificHotel ? 'Hotel / Property' : 'Platform';
 
         return (new MailMessage)
             ->from(config('mail.from.address', 'info@haulaenterprises.co.tz'), $hotelName)
-            ->subject("[{$hotelName}] Password Reset Request / Urejeshaji wa Nenosiri")
-            ->greeting("Habari {$notifiable->name},")
-            ->line("Ujumbe huu unatumwa kwako kutoka **{$hotelName}** kwa sababu kumekuwa na ombi la kurejesha nenosiri (password recovery) la akaunti yako ya mfumo.")
-            ->line("Taarifa za akaunti yako ya kazi:")
-            ->line("• **{$propertyLabel}:** {$hotelName}")
-            ->line("• **Username:** {$username}")
-            ->line("• **Recovery Phone:** {$phone}")
-            ->action("Weka Nenosiri Jipya ({$hotelName})", $url)
-            ->line("Kiungo (link) hiki cha kurejesha nenosiri kitakwisha muda wake baada ya dakika {$expire}.")
-            ->line("Ikiwa hukuomba kubadilisha nenosiri, hakuna hatua nyingine inayohitajika; akaunti yako iko salama.")
-            ->salutation("Uongozi wa {$hotelName}");
+            ->subject("[{$hotelName}] Password Reset Request")
+            ->greeting("Hello {$notifiable->name},")
+            ->line("You are receiving this email from **{$hotelName}** because a password reset request was received for your system account.")
+            ->line("Account information:")
+            ->line("- **{$propertyLabel}:** {$hotelName}")
+            ->line("- **Username:** {$username}")
+            ->line("- **Recovery Phone:** {$phone}")
+            ->action("Reset Password ({$hotelName})", $url)
+            ->line("This password reset link will expire in {$expire} minutes.")
+            ->line("If you did not request a password reset, no further action is required; your account remains secure.")
+            ->salutation("Management at {$hotelName}");
     }
 }
 

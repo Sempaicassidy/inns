@@ -60,7 +60,6 @@ import {
     ShieldCheck,
     ShoppingBag,
     Sliders,
-    Sparkles,
     ToggleLeft,
     Trash2,
     TrendingDown,
@@ -482,7 +481,7 @@ export default function SaasAdminDashboard({
     const defaultHeroSlides: HeroSlideItem[] = [
         {
             id: 'slide_1',
-            badge: cms_content?.hero_badge || 'THE INNS • Centralized Hospitality OS 2026',
+            badge: cms_content?.hero_badge || 'Centralized Hospitality OS 2026',
             title: cms_content?.hero_title || 'Complete Modern Cloud PMS for Hotels, Lodges & Resorts',
             subtitle: cms_content?.hero_subtitle || 'Manage rooms, front desk, reservations, legal contracts, invoices, payment receipts, POS, and financial reporting seamlessly on one unified cloud platform.',
             image: cms_content?.hero_image || '/uploads/cms/hero_1794042362.png',
@@ -517,7 +516,7 @@ export default function SaasAdminDashboard({
     const initialSlides: HeroSlideItem[] = (cms_content?.hero_slides && Array.isArray(cms_content.hero_slides) && cms_content.hero_slides.length > 0)
         ? cms_content.hero_slides.map((s: any, idx: number) => ({
             id: s.id || `slide_${idx + 1}`,
-            badge: s.badge || 'THE INNS • Hospitality OS',
+            badge: s.badge || 'Hospitality OS',
             title: s.title || '',
             subtitle: s.subtitle || '',
             image: s.image || '',
@@ -561,7 +560,7 @@ export default function SaasAdminDashboard({
         const newIndex = heroSlidesList.length + 1;
         const newSlide: HeroSlideItem = {
             id: newId,
-            badge: `NEW HOSPITALITY MODULE • SLIDE ${newIndex}`,
+            badge: `NEW HOSPITALITY MODULE - SLIDE ${newIndex}`,
             title: `Next-Generation Hotel Management #${newIndex}`,
             subtitle: 'Provide a brief summary of the key features, advantages, and operational speed of the platform here.',
             image: 'https://images.unsplash.com/photo-1566073741257-6a1056039daa?w=1920&q=80&fit=crop',
@@ -602,7 +601,7 @@ export default function SaasAdminDashboard({
         hero_subtitle: cms_content?.hero_subtitle || 'Manage rooms, front desk, reservations, legal contracts, invoices, payment receipts, POS, and financial reporting seamlessly on one unified cloud platform.',
         hero_cta_text: cms_content?.hero_cta_text || 'Start 14-Day Free Trial',
         demo_cta_text: cms_content?.demo_cta_text || 'Schedule a Live Platform Demo',
-        hero_badge: cms_content?.hero_badge || 'THE INNS • Centralized Hospitality OS 2026',
+        hero_badge: cms_content?.hero_badge || 'Centralized Hospitality OS 2026',
         demo_cta_phone: cms_content?.demo_cta_phone || '+255 744 396 220',
         hero_image: null as File | null,
         remove_hero_image: false,
@@ -3002,7 +3001,7 @@ export default function SaasAdminDashboard({
                                                                         {slide.title || `Slide #${idx + 1}`}
                                                                     </span>
                                                                     <span className="text-[10px] text-slate-500 font-medium truncate block">
-                                                                        {slide.badge || 'THE INNS • Slide'}
+                                                                        {slide.badge || 'Hospitality OS'}
                                                                     </span>
                                                                 </div>
                                                             </div>
@@ -3013,7 +3012,7 @@ export default function SaasAdminDashboard({
                                                                     type="button"
                                                                     onClick={() => handleMoveSlide(idx, 'up')}
                                                                     disabled={idx === 0}
-                                                                    title="Sogeza Juu (Move Up)"
+                                                                    title="Move Up"
                                                                     className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer"
                                                                 >
                                                                     <ChevronUp className="w-4 h-4" />
@@ -3022,7 +3021,7 @@ export default function SaasAdminDashboard({
                                                                     type="button"
                                                                     onClick={() => handleMoveSlide(idx, 'down')}
                                                                     disabled={idx === heroSlidesList.length - 1}
-                                                                    title="Sogeza Chini (Move Down)"
+                                                                    title="Move Down"
                                                                     className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer"
                                                                 >
                                                                     <ChevronDown className="w-4 h-4" />
@@ -3030,7 +3029,7 @@ export default function SaasAdminDashboard({
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => setActivePreviewIndex(idx)}
-                                                                    title="Tazama Kwenye Simulation"
+                                                                    title="View Simulation"
                                                                     className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 transition cursor-pointer ${
                                                                         isActivePreview ? 'bg-blue-600 text-white shadow-2xs' : 'bg-slate-200/80 text-slate-700 hover:bg-slate-300'
                                                                     }`}
@@ -3055,14 +3054,14 @@ export default function SaasAdminDashboard({
                                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                                 <div className="sm:col-span-2">
                                                                     <label className="font-bold text-slate-700 block mb-1">
-                                                                        Slide Badge / Tagline (Lebo ya Juu) *
+                                                                        Slide Badge / Tagline *
                                                                     </label>
                                                                     <input
                                                                         type="text"
                                                                         required
                                                                         value={slide.badge}
                                                                         onChange={(e) => handleUpdateSlideField(idx, 'badge', e.target.value)}
-                                                                        placeholder="Mfano: THE INNS • Centralized Hospitality OS 2026"
+                                                                        placeholder="e.g. Centralized Hospitality OS 2026"
                                                                         className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-blue-500"
                                                                     />
                                                                 </div>
@@ -3154,8 +3153,7 @@ export default function SaasAdminDashboard({
                                         {/* Global CTA Buttons Settings */}
                                         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-3.5 text-xs">
                                             <h4 className="font-extrabold text-slate-900 border-b border-slate-100 pb-2 flex items-center gap-2">
-                                                <Sparkles className="w-4 h-4 text-[#D4AF37]" />
-                                                <span>Global CTA Buttons (Vitufe vya Chini ya Hero Section)</span>
+                                                <span>Global Call-to-Action Buttons</span>
                                             </h4>
                                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                                 <div>
@@ -3277,12 +3275,6 @@ export default function SaasAdminDashboard({
 
                                                         {/* Simulated Live Content */}
                                                         <div className="space-y-3.5 text-center relative z-10 my-auto">
-                                                            {/* Badge */}
-                                                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/95 backdrop-blur-md text-[#8c7003] font-black text-[10px] border border-[#D4AF37]/50 shadow-xs">
-                                                                <Sparkles className="w-3 h-3" />
-                                                                <span>{currentPreview.badge || 'THE INNS • OS'}</span>
-                                                            </div>
-
                                                             {/* Headline */}
                                                             <h2 className="text-xl sm:text-2xl font-black text-slate-950 tracking-tight leading-snug drop-shadow-[0_2px_8px_rgba(255,255,255,0.9)]">
                                                                 {currentPreview.title || 'Slide Headline'}
@@ -3323,7 +3315,7 @@ export default function SaasAdminDashboard({
                                                         <div className="pt-4 border-t border-slate-200/60 flex items-center justify-between text-[10px] text-slate-500 font-medium">
                                                             <span className="flex items-center gap-1">
                                                                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                                                <span>{heroSlidesList.length} Slides zitazunguka kiotomatiki</span>
+                                                                <span>{heroSlidesList.length} Slides rotate automatically</span>
                                                             </span>
                                                             <span className="font-bold text-slate-700">100% Dynamic</span>
                                                         </div>
@@ -3335,11 +3327,10 @@ export default function SaasAdminDashboard({
                                         {/* Helper Tips Card */}
                                         <div className="bg-blue-50/60 border border-blue-200/70 rounded-2xl p-4 text-xs text-blue-900 space-y-1.5">
                                             <span className="font-extrabold flex items-center gap-1.5 text-blue-800">
-                                                <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                                                <span>Ufafanuzi wa Hero Slides:</span>
+                                                <span>Hero Slides Information:</span>
                                             </span>
                                             <p className="text-[11px] text-blue-700 leading-relaxed">
-                                                Kila slide unayoongeza au kubadilisha hapa itakuwa na picha yake nyuma ya maandishi na maandishi yake yanayobadilika kwa pamoja kwenye Landing Page. Idadi ya vidoti (dots) chini itaongezeka au kupungua kulingana na idadi ya slides ulizoweka.
+                                                Each slide configured here features its own background image and synchronized headline text displayed across the landing page hero section.
                                             </p>
                                         </div>
                                     </div>
@@ -3413,7 +3404,7 @@ export default function SaasAdminDashboard({
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-4">
                                     <h4 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
-                                        <Sparkles className="w-4 h-4 text-blue-600" />
+                                        <MessageSquare className="w-4 h-4 text-blue-600" />
                                         <span>Customer Testimonials Showcase</span>
                                     </h4>
                                     <div className="space-y-3">
@@ -3422,7 +3413,7 @@ export default function SaasAdminDashboard({
                                                 <div className="flex items-center justify-between">
                                                     <div>
                                                         <span className="font-bold text-slate-900 text-xs block">{t.name}</span>
-                                                        <span className="text-[11px] text-slate-400">{t.role} • {t.hotel}</span>
+                                                        <span className="text-[11px] text-slate-400">{t.role} - {t.hotel}</span>
                                                     </div>
                                                     <div className="flex text-amber-400 text-xs">★★★★★</div>
                                                 </div>

@@ -31,7 +31,7 @@ export default function ResetPassword({
     return (
         <GuestLayout
             title="Reset Password"
-            subtitle="Weka nenosiri lako jipya la akaunti ya mfumo"
+            subtitle="Set your new system account password"
             cardMaxWidth="max-w-md"
         >
             <Head title="Reset Password - THE INNS" />
@@ -126,7 +126,7 @@ export default function ResetPassword({
                         disabled={processing}
                         className="w-full py-3.5 px-4 rounded-2xl bg-[#D4AF37] hover:bg-[#B8960C] text-[#1E3A5F] font-bold text-sm shadow-md shadow-[#D4AF37]/30 active:scale-[0.99] transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                        <span>{processing ? 'Inahifadhi Nenosiri...' : 'Hifadhi Nenosiri Jipya'}</span>
+                        <span>{processing ? 'Saving Password...' : 'Save New Password'}</span>
                         <ArrowRight className="w-4 h-4 stroke-[2.5]" />
                     </button>
 
@@ -136,14 +136,14 @@ export default function ResetPassword({
                             className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1E3A5F] hover:text-[#D4AF37] transition-colors py-1.5 px-3 rounded-xl hover:bg-slate-50"
                         >
                             <ArrowLeft className="w-3.5 h-3.5" />
-                            <span>Rudi Kwenye Kuingia (Sign In)</span>
+                            <span>Back to Sign In</span>
                         </Link>
                     </div>
                 </form>
 
                 <div className="text-center pt-2">
                     <p className="text-[11px] text-slate-400 font-medium">
-                        Secure System Access • THE INNS
+                        Secure System Access | THE INNS
                     </p>
                 </div>
             </div>

@@ -17,7 +17,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
     return (
         <GuestLayout
             title="Forgot Password"
-            subtitle="Omba kiungo cha kurejesha nenosiri la akaunti yako"
+            subtitle="Request a secure password reset link"
             cardMaxWidth="max-w-md"
         >
             <Head title="Forgot Password - THE INNS" />
@@ -32,7 +32,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
 
                 <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-center">
                     <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                        Umesahau nenosiri lako? Weka <strong>Username</strong> au <strong>Email</strong> yako hapa chini na tutakutumia kiungo salama cha kuweka nenosiri kwenye barua pepe iliyounganishwa na akaunti yako.
+                        Forgot your password? Enter your registered <strong>Username</strong> or <strong>Email address</strong> below and we will send a password reset link to your verified email.
                     </p>
                 </div>
 
@@ -69,7 +69,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
                         disabled={processing}
                         className="w-full py-3.5 px-4 rounded-2xl bg-[#D4AF37] hover:bg-[#B8960C] text-[#1E3A5F] font-bold text-sm shadow-md shadow-[#D4AF37]/30 active:scale-[0.99] transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                        <span>{processing ? 'Inatuma Kiungo...' : 'Tuma Kiungo cha Kurejesha Nenosiri'}</span>
+                        <span>{processing ? 'Sending Link...' : 'Send Password Reset Link'}</span>
                         <ArrowRight className="w-4 h-4 stroke-[2.5]" />
                     </button>
 
@@ -79,14 +79,14 @@ export default function ForgotPassword({ status }: { status?: string }) {
                             className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1E3A5F] hover:text-[#D4AF37] transition-colors py-1.5 px-3 rounded-xl hover:bg-slate-50"
                         >
                             <ArrowLeft className="w-3.5 h-3.5" />
-                            <span>Rudi Kwenye Kuingia (Sign In)</span>
+                            <span>Back to Sign In</span>
                         </Link>
                     </div>
                 </form>
 
                 <div className="text-center pt-2">
                     <p className="text-[11px] text-slate-400 font-medium">
-                        Secure System Access • THE INNS
+                        Secure System Access | THE INNS
                     </p>
                 </div>
             </div>

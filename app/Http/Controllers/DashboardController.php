@@ -287,7 +287,7 @@ class DashboardController extends Controller
         $property = $user->property ?? Property::where('tenant_id', $user->tenant_id)->first();
 
         if (! $property) {
-            return redirect()->back()->with('error', 'Hakuna tawi lililounganishwa na akaunti yako.');
+            return redirect()->back()->with('error', 'No property is linked to your account.');
         }
 
         $validated = $request->validate([
@@ -329,15 +329,15 @@ class DashboardController extends Controller
                 'tenant_id' => $user->tenant_id,
                 'user_id' => $owner->id,
                 'target_role' => 'owner',
-                'title' => "Ombi Jipya la Idhini ({$reqNo}) kutoka kwa {$user->name}",
-                'message' => "Tawi: {$property->name} — Kiasi: TZS " . number_format($validated['amount'], 0) . " — {$validated['title']}",
+                'title' => "New Expenditure Approval Request ({$reqNo}) from {$user->name}",
+                'message' => "Property: {$property->name} — Amount: TZS " . number_format($validated['amount'], 0) . " — {$validated['title']}",
                 'category' => 'governance',
                 'severity' => $validated['urgency'] === 'emergency' ? 'high' : 'info',
                 'action_url' => route('owner.index', ['tab' => 'approvals']),
             ]);
         }
 
-        return redirect()->back()->with('success', "Ombi la Idhini {$reqNo} limetumwa kwa Mmiliki wa Hoteli kwa ukaguzi.");
+        return redirect()->back()->with('success', "Approval Request {$reqNo} has been submitted to Property Owner for review.");
     }
 
     /**
@@ -355,7 +355,7 @@ class DashboardController extends Controller
             'status' => 'acknowledged',
             'acknowledged_at' => now(),
             'acknowledged_by' => $user->id,
-            'acknowledgement_notes' => $validated['notes'] ?? 'Imethibitishwa na Meneja.',
+            'acknowledgement_notes' => $validated['notes'] ?? 'Acknowledged by Manager.',
         ]);
 
         // Notify the Owner who created it
@@ -364,15 +364,15 @@ class DashboardController extends Controller
                 'tenant_id' => $directive->tenant_id,
                 'user_id' => $directive->created_by,
                 'target_role' => 'owner',
-                'title' => "Mwongozo Umepokelewa na Meneja ({$user->name})",
-                'message' => "Meneja amethibitisha kupokea maelekezo ya: \"{$directive->title}\"",
+                'title' => "Directive Acknowledged by Manager ({$user->name})",
+                'message' => "Manager confirmed receipt of directive: \"{$directive->title}\"",
                 'category' => 'governance',
                 'severity' => 'info',
                 'action_url' => route('owner.index', ['tab' => 'directives']),
             ]);
         }
 
-        return redirect()->back()->with('success', 'Umethibitisha kupokea mwongozo wa mmiliki.');
+        return redirect()->back()->with('success', 'You have acknowledged the owner directive.');
     }
 
     // ─────────────────────────────────────────────────────────────────────────

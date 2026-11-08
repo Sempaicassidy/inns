@@ -20,7 +20,7 @@ export default function ConfirmPassword() {
     return (
         <GuestLayout
             title="Confirm Password"
-            subtitle="Uthibitisho wa usalama kabla ya kuendelea"
+            subtitle="Security confirmation before proceeding"
             cardMaxWidth="max-w-md"
         >
             <Head title="Confirm Password - THE INNS" />
@@ -34,7 +34,7 @@ export default function ConfirmPassword() {
 
                 <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-center">
                     <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                        Hili ni eneo salama la mfumo. Tafadhali thibitisha nenosiri lako kabla ya kuendelea.
+                        This is a secure area of the system. Please confirm your password before continuing.
                     </p>
                 </div>
 
@@ -71,14 +71,14 @@ export default function ConfirmPassword() {
                         disabled={processing}
                         className="w-full py-3.5 px-4 rounded-2xl bg-[#D4AF37] hover:bg-[#B8960C] text-[#1E3A5F] font-bold text-sm shadow-md shadow-[#D4AF37]/30 active:scale-[0.99] transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                        <span>{processing ? 'Inathibitisha...' : 'Thibitisha Nenosiri'}</span>
+                        <span>{processing ? 'Confirming...' : 'Confirm Password'}</span>
                         <ArrowRight className="w-4 h-4 stroke-[2.5]" />
                     </button>
                 </form>
 
                 <div className="text-center pt-2">
                     <p className="text-[11px] text-slate-400 font-medium">
-                        Secure System Access • THE INNS
+                        Secure System Access | THE INNS
                     </p>
                 </div>
             </div>

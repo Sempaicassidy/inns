@@ -90,10 +90,10 @@ export default function PwaInstallButton({ className = '' }: { className?: strin
                             </div>
                             <div>
                                 <h3 className="font-extrabold text-slate-900 text-sm">
-                                    Sakinisha THE INNS App
+                                    Install THE INNS App
                                 </h3>
                                 <p className="text-[11px] text-slate-500">
-                                    Tumia bila kufungua kivinjari kila mara
+                                    Fast desktop & mobile access without opening browser tabs
                                 </p>
                             </div>
                         </div>
@@ -102,33 +102,33 @@ export default function PwaInstallButton({ className = '' }: { className?: strin
                             {isIOS ? (
                                 <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-1.5">
                                     <p className="font-bold text-slate-800 flex items-center gap-1.5">
-                                        <Smartphone className="w-4 h-4 text-blue-600" /> Kwenye iPhone / iPad (Safari):
+                                        <Smartphone className="w-4 h-4 text-blue-600" /> On iPhone / iPad (Safari):
                                     </p>
                                     <ol className="list-decimal list-inside space-y-1 text-[11.5px] pl-1">
-                                        <li>Bonyeza kitufe cha <strong>Share (⎋)</strong> chini ya Safari.</li>
-                                        <li>Tembeza chini kisha chagua <strong>Add to Home Screen (⊕)</strong>.</li>
-                                        <li>Bonyeza <strong>Add</strong> juu kulia.</li>
+                                        <li>Tap the <strong>Share button (⎋)</strong> at the bottom of Safari.</li>
+                                        <li>Scroll down and select <strong>Add to Home Screen (⊕)</strong>.</li>
+                                        <li>Tap <strong>Add</strong> in the top right corner.</li>
                                     </ol>
                                 </div>
                             ) : (
                                 <>
                                     <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-1.5">
                                         <p className="font-bold text-slate-800 flex items-center gap-1.5">
-                                            <Smartphone className="w-4 h-4 text-emerald-600" /> Kwenye Simu (Android Chrome):
+                                            <Smartphone className="w-4 h-4 text-emerald-600" /> On Android (Chrome):
                                         </p>
                                         <ol className="list-decimal list-inside space-y-1 text-[11.5px] pl-1">
-                                            <li>Bonyeza vitone vitatu <strong>(⋮)</strong> juu kulia mwa browser.</li>
-                                            <li>Chagua <strong>"Sakinisha app / Install app"</strong> au <strong>"Add to Home screen"</strong>.</li>
-                                            <li>Bonyeza <strong>Sakinisha / Install</strong>.</li>
+                                            <li>Tap the three dots menu <strong>(⋮)</strong> in the top right corner.</li>
+                                            <li>Select <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.</li>
+                                            <li>Tap <strong>Install</strong> to confirm.</li>
                                         </ol>
                                     </div>
 
                                     <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-1.5">
                                         <p className="font-bold text-slate-800 flex items-center gap-1.5">
-                                            <Monitor className="w-4 h-4 text-blue-600" /> Kwenye Kompyuta (Chrome / Edge):
+                                            <Monitor className="w-4 h-4 text-blue-600" /> On Desktop (Chrome / Edge):
                                         </p>
                                         <p className="text-[11.5px] leading-relaxed">
-                                            Angalia juu kulia kwenye sehemu ya anwani (URL address bar), utaona alama ya <strong>Kompyuta yenye mshale wa chini ⊕ (Install App)</strong>. Bonyeza hapo kusakinisha moja kwa moja.
+                                            Look at the right side of the browser URL address bar and click the <strong>Install App icon (⊕)</strong> to install directly onto your desktop.
                                         </p>
                                     </div>
                                 </>
@@ -140,7 +140,7 @@ export default function PwaInstallButton({ className = '' }: { className?: strin
                             onClick={() => setShowHelpModal(false)}
                             className="mt-5 w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition"
                         >
-                            Nimeelewa
+                            Got It
                         </button>
                     </div>
                 </div>

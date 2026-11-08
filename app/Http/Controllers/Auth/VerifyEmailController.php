@@ -38,7 +38,7 @@ class VerifyEmailController extends Controller
             session(['active_role' => $singleRole]);
             $targetRoute = User::getRoleDashboardRoute($singleRole);
 
-            return redirect()->route($targetRoute)->with('info', 'Akaunti yako tayari imewezeshwa (activated). Karibu kazini!');
+            return redirect()->route($targetRoute)->with('info', 'Your account is already activated. Welcome back!');
         }
 
         // 2. Mark as verified (ONE-TIME ACTIVATION)
@@ -56,6 +56,6 @@ class VerifyEmailController extends Controller
         session(['active_role' => $singleRole]);
         $targetRoute = User::getRoleDashboardRoute($singleRole);
 
-        return redirect()->route($targetRoute)->with('success', 'Hongera! Akaunti yako imewezeshwa (activated) kikamilifu. Karibu kazini!');
+        return redirect()->route($targetRoute)->with('success', 'Congratulations! Your account has been successfully activated. Welcome to your workspace!');
     }
 }

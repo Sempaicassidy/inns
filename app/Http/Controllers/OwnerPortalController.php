@@ -37,7 +37,7 @@ class OwnerPortalController extends Controller
 
         // Enforce Owner or SuperAdmin access
         if (! $user->isOwner() && ! $user->isSuperAdmin()) {
-            return redirect()->route('dashboard')->with('error', 'Huna ruhusa ya kufikia Portal ya Mmiliki.');
+            return redirect()->route('dashboard')->with('error', 'You do not have permission to access the Owner Portal.');
         }
 
         $tenantId = $user->tenant_id;
@@ -313,7 +313,7 @@ class OwnerPortalController extends Controller
                 'tenant_id' => $user->tenant_id,
                 'user_id' => $mgr->id,
                 'target_role' => 'general_manager',
-                'title' => 'Mwongozo Rasmi kutoka kwa Mmiliki: ' . $validated['title'],
+                'title' => 'Official Executive Directive from Owner: ' . $validated['title'],
                 'message' => Str::limit($validated['directive_text'], 140),
                 'category' => 'governance',
                 'severity' => $validated['priority'] === 'urgent' ? 'high' : 'info',
@@ -321,7 +321,7 @@ class OwnerPortalController extends Controller
             ]);
         }
 
-        return redirect()->back()->with('success', 'Mwongozo wa Mmiliki umetumwa kwa mameneja wa matawi.');
+        return redirect()->back()->with('success', 'Executive Owner Directive has been dispatched to branch managers.');
     }
 
     /**
@@ -342,7 +342,7 @@ class OwnerPortalController extends Controller
 
         $directive->update($validated);
 
-        return redirect()->back()->with('success', 'Mwongozo umesasishwa kikamilifu.');
+        return redirect()->back()->with('success', 'Directive has been updated successfully.');
     }
 
     /**
@@ -357,7 +357,7 @@ class OwnerPortalController extends Controller
 
         $directive->delete();
 
-        return redirect()->back()->with('success', 'Mwongozo umefutwa.');
+        return redirect()->back()->with('success', 'Directive has been deleted.');
     }
 
     /**
@@ -404,14 +404,14 @@ class OwnerPortalController extends Controller
             'tenant_id' => $requisition->tenant_id,
             'user_id' => $requisition->requested_by,
             'target_role' => 'general_manager',
-            'title' => 'Ombi Limeidhinishwa na Mmiliki (' . $requisition->requisition_no . ')',
-            'message' => 'Ombi lako la "' . $requisition->title . '" la kiasi cha TZS ' . number_format($requisition->amount_minor / 100, 0) . ' limeidhinishwa.',
+            'title' => 'Requisition Approved by Owner (' . $requisition->requisition_no . ')',
+            'message' => 'Your requisition "' . $requisition->title . '" for TZS ' . number_format($requisition->amount_minor / 100, 0) . ' has been approved.',
             'category' => 'finance',
             'severity' => 'success',
             'action_url' => route('dashboard'),
         ]);
 
-        return redirect()->back()->with('success', "Ombi {$requisition->requisition_no} limeidhinishwa kikamilifu.");
+        return redirect()->back()->with('success', "Requisition {$requisition->requisition_no} has been approved.");
     }
 
     /**
@@ -440,14 +440,14 @@ class OwnerPortalController extends Controller
             'tenant_id' => $requisition->tenant_id,
             'user_id' => $requisition->requested_by,
             'target_role' => 'general_manager',
-            'title' => 'Ombi Limekataliwa na Mmiliki (' . $requisition->requisition_no . ')',
-            'message' => 'Sababu: ' . $validated['owner_notes'],
+            'title' => 'Requisition Rejected by Owner (' . $requisition->requisition_no . ')',
+            'message' => 'Reason: ' . $validated['owner_notes'],
             'category' => 'finance',
             'severity' => 'warning',
             'action_url' => route('dashboard'),
         ]);
 
-        return redirect()->back()->with('warning', "Ombi {$requisition->requisition_no} limekataliwa.");
+        return redirect()->back()->with('warning', "Requisition {$requisition->requisition_no} has been rejected.");
     }
 
     /**
@@ -469,7 +469,7 @@ class OwnerPortalController extends Controller
             'monthly_target_revenue_minor' => $targetMinor,
         ]);
 
-        return redirect()->back()->with('success', "Lengo la mapato kwa {$property->name} limesasishwa: TZS " . number_format($validated['monthly_target_revenue'], 0));
+        return redirect()->back()->with('success', "Monthly revenue target for {$property->name} updated: TZS " . number_format($validated['monthly_target_revenue'], 0));
     }
 
     /**
@@ -506,12 +506,12 @@ class OwnerPortalController extends Controller
         ]);
 
         $typeLabel = match ($validated['drawing_type']) {
-            'dividend' => 'Gawio la Faida (Dividend)',
-            'capital_injection' => 'Mtaji wa Ziada (Capital Injection)',
-            default => 'Kutoa Fedha (Owner Draw)',
+            'dividend' => 'Dividend',
+            'capital_injection' => 'Capital Injection',
+            default => 'Owner Drawing',
         };
 
-        return redirect()->back()->with('success', "Muamala wa {$typeLabel} wa TZS " . number_format($validated['amount'], 0) . " umerekodiwa.");
+        return redirect()->back()->with('success', "{$typeLabel} transaction of TZS " . number_format($validated['amount'], 0) . " recorded successfully.");
     }
 
     /**
@@ -530,7 +530,7 @@ class OwnerPortalController extends Controller
             'owner_inspecting_property_name' => $property->name,
         ]);
 
-        return redirect()->route('dashboard')->with('info', "Unakagua shughuli za tawi: {$property->name} kama Mmiliki wa Hoteli.");
+        return redirect()->route('dashboard')->with('info', "Inspecting operations for property: {$property->name} in Owner Mode.");
     }
 
     /**
@@ -540,6 +540,6 @@ class OwnerPortalController extends Controller
     {
         session()->forget(['owner_inspecting_property_id', 'owner_inspecting_property_name']);
 
-        return redirect()->route('owner.index')->with('success', 'Umerudi kwenye Portal ya Mmiliki.');
+        return redirect()->route('owner.index')->with('success', 'Returned to Executive Owner Portal.');
     }
 }

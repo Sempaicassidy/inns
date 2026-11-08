@@ -19,7 +19,7 @@ import {
     Plus,
     Search,
     Shield,
-    Sparkles,
+    ListTodo,
     Trash2,
     User,
     UserCheck,
@@ -381,8 +381,7 @@ export default function RoomArrangementGrid({
                 <div className="flex flex-wrap items-center gap-2.5">
                     {/* Housekeeping Status Quick Strip */}
                     <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 shadow-2xs">
-                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider hidden sm:inline">HK:</span>
+                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider hidden sm:inline">HK Status:</span>
                         
                         <button
                             type="button"
@@ -864,7 +863,7 @@ export default function RoomArrangementGrid({
                                         }}
                                         className="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
                                     >
-                                        <Sparkles className="w-3.5 h-3.5 text-slate-500" />
+                                        <ListTodo className="w-3.5 h-3.5 text-slate-500" />
                                         <span>Assign Cleaning Task</span>
                                     </button>
                                 )}

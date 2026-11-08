@@ -73,9 +73,9 @@ export default function SelectRole({ roles, activeRole, property }: SelectRolePr
                     {property && (
                         <p className="text-sm text-[#D4AF37]/80 mb-1">{property.name}</p>
                     )}
-                    <h1 className="text-2xl font-bold text-white">Chagua Jukumu Lako</h1>
+                    <h1 className="text-2xl font-bold text-white">Select Your Active Role</h1>
                     <p className="text-sm text-white/70 mt-2">
-                        Una majukumu mengi. Chagua jukumu unalotaka kutumia sasa.
+                        You have multiple roles assigned. Choose the role you want to access now.
                     </p>
                 </div>
 
@@ -100,7 +100,7 @@ export default function SelectRole({ roles, activeRole, property }: SelectRolePr
                                 {/* Text */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="font-semibold text-white">{roleMeta.title_sw}</span>
+                                        <span className="font-semibold text-white">{roleMeta.title || roleMeta.title_sw}</span>
                                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${colorBadge(roleMeta.color)}`}>
                                             {roleMeta.badge}
                                         </span>
@@ -125,12 +125,12 @@ export default function SelectRole({ roles, activeRole, property }: SelectRolePr
                         disabled={processing || !data.role}
                         className="w-full mt-4 py-3 bg-[#D4AF37] text-[#1E3A5F] rounded-lg font-bold hover:bg-[#B8960C] transition disabled:opacity-60 disabled:cursor-not-allowed shadow-lg shadow-[#D4AF37]/30"
                     >
-                        {processing ? 'Inaendelea...' : 'Ingia kwa Jukumu Hili →'}
+                        {processing ? 'Processing...' : 'Continue with Selected Role →'}
                     </button>
                 </form>
 
                 <p className="text-xs text-white/50 mt-6 text-center">
-                    Unaweza kubadilisha jukumu wakati wowote kutoka kwa kitufe cha juu kulia.
+                    You can switch your active role at any time from the top navigation bar.
                 </p>
             </div>
         </>

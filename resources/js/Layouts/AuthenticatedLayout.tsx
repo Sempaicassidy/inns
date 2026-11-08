@@ -395,7 +395,7 @@ export default function AuthenticatedLayout({
                 {
                     name: 'Demo / Trial Inquiries',
                     href: route('saas-admin.index', { tab: 'demos' }),
-                    icon: Sparkles,
+                    icon: MessageSquare,
                     active: route().current('saas-admin.*') && currentTab === 'demos',
                 },
                 {
@@ -1267,7 +1267,7 @@ export default function AuthenticatedLayout({
                                 <span className="relative inline-flex rounded-full h-3 w-3 bg-slate-950"></span>
                             </span>
                             <span>
-                                Unakagua tawi la: <strong className="font-black text-slate-950">{(auth as any)?.owner_inspecting_property_name || 'Tawi la Hoteli'}</strong> kama <strong className="font-black text-slate-950">Mmiliki wa Hoteli (Owner Mode)</strong>.
+                                Inspecting property: <strong className="font-black text-slate-950">{(auth as any)?.owner_inspecting_property_name || 'Hotel Property'}</strong> in <strong className="font-black text-slate-950">Owner Mode</strong>.
                             </span>
                         </div>
                         <Link
@@ -1277,7 +1277,7 @@ export default function AuthenticatedLayout({
                             className="px-3.5 py-1.5 bg-[#1E3A5F] hover:bg-[#152a45] text-white rounded-xl text-xs font-black shadow-xs transition flex items-center gap-1.5"
                         >
                             <Crown className="w-3.5 h-3.5 text-amber-300" />
-                            Rudi kwenye Portal ya Mmiliki
+                            Return to Owner Portal
                         </Link>
                     </div>
                 )}
@@ -1325,7 +1325,7 @@ export default function AuthenticatedLayout({
                         {!isSuperAdmin && (
                             <Link
                                 href={route('whatsapp.index')}
-                                title={`SMS Balance: ${Number((auth as any)?.sms_balance ?? 0).toLocaleString()} Credits available. Bonyeza kuangalia gateway au kutuma ujumbe.`}
+                                title={`SMS Balance: ${Number((auth as any)?.sms_balance ?? 0).toLocaleString()} Credits available. Click to review gateway or send messages.`}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-2xs border cursor-pointer ${
                                     Number((auth as any)?.sms_balance ?? 0) <= 50
                                         ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
@@ -1354,7 +1354,7 @@ export default function AuthenticatedLayout({
                             <Link
                                 href={route('owner.index')}
                                 className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-3.5 py-1.5 rounded-xl font-bold text-xs shadow-xs hover:shadow-md transition-all flex items-center gap-1.5"
-                                title="Fungua Portal ya Mmiliki wa Hoteli"
+                                title="Open Hotel Owner Portal"
                             >
                                 <Crown className="w-3.5 h-3.5 text-amber-200" />
                                 <span className="hidden sm:inline">Owner Portal</span>
@@ -1364,7 +1364,7 @@ export default function AuthenticatedLayout({
                             <Link
                                 href={route('dashboard')}
                                 className="bg-[#1E3A5F] hover:bg-[#152a45] text-white px-3.5 py-1.5 rounded-xl font-bold text-xs shadow-xs hover:shadow-md transition-all flex items-center gap-1.5"
-                                title="Tazama Dashibodi ya Tawi kama Meneja"
+                                title="View Branch Dashboard as Manager"
                             >
                                 <Building2 className="w-3.5 h-3.5 text-[#D4AF37]" />
                                 <span className="hidden sm:inline">Manager View</span>

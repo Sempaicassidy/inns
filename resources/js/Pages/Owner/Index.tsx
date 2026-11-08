@@ -319,7 +319,7 @@ export default function OwnerPortalIndex({
                                     </span>
                                 </div>
                                 <p className="text-xs sm:text-sm text-slate-300 font-medium mt-1">
-                                    Usimamizi Mkuu wa Kikundi cha Hoteli, Idhini za Mameneja na Ulinzi wa Faida (Chain of Command)
+                                    Executive Group Hospitality Management, Manager Approvals & Chain of Command
                                 </p>
                             </div>
                         </div>
@@ -332,7 +332,7 @@ export default function OwnerPortalIndex({
                                 className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-xs shadow-md transition flex items-center gap-1.5"
                             >
                                 <Megaphone className="w-4 h-4" />
-                                <span>Toa Mwongozo wa Mmiliki</span>
+                                <span>Issue Owner Directive</span>
                             </button>
 
                             <button
@@ -341,7 +341,7 @@ export default function OwnerPortalIndex({
                                 className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 font-bold text-xs transition flex items-center gap-1.5"
                             >
                                 <Coins className="w-4 h-4 text-emerald-400" />
-                                <span>Rekodi Gawio / Mtaji</span>
+                                <span>Record Dividend / Capital</span>
                             </button>
 
                             <Link
@@ -349,7 +349,7 @@ export default function OwnerPortalIndex({
                                 className="px-3.5 py-2 rounded-xl bg-[#1E3A5F] hover:bg-[#152a45] text-white border border-[#D4AF37]/30 font-bold text-xs transition flex items-center gap-1.5"
                             >
                                 <Building2 className="w-4 h-4 text-[#D4AF37]" />
-                                <span>Tazama Kama Meneja</span>
+                                <span>View as Manager</span>
                             </Link>
                         </div>
                     </div>
@@ -357,22 +357,22 @@ export default function OwnerPortalIndex({
                     {/* Navigation Tabs */}
                     <div className="max-w-7xl mx-auto mt-6 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none border-t border-slate-800/80 pt-4">
                         {[
-                            { id: 'overview', label: 'Muhtasari Mkuu (Overview)', icon: Activity },
-                            { id: 'branches', label: 'Ulinganifu wa Matawi (Branches)', icon: Building2 },
+                            { id: 'overview', label: 'Executive Overview', icon: Activity },
+                            { id: 'branches', label: 'Branch Portfolio', icon: Building2 },
                             {
                                 id: 'approvals',
-                                label: 'Idhini za Matumizi (Approvals)',
+                                label: 'Expenditure Approvals',
                                 icon: CheckSquare,
                                 count: metrics.pending_approvals_count,
                             },
                             {
                                 id: 'directives',
-                                label: 'Miongozo ya Mmiliki (Directives)',
+                                label: 'Owner Directives',
                                 icon: Send,
                                 count: metrics.active_directives_count,
                             },
-                            { id: 'audit', label: 'Ukaguzi wa Fedha (Audit & Loss)', icon: ShieldAlert },
-                            { id: 'financials', label: 'Faida & Gawio (Financials)', icon: DollarSign },
+                            { id: 'audit', label: 'Audit & Loss Prevention', icon: ShieldAlert },
+                            { id: 'financials', label: 'Profit & Equity', icon: DollarSign },
                         ].map(t => {
                             const Icon = t.icon;
                             const isActive = currentTab === t.id;
@@ -413,7 +413,7 @@ export default function OwnerPortalIndex({
                             <div className="bg-gradient-to-br from-slate-800 to-slate-850 p-5 rounded-2xl border border-slate-700/80 shadow-lg relative overflow-hidden">
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                                        Mapato ya Mwezi (Group)
+                                        Monthly Revenue (Group)
                                     </span>
                                     <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
                                         <TrendingUp className="w-5 h-5" />
@@ -423,7 +423,7 @@ export default function OwnerPortalIndex({
                                     {formatTzs(metrics.group_month_revenue_minor)}
                                 </h3>
                                 <div className="flex items-center justify-between mt-3 text-xs text-slate-400 pt-2 border-t border-slate-700/50">
-                                    <span>Mapato ya Leo:</span>
+                                    <span>Today's Revenue:</span>
                                     <span className="font-bold text-emerald-400">
                                         {formatTzs(metrics.group_today_revenue_minor)}
                                     </span>
@@ -434,7 +434,7 @@ export default function OwnerPortalIndex({
                             <div className="bg-gradient-to-br from-slate-800 to-slate-850 p-5 rounded-2xl border border-slate-700/80 shadow-lg relative overflow-hidden">
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                                        Faida ya Uendeshaji (GOP)
+                                        Operating Profit (GOP)
                                     </span>
                                     <div className="w-9 h-9 rounded-xl bg-[#D4AF37]/10 text-[#D4AF37] flex items-center justify-center">
                                         <DollarSign className="w-5 h-5" />
@@ -453,7 +453,7 @@ export default function OwnerPortalIndex({
                             <div className="bg-gradient-to-br from-slate-800 to-slate-850 p-5 rounded-2xl border border-slate-700/80 shadow-lg relative overflow-hidden">
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                                        Wastani wa Ukaaji (Occupancy)
+                                        Average Occupancy
                                     </span>
                                     <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center">
                                         <Bed className="w-5 h-5" />
@@ -463,7 +463,7 @@ export default function OwnerPortalIndex({
                                     {metrics.group_occupancy_rate}%
                                 </h3>
                                 <div className="flex items-center justify-between mt-3 text-xs text-slate-400 pt-2 border-t border-slate-700/50">
-                                    <span>Vyumba Vilivyopo:</span>
+                                    <span>Occupied Rooms:</span>
                                     <span className="font-bold text-slate-200">
                                         {metrics.total_occupied_group} / {metrics.total_rooms_group} rooms
                                     </span>
@@ -474,7 +474,7 @@ export default function OwnerPortalIndex({
                             <div className="bg-gradient-to-br from-slate-800 to-slate-850 p-5 rounded-2xl border border-slate-700/80 shadow-lg relative overflow-hidden">
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                                        Lengo la Mwezi (Target)
+                                        Monthly Target Progress
                                     </span>
                                     <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center">
                                         <Target className="w-5 h-5" />
@@ -484,9 +484,9 @@ export default function OwnerPortalIndex({
                                     {metrics.group_target_progress_percent}%
                                 </h3>
                                 <div className="flex items-center justify-between mt-3 text-xs text-slate-400 pt-2 border-t border-slate-700/50">
-                                    <span>Lengo:</span>
+                                    <span>Target:</span>
                                     <span className="font-bold text-slate-200">
-                                        {metrics.group_target_minor > 0 ? formatTzs(metrics.group_target_minor) : 'Haijawekwa'}
+                                        {metrics.group_target_minor > 0 ? formatTzs(metrics.group_target_minor) : 'Not Set'}
                                     </span>
                                 </div>
                             </div>
@@ -497,14 +497,14 @@ export default function OwnerPortalIndex({
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-lg font-black text-white flex items-center gap-2">
                                     <Building2 className="w-5 h-5 text-[#D4AF37]" />
-                                    <span>Matawi Yote ya Hoteli & Utendaji (Property Portfolio)</span>
+                                    <span>All Properties & Performance Portfolio</span>
                                 </h2>
                                 <button
                                     type="button"
                                     onClick={() => setCurrentTab('branches')}
                                     className="text-xs font-bold text-[#D4AF37] hover:underline flex items-center gap-1"
                                 >
-                                    Tazama Jedwali Kamili la Ulinganifu <ChevronRight className="w-3.5 h-3.5" />
+                                    View Full Comparison Matrix <ChevronRight className="w-3.5 h-3.5" />
                                 </button>
                             </div>
 
@@ -521,7 +521,7 @@ export default function OwnerPortalIndex({
                                                         {branch.name}
                                                     </h3>
                                                     <p className="text-xs text-slate-400 mt-0.5">
-                                                        {branch.city} • Code: {branch.code || 'N/A'}
+                                                        {branch.city} - Code: {branch.code || 'N/A'}
                                                     </p>
                                                 </div>
                                                 <span
@@ -541,7 +541,7 @@ export default function OwnerPortalIndex({
                                                     <UserCheck className="w-4 h-4 text-blue-400 shrink-0" />
                                                     <div>
                                                         <p className="font-bold text-slate-200">
-                                                            GM: {branch.general_manager?.name || 'Haijapangiwa Meneja'}
+                                                            GM: {branch.general_manager?.name || 'Unassigned GM'}
                                                         </p>
                                                         <p className="text-[11px] text-slate-400">
                                                             {branch.general_manager?.phone || branch.general_manager?.email || 'N/A'}
@@ -553,13 +553,13 @@ export default function OwnerPortalIndex({
                                             {/* Stats Row */}
                                             <div className="grid grid-cols-2 gap-3 mt-4 text-xs">
                                                 <div className="bg-slate-900/40 p-2.5 rounded-xl border border-slate-700/40">
-                                                    <span className="text-[11px] text-slate-400 block">Mapato ya Mwezi</span>
+                                                    <span className="text-[11px] text-slate-400 block">Monthly Revenue</span>
                                                     <span className="font-black text-emerald-400 text-sm">
                                                         {formatTzs(branch.month_revenue_minor)}
                                                     </span>
                                                 </div>
                                                 <div className="bg-slate-900/40 p-2.5 rounded-xl border border-slate-700/40">
-                                                    <span className="text-[11px] text-slate-400 block">Faida (GOP)</span>
+                                                    <span className="text-[11px] text-slate-400 block">Gross Profit (GOP)</span>
                                                     <span className="font-black text-amber-300 text-sm">
                                                         {formatTzs(branch.gop_minor)}
                                                     </span>
@@ -569,7 +569,7 @@ export default function OwnerPortalIndex({
                                             {/* Occupancy Bar */}
                                             <div className="mt-4">
                                                 <div className="flex items-center justify-between text-xs font-semibold mb-1">
-                                                    <span className="text-slate-400">Ukaaji wa Vyumba</span>
+                                                    <span className="text-slate-400">Room Occupancy</span>
                                                     <span className="text-slate-200">
                                                         {branch.occupancy_rate}% ({branch.occupied_rooms}/{branch.total_rooms})
                                                     </span>
@@ -590,10 +590,10 @@ export default function OwnerPortalIndex({
                                                 <button
                                                     type="submit"
                                                     className="w-full py-2 px-3 rounded-xl bg-slate-700 hover:bg-[#1E3A5F] hover:text-[#D4AF37] text-white font-bold text-xs transition flex items-center justify-center gap-1.5"
-                                                    title="Tazama dashibodi ya tawi hili kama meneja"
+                                                    title="Inspect operations of this property in manager mode"
                                                 >
                                                     <Eye className="w-3.5 h-3.5" />
-                                                    <span>Kagua Tawi (Inspect)</span>
+                                                    <span>Inspect Property</span>
                                                 </button>
                                             </form>
                                             <button
@@ -603,7 +603,7 @@ export default function OwnerPortalIndex({
                                                     targetForm.setData('monthly_target_revenue', Math.round(branch.monthly_target_revenue_minor / 100));
                                                 }}
                                                 className="py-2 px-3 rounded-xl bg-slate-700/60 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition"
-                                                title="Weka Lengo la Mapato"
+                                                title="Set Revenue Target"
                                             >
                                                 <Target className="w-3.5 h-3.5 text-purple-400" />
                                             </button>
@@ -620,21 +620,21 @@ export default function OwnerPortalIndex({
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-base font-black text-white flex items-center gap-2">
                                         <CheckSquare className="w-5 h-5 text-amber-400" />
-                                        <span>Idhini Zinazosubiri Uamuzi wa Mmiliki</span>
+                                        <span>Approvals Pending Owner Action</span>
                                     </h3>
                                     <button
                                         type="button"
                                         onClick={() => setCurrentTab('approvals')}
                                         className="text-xs font-bold text-[#D4AF37] hover:underline"
                                     >
-                                        Tazama Zote ({requisitions.filter(r => r.status === 'pending_owner').length})
+                                        View All ({requisitions.filter(r => r.status === 'pending_owner').length})
                                     </button>
                                 </div>
 
                                 {requisitions.filter(r => r.status === 'pending_owner').length === 0 ? (
                                     <div className="p-8 text-center bg-slate-900/40 rounded-xl border border-slate-800 text-slate-400 text-xs">
                                         <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2 opacity-80" />
-                                        Hakuna ombi lolote la dharura linalosubiri idhini yako kwa sasa.
+                                        No urgent requisitions pending your review at this time.
                                     </div>
                                 ) : (
                                     <div className="space-y-3">
@@ -665,7 +665,7 @@ export default function OwnerPortalIndex({
                                                         </div>
                                                         <h4 className="font-bold text-white mt-1">{req.title}</h4>
                                                         <p className="text-slate-400 mt-0.5">
-                                                            Tawi: {req.property?.name} • Kutoka: {req.requester?.name}
+                                                            Property: {req.property?.name} - Requested By: {req.requester?.name}
                                                         </p>
                                                     </div>
                                                     <div className="text-right shrink-0">
@@ -677,7 +677,7 @@ export default function OwnerPortalIndex({
                                                             onClick={() => setShowApprovalModal(req)}
                                                             className="mt-2 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px] shadow transition"
                                                         >
-                                                            Idhinisha
+                                                            Approve
                                                         </button>
                                                     </div>
                                                 </div>
@@ -691,20 +691,20 @@ export default function OwnerPortalIndex({
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-base font-black text-white flex items-center gap-2">
                                         <Megaphone className="w-5 h-5 text-[#D4AF37]" />
-                                        <span>Miongozo Rasmi ya Hivi Karibuni</span>
+                                        <span>Recent Official Directives</span>
                                     </h3>
                                     <button
                                         type="button"
                                         onClick={() => setShowDirectiveModal(true)}
                                         className="text-xs font-bold text-[#D4AF37] hover:underline flex items-center gap-1"
                                     >
-                                        <Plus className="w-3.5 h-3.5" /> Toa Mpya
+                                        <Plus className="w-3.5 h-3.5" /> Issue New
                                     </button>
                                 </div>
 
                                 {directives.length === 0 ? (
                                     <div className="p-8 text-center bg-slate-900/40 rounded-xl border border-slate-800 text-slate-400 text-xs">
-                                        Hakuna muongozo rasmi uliotolewa hivi karibuni.
+                                        No executive directives issued recently.
                                     </div>
                                 ) : (
                                     <div className="space-y-3">
@@ -725,7 +725,7 @@ export default function OwnerPortalIndex({
                                                         }`}
                                                     >
                                                         {dir.status === 'acknowledged'
-                                                            ? 'Imepokelewa na GM'
+                                                            ? 'Acknowledged by GM'
                                                             : dir.status}
                                                     </span>
                                                 </div>
@@ -733,8 +733,8 @@ export default function OwnerPortalIndex({
                                                     {dir.directive_text}
                                                 </p>
                                                 <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-800 text-[11px] text-slate-400">
-                                                    <span>Target: {dir.property?.name || 'Matawi Yote'}</span>
-                                                    <span>Tarehe: {dir.created_at.split('T')[0]}</span>
+                                                    <span>Target: {dir.property?.name || 'All Properties'}</span>
+                                                    <span>Date: {dir.created_at.split('T')[0]}</span>
                                                 </div>
                                             </div>
                                         ))}
@@ -753,10 +753,10 @@ export default function OwnerPortalIndex({
                                 <div>
                                     <h2 className="text-lg font-black text-white flex items-center gap-2">
                                         <Building2 className="w-5 h-5 text-[#D4AF37]" />
-                                        <span>Jedwali Kamili la Ulinganifu wa Matawi (Branch Matrix)</span>
+                                        <span>Comprehensive Branch Performance Matrix</span>
                                     </h2>
                                     <p className="text-xs text-slate-400 mt-0.5">
-                                        Ulinganifu wa mapato, matumizi, faida (GOP), ADR, RevPAR na mameneja wa kila tawi
+                                        Comparison of revenue, expenditures, GOP profit, occupancy and property managers across branches
                                     </p>
                                 </div>
                             </div>
@@ -765,15 +765,15 @@ export default function OwnerPortalIndex({
                                 <table className="w-full text-left text-xs text-slate-200">
                                     <thead className="bg-slate-900/80 text-[11px] uppercase tracking-wider text-slate-400 font-bold border-b border-slate-700">
                                         <tr>
-                                            <th className="py-3 px-4">Tawi (Property)</th>
-                                            <th className="py-3 px-4">Meneja Mkuu (GM)</th>
-                                            <th className="py-3 px-4">Vyumba & Ukaaji</th>
-                                            <th className="py-3 px-4">Mapato ya Mwezi</th>
-                                            <th className="py-3 px-4">Lengo (Target)</th>
-                                            <th className="py-3 px-4">Matumizi (OPEX)</th>
-                                            <th className="py-3 px-4">Faida (GOP)</th>
+                                            <th className="py-3 px-4">Property</th>
+                                            <th className="py-3 px-4">General Manager (GM)</th>
+                                            <th className="py-3 px-4">Rooms & Occupancy</th>
+                                            <th className="py-3 px-4">Monthly Revenue</th>
+                                            <th className="py-3 px-4">Monthly Target</th>
+                                            <th className="py-3 px-4">Operating Expenses (OPEX)</th>
+                                            <th className="py-3 px-4">Gross Profit (GOP)</th>
                                             <th className="py-3 px-4">Margin %</th>
-                                            <th className="py-3 px-4 text-right">Vitendo</th>
+                                            <th className="py-3 px-4 text-right">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-800">
@@ -802,7 +802,7 @@ export default function OwnerPortalIndex({
                                                         </div>
                                                     ) : (
                                                         <span className="text-amber-400 font-semibold italic">
-                                                            Haijapangiwa
+                                                            Unassigned
                                                         </span>
                                                     )}
                                                 </td>
@@ -823,7 +823,7 @@ export default function OwnerPortalIndex({
                                                     </span>
                                                     {branch.monthly_target_revenue_minor > 0 && (
                                                         <span className="text-[10px] text-slate-400 block">
-                                                            {branch.target_progress_percent}% iliyofikiwa
+                                                            {branch.target_progress_percent}% achieved
                                                         </span>
                                                     )}
                                                 </td>
@@ -843,9 +843,9 @@ export default function OwnerPortalIndex({
                                                             <button
                                                                 type="submit"
                                                                 className="px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-[#1E3A5F] text-[#D4AF37] font-bold text-xs transition"
-                                                                title="Kagua shughuli za kiutendaji za tawi hili"
+                                                                title="Inspect branch operational workspace"
                                                             >
-                                                                Kagua
+                                                                Inspect
                                                             </button>
                                                         </form>
                                                         <button
@@ -858,9 +858,9 @@ export default function OwnerPortalIndex({
                                                                 );
                                                             }}
                                                             className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-purple-300 font-bold text-xs transition"
-                                                            title="Weka Lengo la Mapato"
+                                                            title="Set Revenue Target"
                                                         >
-                                                            Lengo
+                                                            Target
                                                         </button>
                                                     </div>
                                                 </td>
@@ -880,20 +880,20 @@ export default function OwnerPortalIndex({
                             <div>
                                 <h2 className="text-lg font-black text-white flex items-center gap-2">
                                     <CheckSquare className="w-5 h-5 text-amber-400" />
-                                    <span>Idhini za Matumizi na Maombi ya Mameneja (Chain of Command)</span>
+                                    <span>Manager Requisitions & Approvals (Chain of Command)</span>
                                 </h2>
                                 <p className="text-xs text-slate-400 mt-0.5">
-                                    Maombi yote ya fedha au matengenezo yanayohitaji idhini rasmi ya Mmiliki kabla ya kutolewa
+                                    All expenditure and maintenance requests requiring owner authorization before release
                                 </p>
                             </div>
 
                             {/* Status Filter */}
                             <div className="flex items-center gap-1.5 bg-slate-800 p-1 rounded-xl border border-slate-700">
                                 {[
-                                    { id: 'all', label: 'Zote' },
-                                    { id: 'pending_owner', label: 'Zinazosubiri (Pending)' },
-                                    { id: 'approved', label: 'Zilizoidhinishwa' },
-                                    { id: 'rejected', label: 'Zilizokataliwa' },
+                                    { id: 'all', label: 'All Requests' },
+                                    { id: 'pending_owner', label: 'Pending Review' },
+                                    { id: 'approved', label: 'Approved' },
+                                    { id: 'rejected', label: 'Rejected' },
                                 ].map(f => (
                                     <button
                                         key={f.id}
@@ -914,9 +914,9 @@ export default function OwnerPortalIndex({
                         {filteredRequisitions.length === 0 ? (
                             <div className="bg-slate-800/80 rounded-2xl p-12 text-center border border-slate-700 text-slate-400">
                                 <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-3 opacity-75" />
-                                <h3 className="text-base font-bold text-white">Hakuna Maombi Yaliyopatikana</h3>
+                                <h3 className="text-base font-bold text-white">No Requisitions Found</h3>
                                 <p className="text-xs mt-1">
-                                    Hakuna maombi ya idhini kulingana na kichujio ulichochagua.
+                                    No expenditure approval requests match the selected status filter.
                                 </p>
                             </div>
                         ) : (
@@ -945,26 +945,26 @@ export default function OwnerPortalIndex({
                                                             : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse'
                                                     }`}
                                                 >
-                                                    {req.status === 'pending_owner' ? 'Inasubiri Mmiliki' : req.status}
+                                                    {req.status === 'pending_owner' ? 'Pending Review' : req.status}
                                                 </span>
                                             </div>
 
                                             <div className="mt-3.5 p-3 rounded-xl bg-slate-900/60 border border-slate-700/60 text-xs space-y-1">
                                                 <div className="flex justify-between">
-                                                    <span className="text-slate-400">Tawi:</span>
+                                                    <span className="text-slate-400">Property:</span>
                                                     <span className="font-bold text-slate-200">{req.property?.name}</span>
                                                 </div>
                                                 <div className="flex justify-between">
-                                                    <span className="text-slate-400">Meneja Aliyeomba:</span>
+                                                    <span className="text-slate-400">Requested By:</span>
                                                     <span className="font-bold text-slate-200">{req.requester?.name}</span>
                                                 </div>
                                                 <div className="flex justify-between">
-                                                    <span className="text-slate-400">Kategoria:</span>
+                                                    <span className="text-slate-400">Category:</span>
                                                     <span className="font-semibold text-slate-300 uppercase text-[11px]">{req.category}</span>
                                                 </div>
                                                 {req.vendor_name && (
                                                     <div className="flex justify-between">
-                                                        <span className="text-slate-400">Msambazaji:</span>
+                                                        <span className="text-slate-400">Vendor:</span>
                                                         <span className="text-slate-300">{req.vendor_name}</span>
                                                     </div>
                                                 )}
@@ -972,7 +972,7 @@ export default function OwnerPortalIndex({
 
                                             <p className="mt-3 text-xs text-slate-300 bg-slate-900/30 p-2.5 rounded-xl border border-slate-800">
                                                 <span className="font-bold text-slate-400 block text-[10px] uppercase">
-                                                    Maelezo / Sababu ya Ombi:
+                                                    Request Justification:
                                                 </span>
                                                 {req.justification}
                                             </p>
@@ -980,7 +980,7 @@ export default function OwnerPortalIndex({
                                             {req.owner_notes && (
                                                 <p className="mt-2 text-xs text-amber-300 bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/30">
                                                     <span className="font-bold text-amber-400 block text-[10px] uppercase">
-                                                        Uamuzi wa Mmiliki:
+                                                        Owner Decision Notes:
                                                     </span>
                                                     {req.owner_notes}
                                                 </p>
@@ -989,7 +989,7 @@ export default function OwnerPortalIndex({
 
                                         <div className="mt-5 pt-3 border-t border-slate-700 flex items-center justify-between">
                                             <div>
-                                                <span className="text-[10px] uppercase text-slate-400 font-bold block">Kiasi Kilichoombwa</span>
+                                                <span className="text-[10px] uppercase text-slate-400 font-bold block">Requested Amount</span>
                                                 <span className="text-base font-black text-emerald-400">
                                                     {formatTzs(req.amount_minor)}
                                                 </span>
@@ -1003,7 +1003,7 @@ export default function OwnerPortalIndex({
                                                         className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow transition flex items-center gap-1 cursor-pointer"
                                                     >
                                                         <CheckCircle2 className="w-3.5 h-3.5" />
-                                                        <span>Idhinisha</span>
+                                                        <span>Approve</span>
                                                     </button>
                                                     <button
                                                         type="button"
@@ -1011,7 +1011,7 @@ export default function OwnerPortalIndex({
                                                         className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs shadow transition flex items-center gap-1 cursor-pointer"
                                                     >
                                                         <XCircle className="w-3.5 h-3.5" />
-                                                        <span>Kataa</span>
+                                                        <span>Reject</span>
                                                     </button>
                                                 </div>
                                             )}
@@ -1030,10 +1030,10 @@ export default function OwnerPortalIndex({
                             <div>
                                 <h2 className="text-lg font-black text-white flex items-center gap-2">
                                     <Send className="w-5 h-5 text-[#D4AF37]" />
-                                    <span>Miongozo Rasmi ya Mmiliki kwa Mameneja (Executive Directives)</span>
+                                    <span>Executive Directives to General Managers</span>
                                 </h2>
                                 <p className="text-xs text-slate-400 mt-0.5">
-                                    Toa maagizo ya kiutendaji, sera mpya au malengo ya dharura yatakayoonekana moja kwa moja kwenye dashibodi ya mameneja
+                                    Issue operational instructions, company policies, or target directives visible immediately on manager dashboards
                                 </p>
                             </div>
                             <button
@@ -1042,16 +1042,16 @@ export default function OwnerPortalIndex({
                                 className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
                             >
                                 <Plus className="w-4 h-4" />
-                                <span>Toa Mwongozo Mpya</span>
+                                <span>Issue New Directive</span>
                             </button>
                         </div>
 
                         {directives.length === 0 ? (
                             <div className="bg-slate-800/80 rounded-2xl p-12 text-center border border-slate-700 text-slate-400">
                                 <Megaphone className="w-12 h-12 text-[#D4AF37] mx-auto mb-3 opacity-75" />
-                                <h3 className="text-base font-bold text-white">Hakuna Miongozo Iliyotolewa</h3>
+                                <h3 className="text-base font-bold text-white">No Directives Issued</h3>
                                 <p className="text-xs mt-1">
-                                    Bado haujatoa mwongozo wowote kwa mameneja wa matawi yako.
+                                    You haven't issued any executive directives to property managers yet.
                                 </p>
                             </div>
                         ) : (
@@ -1090,48 +1090,48 @@ export default function OwnerPortalIndex({
 
                                             <div className="mt-4 p-3 rounded-xl bg-slate-900/70 border border-slate-800 text-xs space-y-1.5">
                                                 <div className="flex justify-between">
-                                                    <span className="text-slate-400">Matawi Yanayohusika:</span>
+                                                    <span className="text-slate-400">Target Property:</span>
                                                     <span className="font-bold text-slate-200">
-                                                        {dir.property?.name || 'Matawi Yote (Group-wide)'}
+                                                        {dir.property?.name || 'All Properties (Group-wide)'}
                                                     </span>
                                                 </div>
                                                 {dir.target_deadline && (
                                                     <div className="flex justify-between">
-                                                        <span className="text-slate-400">Ukomo wa Utekelezaji:</span>
+                                                        <span className="text-slate-400">Deadline:</span>
                                                         <span className="font-bold text-amber-300">
                                                             {dir.target_deadline}
                                                         </span>
                                                     </div>
                                                 )}
                                                 <div className="flex justify-between">
-                                                    <span className="text-slate-400">Hali:</span>
+                                                    <span className="text-slate-400">Status:</span>
                                                     <span className="font-bold text-slate-200">
                                                         {dir.status === 'acknowledged'
-                                                            ? `Imethibitishwa na ${dir.acknowledgedBy?.name || 'Meneja'}`
+                                                            ? `Acknowledged by ${dir.acknowledgedBy?.name || 'Manager'}`
                                                             : dir.status}
                                                     </span>
                                                 </div>
                                                 {dir.acknowledgement_notes && (
                                                     <p className="text-[11px] text-blue-300 pt-1 border-t border-slate-800">
-                                                        Jibu la Meneja: "{dir.acknowledgement_notes}"
+                                                        Manager Note: "{dir.acknowledgement_notes}"
                                                     </p>
                                                 )}
                                             </div>
                                         </div>
 
                                         <div className="mt-4 pt-3 border-t border-slate-700 flex items-center justify-between text-xs text-slate-400">
-                                            <span>Iliwekwa: {dir.created_at.split('T')[0]}</span>
+                                            <span>Issued: {dir.created_at.split('T')[0]}</span>
                                             <button
                                                 type="button"
                                                 onClick={() => {
-                                                    if (confirm('Je, una uhakika unataka kufuta mwongozo huu?')) {
+                                                    if (confirm('Are you sure you want to delete this directive?')) {
                                                         router.delete(route('owner.directives.destroy', dir.id));
                                                     }
                                                 }}
                                                 className="text-rose-400 hover:text-rose-300 font-bold flex items-center gap-1 cursor-pointer"
                                             >
                                                 <Trash2 className="w-3.5 h-3.5" />
-                                                <span>Futa</span>
+                                                <span>Delete</span>
                                             </button>
                                         </div>
                                     </div>
@@ -1147,10 +1147,10 @@ export default function OwnerPortalIndex({
                         <div>
                             <h2 className="text-lg font-black text-white flex items-center gap-2">
                                 <ShieldAlert className="w-5 h-5 text-rose-400" />
-                                <span>Ukaguzi wa Fedha & Ulinzi wa Mapato (Loss Prevention Watchlist)</span>
+                                <span>Financial Audit & Loss Prevention Watchlist</span>
                             </h2>
                             <p className="text-xs text-slate-400 mt-0.5">
-                                Ufuatiliaji wa punguzo zilizotolewa, miamala iliyofutwa, na ughairi wa wateja ili kuzuia upotevu wa fedha kwenye matawi
+                                Monitoring of room discounts, voided transactions, and guest cancellations to prevent branch revenue leakage
                             </p>
                         </div>
 
@@ -1159,11 +1159,11 @@ export default function OwnerPortalIndex({
                             <div className="bg-slate-800/90 rounded-2xl p-5 border border-slate-700 shadow-lg">
                                 <h3 className="text-base font-black text-white flex items-center gap-2 mb-3">
                                     <Percent className="w-4 h-4 text-amber-400" />
-                                    <span>Punguzo Zilizotolewa (Discounts Watchlist)</span>
+                                    <span>Discounts Watchlist</span>
                                 </h3>
                                 {discountsWatchlist.length === 0 ? (
                                     <p className="text-xs text-slate-400 text-center py-6">
-                                        Hakuna punguzo zilizorekodiwa hivi karibuni.
+                                        No promotional discounts recorded recently.
                                     </p>
                                 ) : (
                                     <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
@@ -1175,7 +1175,7 @@ export default function OwnerPortalIndex({
                                                 <div>
                                                     <p className="font-bold text-white">{disc.guest_name}</p>
                                                     <p className="text-[11px] text-slate-400">
-                                                        {disc.property_name} • {disc.description}
+                                                        {disc.property_name} - {disc.description}
                                                     </p>
                                                     <span className="text-[10px] text-slate-500">{disc.date}</span>
                                                 </div>
@@ -1192,11 +1192,11 @@ export default function OwnerPortalIndex({
                             <div className="bg-slate-800/90 rounded-2xl p-5 border border-slate-700 shadow-lg">
                                 <h3 className="text-base font-black text-white flex items-center gap-2 mb-3">
                                     <XCircle className="w-4 h-4 text-rose-400" />
-                                    <span>Ughairi wa Vyumba & Sababu (Cancelled Bookings)</span>
+                                    <span>Room Cancellations & Reasons</span>
                                 </h3>
                                 {cancelledBookings.length === 0 ? (
                                     <p className="text-xs text-slate-400 text-center py-6">
-                                        Hakuna vyumba vilivyoghairiwa hivi karibuni.
+                                        No room cancellations recorded recently.
                                     </p>
                                 ) : (
                                     <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
@@ -1210,10 +1210,10 @@ export default function OwnerPortalIndex({
                                                         <span className="font-mono font-bold text-rose-300">
                                                             {bk.ref_no}
                                                         </span>
-                                                        <span className="text-slate-300 font-bold">• {bk.guest_name}</span>
+                                                        <span className="text-slate-300 font-bold">- {bk.guest_name}</span>
                                                     </div>
                                                     <p className="text-[11px] text-slate-400">
-                                                        {bk.property_name} — Sababu: {bk.notes}
+                                                        {bk.property_name} - Reason: {bk.notes}
                                                     </p>
                                                     <span className="text-[10px] text-slate-500">{bk.date}</span>
                                                 </div>
@@ -1236,10 +1236,10 @@ export default function OwnerPortalIndex({
                             <div>
                                 <h2 className="text-lg font-black text-white flex items-center gap-2">
                                     <DollarSign className="w-5 h-5 text-emerald-400" />
-                                    <span>Gawio la Mmiliki na Mtaji (Owner Equity & Drawings)</span>
+                                    <span>Owner Equity, Dividends & Drawings</span>
                                 </h2>
                                 <p className="text-xs text-slate-400 mt-0.5">
-                                    Rekodi na fuatilia mgao wa faida (dividends), akiba ya mmiliki, na uwekezaji wa mtaji wa ziada
+                                    Track profit dividend distributions, owner withdrawals, and additional capital investments
                                 </p>
                             </div>
                             <button
@@ -1248,14 +1248,14 @@ export default function OwnerPortalIndex({
                                 className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
                             >
                                 <Plus className="w-4 h-4" />
-                                <span>Rekodi Gawio / Mtaji</span>
+                                <span>Record Dividend / Capital</span>
                             </button>
                         </div>
 
                         {/* Top Equity Summary Cards */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div className="bg-slate-800/90 p-5 rounded-2xl border border-slate-700 shadow-lg">
-                                <span className="text-xs font-bold text-slate-400 uppercase block">Jumla ya Gawio Lililotolewa</span>
+                                <span className="text-xs font-bold text-slate-400 uppercase block">Total Dividends Distributed</span>
                                 <h3 className="text-2xl font-black text-emerald-400 mt-1">
                                     {formatTzs(metrics.total_drawings_minor)}
                                 </h3>
@@ -1263,7 +1263,7 @@ export default function OwnerPortalIndex({
                             </div>
 
                             <div className="bg-slate-800/90 p-5 rounded-2xl border border-slate-700 shadow-lg">
-                                <span className="text-xs font-bold text-slate-400 uppercase block">Mtaji wa Ziada Ulioingizwa</span>
+                                <span className="text-xs font-bold text-slate-400 uppercase block">Total Capital Injected</span>
                                 <h3 className="text-2xl font-black text-purple-300 mt-1">
                                     {formatTzs(metrics.total_capital_injected_minor)}
                                 </h3>
@@ -1271,36 +1271,36 @@ export default function OwnerPortalIndex({
                             </div>
 
                             <div className="bg-slate-800/90 p-5 rounded-2xl border border-slate-700 shadow-lg">
-                                <span className="text-xs font-bold text-slate-400 uppercase block">Faida ya Mwezi Huu (GOP)</span>
+                                <span className="text-xs font-bold text-slate-400 uppercase block">This Month's Profit (GOP)</span>
                                 <h3 className="text-2xl font-black text-[#D4AF37] mt-1">
                                     {formatTzs(metrics.group_gop_minor)}
                                 </h3>
-                                <p className="text-[11px] text-slate-400 mt-1">Inayoweza kugawa kama gawio</p>
+                                <p className="text-[11px] text-slate-400 mt-1">Available for dividend distribution</p>
                             </div>
                         </div>
 
                         {/* Drawings Table */}
                         <div className="bg-slate-800/90 rounded-2xl border border-slate-700 overflow-hidden shadow-xl">
                             <div className="p-5 border-b border-slate-700">
-                                <h3 className="text-base font-black text-white">Historia ya Miamala ya Mmiliki</h3>
+                                <h3 className="text-base font-black text-white">Owner Transactions History</h3>
                             </div>
 
                             {drawings.length === 0 ? (
                                 <p className="text-xs text-slate-400 text-center py-10">
-                                    Hakuna muamala wa gawio au mtaji uliorekodiwa.
+                                    No dividend or capital transactions recorded yet.
                                 </p>
                             ) : (
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left text-xs text-slate-200">
                                         <thead className="bg-slate-900/80 text-[11px] uppercase tracking-wider text-slate-400 font-bold border-b border-slate-700">
                                             <tr>
-                                                <th className="py-3 px-4">Tarehe</th>
+                                                <th className="py-3 px-4">Date</th>
                                                 <th className="py-3 px-4">Ref #</th>
-                                                <th className="py-3 px-4">Aina ya Muamala</th>
-                                                <th className="py-3 px-4">Tawi</th>
-                                                <th className="py-3 px-4">Njia ya Malipo</th>
-                                                <th className="py-3 px-4">Kiasi</th>
-                                                <th className="py-3 px-4">Maelezo</th>
+                                                <th className="py-3 px-4">Transaction Type</th>
+                                                <th className="py-3 px-4">Property</th>
+                                                <th className="py-3 px-4">Payment Method</th>
+                                                <th className="py-3 px-4">Amount</th>
+                                                <th className="py-3 px-4">Notes</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-800">
@@ -1317,13 +1317,13 @@ export default function OwnerPortalIndex({
                                                             }`}
                                                         >
                                                             {d.drawing_type === 'dividend'
-                                                                ? 'Gawio (Dividend)'
+                                                                ? 'Dividend'
                                                                 : d.drawing_type === 'capital_injection'
-                                                                ? 'Mtaji (Capital)'
+                                                                ? 'Capital'
                                                                 : 'Owner Draw'}
                                                         </span>
                                                     </td>
-                                                    <td className="py-3 px-4">{d.property?.name || 'Matawi Yote'}</td>
+                                                    <td className="py-3 px-4">{d.property?.name || 'All Properties'}</td>
                                                     <td className="py-3 px-4 capitalize">{d.payment_method.replace('_', ' ')}</td>
                                                     <td className="py-3 px-4 font-black text-emerald-400">
                                                         {formatTzs(d.amount_minor)}
@@ -1356,33 +1356,33 @@ export default function OwnerPortalIndex({
                                     <Megaphone className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <h3 className="text-base font-black text-white">Toa Mwongozo wa Mmiliki</h3>
-                                    <p className="text-xs text-slate-400">Maelekezo rasmi kwa mameneja wa matawi</p>
+                                    <h3 className="text-base font-black text-white">Issue Owner Directive</h3>
+                                    <p className="text-xs text-slate-400">Official executive instructions for branch managers</p>
                                 </div>
                             </div>
 
                             <form onSubmit={handleCreateDirective} className="space-y-4 text-xs">
                                 <div>
-                                    <label className="block text-slate-300 font-bold mb-1">Kichwa cha Mwongozo (Title):</label>
+                                    <label className="block text-slate-300 font-bold mb-1">Directive Title:</label>
                                     <input
                                         type="text"
                                         required
                                         value={directiveForm.data.title}
                                         onChange={e => directiveForm.setData('title', e.target.value)}
-                                        placeholder="Mfano: Punguza gharama za umeme na kagua vifaa"
+                                        placeholder="e.g. Reduce energy consumption and inspect HVAC systems"
                                         className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white focus:ring-2 focus:ring-[#D4AF37]"
                                     />
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className="block text-slate-300 font-bold mb-1">Tawi Lengwa:</label>
+                                        <label className="block text-slate-300 font-bold mb-1">Target Property:</label>
                                         <select
                                             value={directiveForm.data.property_id}
                                             onChange={e => directiveForm.setData('property_id', e.target.value)}
                                             className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white"
                                         >
-                                            <option value="">Matawi Yote (Group-wide)</option>
+                                            <option value="">All Properties (Group-wide)</option>
                                             {multiBranchData.map(b => (
                                                 <option key={b.id} value={b.id}>
                                                     {b.name}
@@ -1391,15 +1391,15 @@ export default function OwnerPortalIndex({
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-slate-300 font-bold mb-1">Kipaumbele (Priority):</label>
+                                        <label className="block text-slate-300 font-bold mb-1">Priority:</label>
                                         <select
                                             value={directiveForm.data.priority}
                                             onChange={e => directiveForm.setData('priority', e.target.value as any)}
                                             className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white"
                                         >
-                                            <option value="normal">Kawaida (Normal)</option>
-                                            <option value="high">Kipaumbele (High)</option>
-                                            <option value="urgent">Dharura (Urgent)</option>
+                                            <option value="normal">Normal</option>
+                                            <option value="high">High</option>
+                                            <option value="urgent">Urgent</option>
                                         </select>
                                     </div>
                                 </div>
@@ -1412,15 +1412,15 @@ export default function OwnerPortalIndex({
                                             onChange={e => directiveForm.setData('category', e.target.value)}
                                             className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white"
                                         >
-                                            <option value="operations">Uendeshaji (Operations)</option>
-                                            <option value="finance">Udhibiti wa Fedha (Finance)</option>
-                                            <option value="policy">Sera & Taratibu (Policy)</option>
-                                            <option value="maintenance">Matengenezo (Maintenance)</option>
-                                            <option value="hr">Wafanyakazi & Nidhamu (HR)</option>
+                                            <option value="operations">Operations</option>
+                                            <option value="finance">Finance & Cost Control</option>
+                                            <option value="policy">Policy & Compliance</option>
+                                            <option value="maintenance">Maintenance & Repairs</option>
+                                            <option value="hr">Human Resources (HR)</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-slate-300 font-bold mb-1">Ukomo wa Siku (Deadline):</label>
+                                        <label className="block text-slate-300 font-bold mb-1">Target Deadline:</label>
                                         <input
                                             type="date"
                                             value={directiveForm.data.target_deadline}
@@ -1431,13 +1431,13 @@ export default function OwnerPortalIndex({
                                 </div>
 
                                 <div>
-                                    <label className="block text-slate-300 font-bold mb-1">Maelekezo Kamili:</label>
+                                    <label className="block text-slate-300 font-bold mb-1">Directive Instructions:</label>
                                     <textarea
                                         rows={4}
                                         required
                                         value={directiveForm.data.directive_text}
                                         onChange={e => directiveForm.setData('directive_text', e.target.value)}
-                                        placeholder="Eleza maelekezo ya utekelezaji kwa mameneja..."
+                                        placeholder="Describe operational instructions for managers..."
                                         className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white focus:ring-2 focus:ring-[#D4AF37]"
                                     />
                                 </div>
@@ -1448,14 +1448,14 @@ export default function OwnerPortalIndex({
                                         onClick={() => setShowDirectiveModal(false)}
                                         className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold hover:bg-slate-700"
                                     >
-                                        Ghairi
+                                        Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={directiveForm.processing}
                                         className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black shadow"
                                     >
-                                        Tuma Mwongozo
+                                        Dispatch Directive
                                     </button>
                                 </div>
                             </form>
@@ -1480,14 +1480,14 @@ export default function OwnerPortalIndex({
                                     <CheckCircle2 className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <h3 className="text-base font-black text-white">Idhinisha Ombi la Matumizi</h3>
+                                    <h3 className="text-base font-black text-white">Approve Expenditure Requisition</h3>
                                     <p className="text-xs font-mono text-amber-300">{showApprovalModal.requisition_no}</p>
                                 </div>
                             </div>
 
                             <div className="bg-slate-800/80 p-3 rounded-xl border border-slate-700 text-xs mb-4">
                                 <p className="font-bold text-white text-sm">{showApprovalModal.title}</p>
-                                <p className="text-slate-400 mt-1">Tawi: {showApprovalModal.property?.name}</p>
+                                <p className="text-slate-400 mt-1">Property: {showApprovalModal.property?.name}</p>
                                 <p className="font-black text-emerald-400 text-base mt-2">
                                     {formatTzs(showApprovalModal.amount_minor)}
                                 </p>
@@ -1495,12 +1495,12 @@ export default function OwnerPortalIndex({
 
                             <form onSubmit={handleApprove} className="space-y-4 text-xs">
                                 <div>
-                                    <label className="block text-slate-300 font-bold mb-1">Maoni ya Idhini (Owner Notes):</label>
+                                    <label className="block text-slate-300 font-bold mb-1">Owner Approval Notes:</label>
                                     <textarea
                                         rows={3}
                                         value={approvalForm.data.owner_notes}
                                         onChange={e => approvalForm.setData('owner_notes', e.target.value)}
-                                        placeholder="Maoni au maelekezo kwa meneja wakati wa kutoa fedha hizi..."
+                                        placeholder="Comments or payment instructions for the manager..."
                                         className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white"
                                     />
                                 </div>
@@ -1512,7 +1512,7 @@ export default function OwnerPortalIndex({
                                         onChange={e => approvalForm.setData('create_expense', e.target.checked)}
                                         className="rounded text-emerald-600 focus:ring-emerald-500 bg-slate-800 border-slate-700"
                                     />
-                                    <span>Ingiza moja kwa moja kwenye orodha ya matumizi yaliyoidhinishwa (Expenses)</span>
+                                    <span>Automatically record in approved operational expenses ledger</span>
                                 </label>
 
                                 <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
@@ -1521,14 +1521,14 @@ export default function OwnerPortalIndex({
                                         onClick={() => setShowApprovalModal(null)}
                                         className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold"
                                     >
-                                        Ghairi
+                                        Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={approvalForm.processing}
                                         className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black shadow"
                                     >
-                                        Thibitisha Idhini
+                                        Confirm Approval
                                     </button>
                                 </div>
                             </form>
@@ -1553,20 +1553,20 @@ export default function OwnerPortalIndex({
                                     <XCircle className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <h3 className="text-base font-black text-white">Kataa Ombi la Matumizi</h3>
+                                    <h3 className="text-base font-black text-white">Reject Expenditure Requisition</h3>
                                     <p className="text-xs font-mono text-rose-300">{showRejectModal.requisition_no}</p>
                                 </div>
                             </div>
 
                             <form onSubmit={handleReject} className="space-y-4 text-xs">
                                 <div>
-                                    <label className="block text-slate-300 font-bold mb-1">Sababu ya Kukataa (Rejection Reason):</label>
+                                    <label className="block text-slate-300 font-bold mb-1">Rejection Reason:</label>
                                     <textarea
                                         rows={3}
                                         required
                                         value={rejectForm.data.owner_notes}
                                         onChange={e => rejectForm.setData('owner_notes', e.target.value)}
-                                        placeholder="Eleza meneja kwa nini ombi hili limekataliwa au marekebisho yanayotakiwa..."
+                                        placeholder="Explain to the manager why this request was declined or modifications required..."
                                         className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white"
                                     />
                                 </div>
@@ -1577,14 +1577,14 @@ export default function OwnerPortalIndex({
                                         onClick={() => setShowRejectModal(null)}
                                         className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold"
                                     >
-                                        Ghairi
+                                        Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={rejectForm.processing}
                                         className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black shadow"
                                     >
-                                        Kataa Ombi Hili
+                                        Reject Requisition
                                     </button>
                                 </div>
                             </form>
@@ -1609,7 +1609,7 @@ export default function OwnerPortalIndex({
                                     <Target className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <h3 className="text-base font-black text-white">Weka Lengo la Mapato</h3>
+                                    <h3 className="text-base font-black text-white">Set Monthly Revenue Target</h3>
                                     <p className="text-xs text-slate-400">{showTargetModal.name}</p>
                                 </div>
                             </div>
@@ -1617,7 +1617,7 @@ export default function OwnerPortalIndex({
                             <form onSubmit={handleUpdateTarget} className="space-y-4 text-xs">
                                 <div>
                                     <label className="block text-slate-300 font-bold mb-1">
-                                        Mapato Lengwa kwa Mwezi (TZS):
+                                        Target Monthly Revenue (TZS):
                                     </label>
                                     <input
                                         type="number"
@@ -1628,7 +1628,7 @@ export default function OwnerPortalIndex({
                                         className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white text-base font-black text-purple-300"
                                     />
                                     <p className="text-[11px] text-slate-400 mt-1">
-                                        Lengo hili litaonekana kwenye dashibodi ya meneja mkuu wa tawi hili kama KPI kuu.
+                                        This target will appear on the General Manager's dashboard as a primary KPI.
                                     </p>
                                 </div>
 
@@ -1638,14 +1638,14 @@ export default function OwnerPortalIndex({
                                         onClick={() => setShowTargetModal(null)}
                                         className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold"
                                     >
-                                        Ghairi
+                                        Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={targetForm.processing}
                                         className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black shadow"
                                     >
-                                        Hifadhi Lengo
+                                        Save Target
                                     </button>
                                 </div>
                             </form>
@@ -1670,27 +1670,27 @@ export default function OwnerPortalIndex({
                                     <Coins className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <h3 className="text-base font-black text-white">Rekodi Gawio au Mtaji</h3>
-                                    <p className="text-xs text-slate-400">Muamala wa akaunti ya mmiliki wa hoteli</p>
+                                    <h3 className="text-base font-black text-white">Record Dividend or Capital</h3>
+                                    <p className="text-xs text-slate-400">Hotel owner equity and drawing transaction</p>
                                 </div>
                             </div>
 
                             <form onSubmit={handleCreateDrawing} className="space-y-4 text-xs">
                                 <div>
-                                    <label className="block text-slate-300 font-bold mb-1">Aina ya Muamala:</label>
+                                    <label className="block text-slate-300 font-bold mb-1">Transaction Type:</label>
                                     <select
                                         value={drawingForm.data.drawing_type}
                                         onChange={e => drawingForm.setData('drawing_type', e.target.value as any)}
                                         className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white font-bold"
                                     >
-                                        <option value="dividend">Gawio la Faida (Dividend Withdrawal)</option>
-                                        <option value="capital_injection">Kuingiza Mtaji wa Ziada (Capital Injection)</option>
-                                        <option value="draw">Kutoa Fedha (Owner Draw)</option>
+                                        <option value="dividend">Profit Dividend (Dividend Withdrawal)</option>
+                                        <option value="capital_injection">Capital Investment (Capital Injection)</option>
+                                        <option value="draw">Owner Draw</option>
                                     </select>
                                 </div>
 
                                 <div>
-                                    <label className="block text-slate-300 font-bold mb-1">Kiasi (TZS):</label>
+                                    <label className="block text-slate-300 font-bold mb-1">Amount (TZS):</label>
                                     <input
                                         type="number"
                                         required
@@ -1704,19 +1704,19 @@ export default function OwnerPortalIndex({
 
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className="block text-slate-300 font-bold mb-1">Njia ya Malipo:</label>
+                                        <label className="block text-slate-300 font-bold mb-1">Payment Method:</label>
                                         <select
                                             value={drawingForm.data.payment_method}
                                             onChange={e => drawingForm.setData('payment_method', e.target.value)}
                                             className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white"
                                         >
-                                            <option value="bank_transfer">Benki (Bank Transfer)</option>
-                                            <option value="cash">Pesa Taslimu (Cash)</option>
-                                            <option value="mpesa">Simu ya Mkononi (M-Pesa / Airtel)</option>
+                                            <option value="bank_transfer">Bank Transfer</option>
+                                            <option value="cash">Cash</option>
+                                            <option value="mpesa">Mobile Money (M-Pesa / Airtel)</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-slate-300 font-bold mb-1">Tarehe:</label>
+                                        <label className="block text-slate-300 font-bold mb-1">Date:</label>
                                         <input
                                             type="date"
                                             required
@@ -1728,13 +1728,13 @@ export default function OwnerPortalIndex({
                                 </div>
 
                                 <div>
-                                    <label className="block text-slate-300 font-bold mb-1">Tawi Lililotoa/Kupokea:</label>
+                                    <label className="block text-slate-300 font-bold mb-1">Source / Target Property:</label>
                                     <select
                                         value={drawingForm.data.property_id}
                                         onChange={e => drawingForm.setData('property_id', e.target.value)}
                                         className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white"
                                     >
-                                        <option value="">Akaunti Kuu ya Kikundi (Group Account)</option>
+                                        <option value="">Group Central Account</option>
                                         {multiBranchData.map(b => (
                                             <option key={b.id} value={b.id}>
                                                 {b.name}
@@ -1744,12 +1744,12 @@ export default function OwnerPortalIndex({
                                 </div>
 
                                 <div>
-                                    <label className="block text-slate-300 font-bold mb-1">Maelezo ya Ziada (Notes):</label>
+                                    <label className="block text-slate-300 font-bold mb-1">Additional Notes:</label>
                                     <textarea
                                         rows={2}
                                         value={drawingForm.data.notes}
                                         onChange={e => drawingForm.setData('notes', e.target.value)}
-                                        placeholder="Maelezo kuhusu mgao au uwekezaji huu..."
+                                        placeholder="Details regarding this dividend or capital transaction..."
                                         className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-white"
                                     />
                                 </div>
@@ -1760,14 +1760,14 @@ export default function OwnerPortalIndex({
                                         onClick={() => setShowDrawingModal(false)}
                                         className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold"
                                     >
-                                        Ghairi
+                                        Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={drawingForm.processing}
                                         className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black shadow"
                                     >
-                                        Hifadhi Muamala
+                                        Record Transaction
                                     </button>
                                 </div>
                             </form>

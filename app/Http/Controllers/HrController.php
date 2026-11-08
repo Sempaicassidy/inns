@@ -26,8 +26,29 @@ class HrController extends Controller
     private function resolveTenantAndProperty(?Request $request): array
     {
         $user = $request?->user();
-        $property = $user?->property ?? ($user?->tenant_id ? Property::where('tenant_id', $user->tenant_id)->first() : null) ?? Property::first();
-        $tenantId = $user?->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
+        $tenantId = $user?->tenant_id;
+
+        if ($tenantId) {
+            $property = $user?->property ?? Property::where('tenant_id', $tenantId)->first();
+            if (!$property) {
+                $tenant = Tenant::find($tenantId);
+                $propertyName = $tenant ? $tenant->name . ' Main Lodge' : 'Main Lodge';
+                $property = Property::create([
+                    'tenant_id' => $tenantId,
+                    'name' => $propertyName,
+                    'code' => strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $propertyName), 0, 4)),
+                    'is_main' => true,
+                    'property_type' => 'hotel',
+                    'city' => 'Dar es Salaam',
+                    'country' => 'Tanzania',
+                    'currency' => 'TZS',
+                    'is_active' => true,
+                ]);
+            }
+        } else {
+            $property = Property::first();
+            $tenantId = $property?->tenant_id ?? Tenant::first()?->id;
+        }
 
         return [$tenantId, $property];
     }
@@ -174,7 +195,10 @@ class HrController extends Controller
      */
     public function storeEmployee(Request $request): RedirectResponse
     {
-        if ($request->has('salary') && ! $request->filled('salary_minor')) {
+        if ($request->filled('salary')) {
+            $rawSalary = (float) preg_replace('/[^0-9.]/', '', (string) $request->input('salary'));
+            $request->merge(['salary_minor' => (int) round($rawSalary * 100)]);
+        } elseif ($request->has('salary') && ! $request->filled('salary_minor')) {
             $request->merge(['salary_minor' => (int) round((float) $request->input('salary') * 100)]);
         }
         if (! $request->filled('full_name') && ($request->filled('first_name') || $request->filled('last_name'))) {
@@ -242,7 +266,7 @@ class HrController extends Controller
             if ($user) {
                 $user->update([
                     'tenant_id' => $tenantId,
-                    'property_id' => $property->id,
+                    'property_id' => $property?->id,
                     'name' => $validated['full_name'],
                     'phone' => $validated['phone'] ?? $user->phone,
                     'password' => Hash::make($validated['password']),
@@ -253,7 +277,7 @@ class HrController extends Controller
             } else {
                 $user = User::create([
                     'tenant_id' => $tenantId,
-                    'property_id' => $property->id,
+                    'property_id' => $property?->id,
                     'name' => $validated['full_name'],
                     'email' => $validated['email'],
                     'phone' => $validated['phone'] ?? null,
@@ -268,7 +292,7 @@ class HrController extends Controller
 
         Employee::create([
             'tenant_id' => $tenantId,
-            'property_id' => $property->id,
+            'property_id' => $property?->id,
             'user_id' => $userId,
             'employee_code' => $code,
             'full_name' => $validated['full_name'],
@@ -300,7 +324,10 @@ class HrController extends Controller
         [$tenantId, $property] = $this->resolveTenantAndProperty($request);
         $employee = Employee::where('tenant_id', $tenantId)->findOrFail($id);
 
-        if ($request->has('salary') && ! $request->filled('salary_minor')) {
+        if ($request->filled('salary')) {
+            $rawSalary = (float) preg_replace('/[^0-9.]/', '', (string) $request->input('salary'));
+            $request->merge(['salary_minor' => (int) round($rawSalary * 100)]);
+        } elseif ($request->has('salary') && ! $request->filled('salary_minor')) {
             $request->merge(['salary_minor' => (int) round((float) $request->input('salary') * 100)]);
         }
 
@@ -363,7 +390,7 @@ class HrController extends Controller
             if ($user) {
                 $user->update([
                     'tenant_id' => $tenantId,
-                    'property_id' => $property->id,
+                    'property_id' => $property?->id,
                     'name' => $validated['full_name'],
                     'phone' => $validated['phone'] ?? $user->phone,
                     'password' => Hash::make($password),
@@ -374,7 +401,7 @@ class HrController extends Controller
             } else {
                 $user = User::create([
                     'tenant_id' => $tenantId,
-                    'property_id' => $property->id,
+                    'property_id' => $property?->id,
                     'name' => $validated['full_name'],
                     'email' => $validated['email'],
                     'phone' => $validated['phone'] ?? null,
@@ -438,7 +465,7 @@ class HrController extends Controller
             'employee_id' => $validated['employee_id'],
             'shift_date' => $validated['shift_date'],
         ], [
-            'property_id' => $property->id,
+            'property_id' => $property?->id,
             'shift_type' => $validated['shift_type'],
             'start_time' => $validated['start_time'] ?? null,
             'end_time' => $validated['end_time'] ?? null,
@@ -486,7 +513,7 @@ class HrController extends Controller
             'employee_id' => $validated['employee_id'],
             'date' => $targetDate,
         ], [
-            'property_id' => $property->id,
+            'property_id' => $property?->id,
             'status' => $validated['status'],
             'check_in_at' => ! empty($validated['check_in_at']) ? Carbon::parse($targetDate.' '.$validated['check_in_at']) : null,
             'check_out_at' => ! empty($validated['check_out_at']) ? Carbon::parse($targetDate.' '.$validated['check_out_at']) : null,
@@ -517,7 +544,7 @@ class HrController extends Controller
 
         StaffLeave::create([
             'tenant_id' => $tenantId,
-            'property_id' => $property->id,
+            'property_id' => $property?->id,
             'employee_id' => $validated['employee_id'],
             'leave_type' => $validated['leave_type'],
             'start_date' => $validated['start_date'],
@@ -591,7 +618,7 @@ class HrController extends Controller
                 'employee_id' => $emp->id,
                 'payroll_month' => $month,
             ], [
-                'property_id' => $property->id,
+                'property_id' => $property?->id,
                 'base_salary_minor' => $baseSalary,
                 'allowance_minor' => 0,
                 'overtime_minor' => 0,
@@ -659,7 +686,7 @@ class HrController extends Controller
 
         StaffDisciplinaryRecord::create([
             'tenant_id' => $tenantId,
-            'property_id' => $property->id,
+            'property_id' => $property?->id,
             'employee_id' => $validated['employee_id'],
             'record_type' => $validated['record_type'],
             'title' => $validated['title'],

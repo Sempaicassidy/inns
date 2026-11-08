@@ -50,3 +50,4 @@ class EnsureTenantFeatureEnabled
         return $next($request);
     }
 }
+

@@ -145,8 +145,8 @@ class Tenant extends Model
             'name' => 'Staff Directory, HR & Payroll',
             'category' => 'Human Resources',
             'description' => 'Employee contracts, attendance, leave management, and monthly payroll slips.',
-            'default_starter' => false,
-            'default_pro' => false,
+            'default_starter' => true,
+            'default_pro' => true,
             'default_enterprise' => true,
         ],
         'accounting' => [

@@ -44,5 +44,10 @@ class StaffLeave extends Model
     {
         return $this->belongsTo(User::class, 'approved_by_user_id');
     }
+
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by_user_id');
+    }
 }
 

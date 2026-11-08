@@ -55,7 +55,7 @@ interface Employee {
     bank_account?: string;
     status: 'active' | 'on_leave' | 'suspended' | 'terminated';
     is_active: boolean;
-    user?: { id: number; name: string; email: string; role?: string; pin_code?: string };
+    user?: { id: number; name: string; email: string; role?: string; pin_code?: string; email_verified_at?: string | null };
 }
 
 interface Schedule {
@@ -396,6 +396,20 @@ export default function HrIndex({
 
         if (confirm(`Are you sure you want to remove employee "${emp.full_name}" and delete their system login account? This action cannot be undone.`)) {
             router.delete(route('hr.employees.destroy', emp.id));
+        }
+    };
+
+    const handleResendVerification = (emp: Employee) => {
+        const email = emp.email || emp.user?.email;
+        if (!email) {
+            alert("This employee does not have an email address.");
+            return;
+        }
+
+        if (confirm(`Send a fresh email verification link to "${email}"?`)) {
+            router.post(route('hr.employees.resend_verification', emp.id), {}, {
+                preserveScroll: true,
+            });
         }
     };
 
@@ -745,10 +759,33 @@ export default function HrIndex({
                                                 </td>
                                                 <td className="py-3 px-4">
                                                     {emp.user ? (
-                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                                            <Key className="w-3 h-3 text-emerald-600" />
-                                                            {emp.user.role || 'User'}
-                                                        </span>
+                                                        <div className="space-y-1">
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                                                <Key className="w-3 h-3 text-blue-600" />
+                                                                {emp.user.role || 'User'}
+                                                            </span>
+                                                            {emp.user.email_verified_at ? (
+                                                                <div className="flex items-center gap-1 text-[10px] font-semibold text-emerald-700">
+                                                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                                                    <span>Verified</span>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md">
+                                                                        <Clock className="w-3 h-3 text-amber-600" />
+                                                                        <span>Unverified</span>
+                                                                    </span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleResendVerification(emp)}
+                                                                        title="Resend activation & verification email"
+                                                                        className="text-[10px] text-blue-600 hover:text-blue-800 underline font-bold cursor-pointer"
+                                                                    >
+                                                                        Resend
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     ) : (
                                                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-500">
                                                             No Login
@@ -1517,7 +1554,7 @@ export default function HrIndex({
                                             System Login Access & Password
                                         </h4>
                                         <p className="text-[11px] text-slate-500 mt-0.5">
-                                            Enable this to assign a password so this employee can log into the system.
+                                            Strict Security: An email verification link will be sent to the employee. The account remains locked until email verification is completed.
                                         </p>
                                     </div>
                                     <label className="relative inline-flex items-center cursor-pointer">

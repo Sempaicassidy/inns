@@ -285,7 +285,14 @@ class HrController extends Controller
                     'role' => $systemRole,
                     'pin_code' => $validated['pin_code'] ?? null,
                     'status' => 'active',
+                    'email_verified_at' => null, // Strictly requires email verification
                 ]);
+
+                try {
+                    $user->sendEmailVerificationNotification();
+                } catch (\Throwable $e) {
+                    \Log::warning("Email verification send failed for {$user->email}: " . $e->getMessage());
+                }
             }
             $userId = $user->id;
         }
@@ -313,7 +320,12 @@ class HrController extends Controller
             'status' => 'active',
         ]);
 
-        return redirect()->back()->with('success', "Employee {$validated['full_name']} registered successfully ({$code})" . ($userId ? " with login access." : "."));
+        $message = "Employee {$validated['full_name']} registered successfully ({$code}).";
+        if ($userId) {
+            $message .= " A verification link has been sent to {$validated['email']} for account activation.";
+        }
+
+        return redirect()->back()->with('success', $message);
     }
 
     /**
@@ -451,6 +463,30 @@ class HrController extends Controller
         $employee->delete();
 
         return redirect()->back()->with('success', "Employee {$name} and login account removed from the system.");
+    }
+
+    /**
+     * Resend verification / activation email to an employee with a system login account.
+     */
+    public function resendVerificationEmail(Request $request, string $id): RedirectResponse
+    {
+        [$tenantId] = $this->resolveTenantAndProperty($request);
+        $employee = Employee::where('tenant_id', $tenantId)->findOrFail($id);
+
+        if (!$employee->user) {
+            return redirect()->back()->with('error', "Employee {$employee->full_name} does not have a system login account.");
+        }
+
+        if ($employee->user->hasVerifiedEmail()) {
+            return redirect()->back()->with('info', "The account for {$employee->full_name} ({$employee->user->email}) is already verified and active.");
+        }
+
+        try {
+            $employee->user->sendEmailVerificationNotification();
+            return redirect()->back()->with('success', "A fresh email verification link has been sent to {$employee->user->email}.");
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', "Failed to send verification email: " . $e->getMessage());
+        }
     }
 
     /**

@@ -222,6 +222,7 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
         Route::post('/hr/employees', [HrController::class, 'storeEmployee'])->name('hr.employees.store');
         Route::put('/hr/employees/{id}', [HrController::class, 'updateEmployee'])->name('hr.employees.update');
         Route::delete('/hr/employees/{id}', [HrController::class, 'destroyEmployee'])->name('hr.employees.destroy');
+        Route::post('/hr/employees/{id}/resend-verification', [HrController::class, 'resendVerificationEmail'])->name('hr.employees.resend_verification');
         Route::post('/hr/shifts', [HrController::class, 'assignShift'])->name('hr.shifts.store');
         Route::post('/hr/schedules', [HrController::class, 'assignShift'])->name('hr.schedules.store');
         Route::delete('/hr/shifts/{id}', [HrController::class, 'destroyShift'])->name('hr.shifts.destroy');

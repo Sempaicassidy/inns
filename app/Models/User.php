@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -144,6 +145,31 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         return $this->roles_list[0] ?? $this->role ?? 'general_manager';
+    }
+
+    /**
+     * Generate a guaranteed unique, human-friendly username from name and/or email.
+     */
+    public static function generateUniqueUsername(string $name, ?string $email = null): string
+    {
+        $firstPart = explode(' ', trim($name))[0] ?? '';
+        $base = Str::lower(preg_replace('/[^a-zA-Z0-9_]/', '', $firstPart));
+        if (empty($base) && $email) {
+            $emailPrefix = explode('@', $email)[0] ?? '';
+            $base = Str::lower(preg_replace('/[^a-zA-Z0-9_]/', '', $emailPrefix));
+        }
+        if (empty($base)) {
+            $base = 'user';
+        }
+
+        $candidate = $base;
+        $counter = 1;
+        while (static::where('username', $candidate)->exists()) {
+            $candidate = $base . '_' . $counter;
+            $counter++;
+        }
+
+        return $candidate;
     }
 
     /**

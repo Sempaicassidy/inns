@@ -380,6 +380,7 @@ class SaasAdminController extends Controller
             ->map(fn($u) => [
                 'id' => $u->id,
                 'name' => $u->name,
+                'username' => $u->username,
                 'email' => $u->email,
                 'role' => $u->role,
                 'roles' => is_array($u->roles) ? $u->roles : [$u->role],
@@ -400,13 +401,22 @@ class SaasAdminController extends Controller
                 'permissions' => ['Platform Control', 'Tenant Impersonation', 'Billing & Quotes', 'SMS Gateway', 'Database Diagnostics', 'Legal Contracts'],
             ],
             [
+                'role' => 'owner',
+                'title' => 'Hotel Owner / Director (Mmiliki wa Hoteli)',
+                'badge' => 'Executive Ownership',
+                'scope' => 'Multi-Branch Oversight & Executive Approvals',
+                'description' => 'Usimamizi wa kiwango cha juu: mapato ya matawi yote (Multi-Property), kuidhinisha maombi ya fedha (Requisitions), kutoa miongozo ya kiutendaji (Directives), kuzuia mianya ya hasara (Loss Prevention), na mikopo/gawio la mwekezaji (Drawings).',
+                'users_count' => User::where('role', 'owner')->orWhere('roles', 'like', '%"owner"%')->count(),
+                'permissions' => ['Executive Directives', 'Requisition Approvals', 'Multi-Branch Financials', 'Loss Prevention Audit', 'Owner Dividends/Drawings', 'Branch Switcher & Inspection'],
+            ],
+            [
                 'role' => 'general_manager',
-                'title' => 'General Manager / Hotel Owner',
-                'badge' => 'Hotel Executive',
-                'scope' => 'Tenant Full Property Management',
-                'description' => 'Udhibiti mkuu wa hoteli husika: mapato, occupancy, wageni, wafanyakazi, stoo na ununuzi, night audit, na bili za hoteli.',
-                'users_count' => User::where('role', 'general_manager')->orWhere('role', 'owner')->count(),
-                'permissions' => ['Property Settings', 'Night Audit', 'Financial Statements', 'Staff & Roster', 'Inventory & Stores', 'Guest Folios'],
+                'title' => 'General Manager (Meneja Mkuu)',
+                'badge' => 'Operations Executive',
+                'scope' => 'Property Daily Operations & Leadership',
+                'description' => 'Udhibiti wa uendeshaji wa hoteli husika: mapato ya kila siku, night audit, ununuzi wa dharura na stoo, kuratibu watumishi, na kutekeleza maagizo ya mwenye hoteli.',
+                'users_count' => User::where('role', 'general_manager')->orWhere('roles', 'like', '%"general_manager"%')->count(),
+                'permissions' => ['Property Operations', 'Night Audit', 'Staff & Roster', 'Inventory & Stores', 'Guest Folios', 'Submit Requisitions to Owner'],
             ],
             [
                 'role' => 'receptionist',
@@ -717,6 +727,7 @@ class SaasAdminController extends Controller
             'plan' => 'required|string|in:starter,pro,enterprise',
             'property_name' => 'required|string|max:100',
             'city' => 'required|string|max:80',
+            'admin_role' => 'nullable|string|in:owner,general_manager',
             'admin_name' => 'required|string|max:100',
             'admin_email' => 'required|email|max:100|unique:users,email',
             'admin_password' => 'required|string|min:6',
@@ -769,17 +780,21 @@ class SaasAdminController extends Controller
                 'state' => 'open',
             ]);
 
-            // 3. Create General Manager User
+            // 3. Create Primary Administrator (Owner or General Manager)
+            $adminRole = $validated['admin_role'] ?? 'owner';
+            $adminUsername = User::generateUniqueUsername($validated['admin_name'], $validated['admin_email']);
             User::create([
                 'name' => $validated['admin_name'],
+                'username' => $adminUsername,
                 'email' => $validated['admin_email'],
                 'password' => Hash::make($validated['admin_password']),
                 'tenant_id' => $tenant->id,
                 'property_id' => $property->id,
-                'role' => 'general_manager',
-                'roles' => ['general_manager', 'owner'],
+                'role' => $adminRole,
+                'roles' => [$adminRole],
                 'status' => 'active',
                 'can_manage_branches' => true,
+                'email_verified_at' => now(),
             ]);
 
             // 4. Create SMS Wallet with 200 Welcome Bonus Credits
@@ -1453,19 +1468,33 @@ class SaasAdminController extends Controller
         $roles = [$validated['role']];
         if ($validated['role'] === 'super_admin') {
             $roles = ['super_admin'];
+        } elseif ($validated['role'] === 'owner') {
+            $roles = ['owner'];
         }
+
+        $propertyId = null;
+        if (!empty($validated['tenant_id'])) {
+            $propertyId = Property::where('tenant_id', $validated['tenant_id'])->where('is_main', true)->value('id')
+                ?? Property::where('tenant_id', $validated['tenant_id'])->value('id');
+        }
+
+        $username = User::generateUniqueUsername($validated['name'], $validated['email']);
 
         User::create([
             'name' => $validated['name'],
+            'username' => $username,
             'email' => $validated['email'],
             'role' => $validated['role'],
             'roles' => $roles,
             'tenant_id' => $validated['tenant_id'] ?: null,
+            'property_id' => $propertyId,
             'password' => Hash::make($validated['password']),
             'email_verified_at' => now(),
+            'status' => 'active',
+            'can_manage_branches' => in_array($validated['role'], ['owner', 'general_manager', 'super_admin']),
         ]);
 
-        return redirect()->back()->with('success', "User '{$validated['name']}' created successfully.");
+        return redirect()->back()->with('success', "User '{$validated['name']}' ({$validated['role']}) created successfully with username '{$username}'.");
     }
 
     /**
@@ -1498,6 +1527,16 @@ class SaasAdminController extends Controller
         $roles = [$validated['role']];
         if ($validated['role'] === 'super_admin') {
             $roles = ['super_admin'];
+        } elseif ($validated['role'] === 'owner') {
+            $roles = ['owner'];
+        }
+
+        $propertyId = $user->property_id;
+        if (!empty($validated['tenant_id']) && $validated['tenant_id'] != $user->tenant_id) {
+            $propertyId = Property::where('tenant_id', $validated['tenant_id'])->where('is_main', true)->value('id')
+                ?? Property::where('tenant_id', $validated['tenant_id'])->value('id');
+        } elseif (empty($validated['tenant_id'])) {
+            $propertyId = null;
         }
 
         $updateData = [
@@ -1506,8 +1545,14 @@ class SaasAdminController extends Controller
             'role' => $validated['role'],
             'roles' => $roles,
             'tenant_id' => $validated['tenant_id'] ?: null,
+            'property_id' => $propertyId,
             'status' => $validated['is_active'] ? 'active' : 'inactive',
+            'can_manage_branches' => in_array($validated['role'], ['owner', 'general_manager', 'super_admin']),
         ];
+
+        if (empty($user->username)) {
+            $updateData['username'] = User::generateUniqueUsername($validated['name'], $validated['email']);
+        }
 
         if (!empty($validated['password'])) {
             $updateData['password'] = Hash::make($validated['password']);

@@ -28,21 +28,49 @@ class TenantVerifyEmailNotification extends Notification
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $hotelName = $notifiable->hotel_name ?? config('app.name', 'Hotel Management');
+        $systemName = config('app.name', 'THE INNS');
+
+        // Resolve respective hotel name or fallback to system name 'THE INNS'
+        $hotelName = $notifiable->hotel_name ?? null;
+        if (empty($hotelName) || strtolower(trim($hotelName)) === 'hotel management') {
+            $hotelName = $notifiable->property?->name
+                ?: ($notifiable->tenant?->name ?: $systemName);
+        }
+
+        if (empty($hotelName) || strtolower(trim($hotelName)) === 'hotel management') {
+            $hotelName = $systemName;
+        }
+
         $username = $notifiable->username ?? $notifiable->email;
-        $phone = $notifiable->phone ?? 'Not specified';
+        $phone = $notifiable->phone ?? 'Bado haijawekwa';
 
         $verificationUrl = $this->verificationUrl($notifiable);
         $expire = Config::get('auth.verification.expire', 60);
 
-        return (new MailMessage)
+        $hasSpecificHotel = ($hotelName !== $systemName);
+        $propertyLabel = $hasSpecificHotel ? 'Hotel / Property' : 'Mfumo / Platform';
+
+        $mail = (new MailMessage)
+            ->from(config('mail.from.address', 'info@haulaenterprises.co.tz'), $hotelName)
             ->subject("[{$hotelName}] Uanzishwaji wa Akaunti / Account Activation")
-            ->greeting("Habari {$notifiable->name},")
-            ->line("Hongera na karibu kwenye mfumo wa **{$hotelName}**! Akaunti yako ya kazi imesajiliwa kikamilifu.")
-            ->line("Taarifa za kuingia na kuwezesha akaunti:")
-            ->line("• **Hotel / Property:** {$hotelName}")
-            ->line("• **Username ya Kuingilia:** {$username}")
-            ->line("• **Simu ya Mawasiliano:** {$phone}")
+            ->greeting("Habari {$notifiable->name},");
+
+        if ($hasSpecificHotel) {
+            $mail->line("Hongera na karibu kwenye mfumo wa **{$hotelName}** ({$systemName})! Akaunti yako ya kazi imesajiliwa kikamilifu.")
+                ->line("Taarifa za kuingia na kuwezesha akaunti:")
+                ->line("• **{$propertyLabel}:** {$hotelName}")
+                ->line("• **Mfumo:** {$systemName}")
+                ->line("• **Username ya Kuingilia:** {$username}")
+                ->line("• **Simu ya Mawasiliano:** {$phone}");
+        } else {
+            $mail->line("Hongera na karibu kwenye mfumo wa **{$systemName}**! Akaunti yako ya kazi imesajiliwa kikamilifu.")
+                ->line("Taarifa za kuingia na kuwezesha akaunti:")
+                ->line("• **{$propertyLabel}:** {$systemName}")
+                ->line("• **Username ya Kuingilia:** {$username}")
+                ->line("• **Simu ya Mawasiliano:** {$phone}");
+        }
+
+        return $mail
             ->line("Kabla ya kuanza kufanya kazi kwenye mfumo, tafadhali thibitisha barua pepe yako kwa kubonyeza kitufe hapa chini ili kuwezesha (activate) akaunti yako:")
             ->action("Washa Akaunti Yangu ({$hotelName})", $verificationUrl)
             ->line("Kiungo hiki cha uthibitishaji kitakuwa hai kwa dakika {$expire}.")

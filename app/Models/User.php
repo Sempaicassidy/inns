@@ -399,7 +399,24 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getHotelNameAttribute(): string
     {
-        return $this->property?->name ?: ($this->tenant?->name ?: config('app.name', 'Hotel Management'));
+        $rawPropertyId = $this->getRawOriginal('property_id');
+        $rawTenantId = $this->getRawOriginal('tenant_id');
+
+        if ($rawPropertyId) {
+            $property = Property::find($rawPropertyId);
+            if ($property?->name) {
+                return $property->name;
+            }
+        }
+
+        if ($rawTenantId) {
+            $tenant = Tenant::find($rawTenantId);
+            if ($tenant?->name) {
+                return $tenant->name;
+            }
+        }
+
+        return config('app.name', 'THE INNS');
     }
 
     /**

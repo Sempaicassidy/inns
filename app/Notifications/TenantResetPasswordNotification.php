@@ -35,9 +35,21 @@ class TenantResetPasswordNotification extends Notification
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $hotelName = $notifiable->hotel_name ?? config('app.name', 'Hotel Management');
+        $systemName = config('app.name', 'THE INNS');
+
+        // Resolve respective hotel name or fallback to system name 'THE INNS'
+        $hotelName = $notifiable->hotel_name ?? null;
+        if (empty($hotelName) || strtolower(trim($hotelName)) === 'hotel management') {
+            $hotelName = $notifiable->property?->name
+                ?: ($notifiable->tenant?->name ?: $systemName);
+        }
+
+        if (empty($hotelName) || strtolower(trim($hotelName)) === 'hotel management') {
+            $hotelName = $systemName;
+        }
+
         $username = $notifiable->username ?? $notifiable->email;
-        $phone = $notifiable->phone ?? 'Not specified';
+        $phone = $notifiable->phone ?? 'Bado haijawekwa';
 
         $url = url(route('password.reset', [
             'token' => $this->token,
@@ -46,12 +58,16 @@ class TenantResetPasswordNotification extends Notification
 
         $expire = config('auth.passwords.'.config('auth.defaults.passwords').'.expire', 60);
 
+        $hasSpecificHotel = ($hotelName !== $systemName);
+        $propertyLabel = $hasSpecificHotel ? 'Hotel / Property' : 'Mfumo / Platform';
+
         return (new MailMessage)
+            ->from(config('mail.from.address', 'info@haulaenterprises.co.tz'), $hotelName)
             ->subject("[{$hotelName}] Password Reset Request / Urejeshaji wa Nenosiri")
             ->greeting("Habari {$notifiable->name},")
             ->line("Ujumbe huu unatumwa kwako kutoka **{$hotelName}** kwa sababu kumekuwa na ombi la kurejesha nenosiri (password recovery) la akaunti yako ya mfumo.")
             ->line("Taarifa za akaunti yako ya kazi:")
-            ->line("• **Hotel / Property:** {$hotelName}")
+            ->line("• **{$propertyLabel}:** {$hotelName}")
             ->line("• **Username:** {$username}")
             ->line("• **Recovery Phone:** {$phone}")
             ->action("Weka Nenosiri Jipya ({$hotelName})", $url)

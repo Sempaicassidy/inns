@@ -267,6 +267,15 @@ export default function NewReservationModal({
                 body: JSON.stringify(newPlanForm),
             });
 
+            const contentType = res.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                throw new Error(
+                    res.status === 419
+                        ? 'Session expired. Please refresh the page and try again.'
+                        : `Server error (${res.status}). Please try again.`
+                );
+            }
+
             const json = await res.json();
             if (json.success && json.ratePlan) {
                 setLocalRatePlans(prev => [...prev, json.ratePlan]);

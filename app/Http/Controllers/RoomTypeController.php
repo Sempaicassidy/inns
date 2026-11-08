@@ -63,6 +63,12 @@ class RoomTypeController extends Controller
         $tenantId = $user?->tenant_id ?? $property?->tenant_id;
 
         if (! $property) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No active property found. Please select a property first.',
+                ], 422);
+            }
             return back()->withErrors(['property' => 'No active property found.']);
         }
 

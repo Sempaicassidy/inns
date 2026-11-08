@@ -108,13 +108,20 @@ export default function HousekeepingIndex({
         }
     }, [ratePlans]);
 
+    const getCsrfToken = () => {
+        const meta = document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null;
+        if (meta?.content) return meta.content;
+        const match = document.cookie.match(new RegExp('(^|;\\s*)XSRF-TOKEN=([^;]*)'));
+        return match ? decodeURIComponent(match[2]) : '';
+    };
+
     const handleCreateRatePlan = async (e: React.FormEvent) => {
         e.preventDefault();
         setSavingPlan(true);
         setPlanError('');
 
         try {
-            const token = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '';
+            const token = getCsrfToken();
             const res = await fetch(route('rate-plans.store'), {
                 method: 'POST',
                 headers: {
@@ -125,6 +132,15 @@ export default function HousekeepingIndex({
                 },
                 body: JSON.stringify(newPlanForm),
             });
+
+            const contentType = res.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                throw new Error(
+                    res.status === 419
+                        ? 'Kipindi chako kimeisha (Session Expired). Tafadhali refresh ukurasa uendelee.'
+                        : `Hitilafu ya Seva (${res.status}). Tafadhali refresh ukurasa au jaribu tena.`
+                );
+            }
 
             const json = await res.json();
             if (json.success && json.ratePlan) {
@@ -218,7 +234,7 @@ export default function HousekeepingIndex({
         setRoomTypeError('');
 
         try {
-            const token = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '';
+            const token = getCsrfToken();
             const url = editingRoomTypeId
                 ? route('room-types.update', editingRoomTypeId)
                 : route('room-types.store');
@@ -234,6 +250,15 @@ export default function HousekeepingIndex({
                 },
                 body: JSON.stringify(roomTypeForm),
             });
+
+            const contentType = res.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                throw new Error(
+                    res.status === 419
+                        ? 'Kipindi chako kimeisha (Session Expired). Tafadhali refresh ukurasa uendelee.'
+                        : `Hitilafu ya Seva (${res.status}). Tafadhali refresh ukurasa au jaribu tena.`
+                );
+            }
 
             const json = await res.json();
             if (json.success && json.roomType) {
@@ -271,7 +296,7 @@ export default function HousekeepingIndex({
         if (!confirm(`Are you sure you want to delete or deactivate room type "${rt.name}"?`)) return;
 
         try {
-            const token = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '';
+            const token = getCsrfToken();
             const res = await fetch(route('room-types.destroy', rt.id), {
                 method: 'DELETE',
                 headers: {
@@ -280,6 +305,15 @@ export default function HousekeepingIndex({
                     'X-Requested-With': 'XMLHttpRequest',
                 },
             });
+
+            const contentType = res.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                throw new Error(
+                    res.status === 419
+                        ? 'Kipindi chako kimeisha (Session Expired). Tafadhali refresh ukurasa uendelee.'
+                        : `Hitilafu ya Seva (${res.status}). Tafadhali refresh ukurasa au jaribu tena.`
+                );
+            }
 
             const json = await res.json();
             if (json.success) {

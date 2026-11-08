@@ -1,0 +1,1 @@
+import{t as e}from"./createLucideIcon-S1XEXOwc.js";var t={name:`smartphone`,size:24,node:[[`rect`,{width:`14`,height:`20`,x:`5`,y:`2`,rx:`2`,ry:`2`,key:`1yt0o3`}],[`path`,{d:`M12 18h.01`,key:`mhygvu`}]]};t.node;var n=e(t),r={name:`x`,size:24,node:[[`path`,{d:`M18 6 6 18`,key:`1bl5f8`}],[`path`,{d:`m6 6 12 12`,key:`d8bk6v`}]]};r.node;var i=e(r);export{n,i as t};

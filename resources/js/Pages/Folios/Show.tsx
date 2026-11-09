@@ -16,6 +16,7 @@ import {
     X,
 } from 'lucide-react';
 import { useState } from 'react';
+import { printThermalReceipt, printA4Invoice, ReceiptData } from '@/Utils/receiptPrinter';
 
 interface FolioShowProps extends PageProps {
     folio: Folio;
@@ -83,12 +84,86 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
         });
     };
 
+    const getFolioReceiptData = (type: 'FISCAL RECEIPT' | 'FOLIO STATEMENT' = 'FOLIO STATEMENT'): ReceiptData => {
+        const guestName = guest?.full_name || (guest ? `${guest.first_name} ${guest.last_name}` : 'Valued Guest');
+        const roomNum = room?.room_number || (folio.reservation as any)?.room?.room_number || undefined;
+        
+        return {
+            hotelName: auth.tenant?.name || auth.property?.name || 'THE INNS HOTEL',
+            hotelAddress: auth.property?.address || (auth.tenant as any)?.address || undefined,
+            hotelPhone: auth.property?.phone || (auth.tenant as any)?.phone || undefined,
+            hotelEmail: (auth.tenant as any)?.email || undefined,
+            tin: auth.tenant?.tin || (auth.property?.tax_config as any)?.tin || undefined,
+            vrn: auth.tenant?.vrn || undefined,
+            receiptNumber: folio.folio_number,
+            receiptType: type,
+            dateTime: new Date().toLocaleString(),
+            cashierName: auth.user?.name || 'Front Desk',
+            guestName: guestName,
+            roomNumber: roomNum,
+            items: (folio.lines && folio.lines.length > 0)
+                ? folio.lines.map((l: any) => ({
+                    description: l.description || l.line_type || 'Room Charge',
+                    quantity: 1,
+                    unit_price: l.amount_minor || 0,
+                    amount: l.amount_minor || 0,
+                }))
+                : [{
+                    description: 'Hotel Accommodation Charges',
+                    quantity: 1,
+                    unit_price: folio.total_charges_minor,
+                    amount: folio.total_charges_minor,
+                }],
+            subtotal: folio.total_charges_minor,
+            tax: Math.round(folio.total_charges_minor * 0.18),
+            taxRatePercent: 18,
+            grandTotal: folio.total_charges_minor,
+            paymentMethod: folio.payments?.[0]?.payment_method || (folio.balance_minor <= 0 ? 'Settled' : 'Pending'),
+            amountPaid: folio.total_payments_minor,
+            balanceDue: folio.balance_minor,
+            amountsAreMinor: true,
+            footerText: auth.tenant?.receipt_footer || undefined,
+        };
+    };
+
     const handlePrintA4 = () => {
-        window.print();
+        printA4Invoice(getFolioReceiptData('FOLIO STATEMENT'));
     };
 
     const handlePrintThermal = () => {
-        window.print();
+        printThermalReceipt(getFolioReceiptData('FISCAL RECEIPT'));
+    };
+
+    const handlePrintSinglePayment = (payment: any) => {
+        const guestName = guest?.full_name || (guest ? `${guest.first_name} ${guest.last_name}` : 'Valued Guest');
+        const roomNum = room?.room_number || (folio.reservation as any)?.room?.room_number || undefined;
+
+        printThermalReceipt({
+            hotelName: auth.tenant?.name || auth.property?.name || 'THE INNS HOTEL',
+            hotelAddress: auth.property?.address || (auth.tenant as any)?.address || undefined,
+            hotelPhone: auth.property?.phone || (auth.tenant as any)?.phone || undefined,
+            tin: auth.tenant?.tin || (auth.property?.tax_config as any)?.tin || undefined,
+            vrn: auth.tenant?.vrn || undefined,
+            receiptNumber: payment.receipt_number || `RCP-${payment.id.substring(0, 8).toUpperCase()}`,
+            receiptType: 'PAYMENT RECEIPT',
+            dateTime: payment.business_date || new Date().toLocaleString(),
+            cashierName: auth.user?.name || 'Cashier',
+            guestName: guestName,
+            roomNumber: roomNum,
+            items: [{
+                description: `Payment on Folio #${folio.folio_number} (${payment.payment_method})`,
+                quantity: 1,
+                unit_price: payment.amount_minor,
+                amount: payment.amount_minor,
+            }],
+            subtotal: payment.amount_minor,
+            grandTotal: payment.amount_minor,
+            paymentMethod: payment.payment_method,
+            amountPaid: payment.amount_minor,
+            balanceDue: 0,
+            amountsAreMinor: true,
+            footerText: 'Payment received with thanks!',
+        });
     };
 
     return (
@@ -286,12 +361,13 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
                                     <th className="py-2.5 px-3">Reference / Tx ID</th>
                                     <th className="py-2.5 px-3">Notes</th>
                                     <th className="py-2.5 px-3 text-right">Amount Paid</th>
+                                    <th className="py-2.5 px-3 text-center print:hidden">Receipt</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-slate-800">
                                 {folio.payments?.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className="py-4 text-center text-slate-400">
+                                        <td colSpan={6} className="py-4 text-center text-slate-400">
                                             No payments recorded yet.
                                         </td>
                                     </tr>
@@ -310,6 +386,17 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
                                             </td>
                                             <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-700">
                                                 {formatTZS(payment.amount_minor)}
+                                            </td>
+                                            <td className="py-2.5 px-3 text-center print:hidden">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handlePrintSinglePayment(payment)}
+                                                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold transition cursor-pointer"
+                                                    title="Print Payment Thermal Receipt"
+                                                >
+                                                    <Printer className="w-3 h-3 text-slate-600" />
+                                                    <span>Receipt</span>
+                                                </button>
                                             </td>
                                         </tr>
                                     ))

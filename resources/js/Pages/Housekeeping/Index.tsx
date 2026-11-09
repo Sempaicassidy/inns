@@ -137,8 +137,8 @@ export default function HousekeepingIndex({
             if (!contentType.includes('application/json')) {
                 throw new Error(
                     res.status === 419
-                        ? 'Kipindi chako kimeisha (Session Expired). Tafadhali refresh ukurasa uendelee.'
-                        : `Hitilafu ya Seva (${res.status}). Tafadhali refresh ukurasa au jaribu tena.`
+                        ? 'Your session has expired. Please refresh the page to continue.'
+                        : `Server error (${res.status}). Please refresh the page or try again.`
                 );
             }
 
@@ -255,8 +255,8 @@ export default function HousekeepingIndex({
             if (!contentType.includes('application/json')) {
                 throw new Error(
                     res.status === 419
-                        ? 'Kipindi chako kimeisha (Session Expired). Tafadhali refresh ukurasa uendelee.'
-                        : `Hitilafu ya Seva (${res.status}). Tafadhali refresh ukurasa au jaribu tena.`
+                        ? 'Your session has expired. Please refresh the page to continue.'
+                        : `Server error (${res.status}). Please refresh the page or try again.`
                 );
             }
 
@@ -310,8 +310,8 @@ export default function HousekeepingIndex({
             if (!contentType.includes('application/json')) {
                 throw new Error(
                     res.status === 419
-                        ? 'Kipindi chako kimeisha (Session Expired). Tafadhali refresh ukurasa uendelee.'
-                        : `Hitilafu ya Seva (${res.status}). Tafadhali refresh ukurasa au jaribu tena.`
+                        ? 'Your session has expired. Please refresh the page to continue.'
+                        : `Server error (${res.status}). Please refresh the page or try again.`
                 );
             }
 

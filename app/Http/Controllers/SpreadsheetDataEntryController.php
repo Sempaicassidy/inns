@@ -14,6 +14,7 @@ use App\Models\RoomType;
 use App\Models\StockMovement;
 use App\Models\Tenant;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -38,6 +39,7 @@ class SpreadsheetDataEntryController extends Controller
             'guests' => Guest::where('tenant_id', $tenantId)->count(),
             'expenses' => Expense::where('tenant_id', $tenantId)->count(),
             'rooms' => Room::where('tenant_id', $tenantId)->count(),
+            'room_types' => RoomType::withoutGlobalScopes()->where('tenant_id', $tenantId)->count(),
         ];
 
         return Inertia::render('DataEntry/Index', [
@@ -59,16 +61,48 @@ class SpreadsheetDataEntryController extends Controller
         $schema = $schemas[$type];
         $filename = "{$type}_import_template.csv";
 
-        return response()->streamDownload(function () use ($schema) {
+        $requestedColumns = null;
+        if ($request->has('columns') && ! empty($request->query('columns'))) {
+            $requestedColumns = array_filter(array_map('trim', explode(',', $request->query('columns'))));
+        }
+
+        return response()->streamDownload(function () use ($schema, $requestedColumns) {
             $handle = fopen('php://output', 'w');
             // Write UTF-8 BOM so Microsoft Excel renders characters cleanly
             fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
 
+            $headers = $schema['headers'];
+            $sampleRows = $schema['sample_rows'];
+
+            if ($requestedColumns && count($requestedColumns) > 0) {
+                $indices = [];
+                $filteredHeaders = [];
+                foreach ($headers as $idx => $headerName) {
+                    if (in_array($headerName, $requestedColumns, true)) {
+                        $indices[] = $idx;
+                        $filteredHeaders[] = $headerName;
+                    }
+                }
+
+                if (count($filteredHeaders) > 0) {
+                    $headers = $filteredHeaders;
+                    $filteredSamples = [];
+                    foreach ($sampleRows as $row) {
+                        $newRow = [];
+                        foreach ($indices as $i) {
+                            $newRow[] = $row[$i] ?? '';
+                        }
+                        $filteredSamples[] = $newRow;
+                    }
+                    $sampleRows = $filteredSamples;
+                }
+            }
+
             // Write Header
-            fputcsv($handle, $schema['headers']);
+            fputcsv($handle, $headers);
 
             // Write Sample Rows
-            foreach ($schema['sample_rows'] as $row) {
+            foreach ($sampleRows as $row) {
                 fputcsv($handle, $row);
             }
 
@@ -183,7 +217,7 @@ class SpreadsheetDataEntryController extends Controller
                     break;
 
                 case 'rooms':
-                    fputcsv($handle, ['Room Number', 'Room Type', 'Floor', 'Occupancy Status', 'Housekeeping Status', 'Is Active']);
+                    fputcsv($handle, ['Room Number', 'Room Type', 'Floor', 'Base Price (TZS)', 'Occupancy Status', 'Housekeeping Status', 'Is Active']);
                     Room::with('roomType')
                         ->where('tenant_id', $tenantId)
                         ->orderBy('room_number')
@@ -193,9 +227,31 @@ class SpreadsheetDataEntryController extends Controller
                                     $r->room_number,
                                     $r->roomType?->name ?? 'Standard',
                                     $r->floor ?? '1',
+                                    number_format(($r->roomType?->base_price_minor ?? 8000000) / 100, 2, '.', ''),
                                     $r->status_occupancy ?? 'vacant',
                                     $r->status_hk ?? 'clean',
                                     $r->is_active ? 'Yes' : 'No',
+                                ]);
+                            }
+                        });
+                    break;
+
+                case 'room_types':
+                    fputcsv($handle, ['Room Type Name', 'Code', 'Base Price (TZS)', 'Base Occupancy', 'Max Adults', 'Max Children', 'Amenities', 'Description']);
+                    RoomType::withoutGlobalScopes()
+                        ->where('tenant_id', $tenantId)
+                        ->orderBy('name')
+                        ->chunk(100, function ($rts) use ($handle) {
+                            foreach ($rts as $rt) {
+                                fputcsv($handle, [
+                                    $rt->name,
+                                    $rt->code,
+                                    number_format(($rt->base_price_minor ?? 0) / 100, 2, '.', ''),
+                                    $rt->base_occupancy ?? 2,
+                                    $rt->max_adults ?? 2,
+                                    $rt->max_children ?? 1,
+                                    is_array($rt->amenities) ? implode(', ', $rt->amenities) : ($rt->amenities ?? ''),
+                                    $rt->description ?? '',
                                 ]);
                             }
                         });
@@ -210,6 +266,78 @@ class SpreadsheetDataEntryController extends Controller
             'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ]);
+    }
+
+    /**
+     * Batch save rows submitted directly from the web interactive grid or mapped client-side CSV
+     */
+    public function batchSave(Request $request, string $type): JsonResponse
+    {
+        $request->validate([
+            'rows' => 'required|array|min:1',
+        ]);
+
+        $user = $request->user();
+        $property = $user->property ?? Property::first();
+        $tenantId = $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
+
+        $rows = $request->input('rows');
+        $created = 0;
+        $updated = 0;
+        $skipped = 0;
+        $errors = [];
+
+        DB::beginTransaction();
+        try {
+            foreach ($rows as $index => $row) {
+                $rowNum = $index + 1;
+                $normalized = [];
+                foreach ($row as $k => $v) {
+                    $normKey = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string)$k));
+                    $normalized[$normKey] = is_string($v) ? trim($v) : $v;
+                }
+
+                $res = match ($type) {
+                    'grocery_items' => $this->processGroceryRow($normalized, $tenantId, $property?->id, $rowNum),
+                    'inventory_items' => $this->processInventoryRow($normalized, $tenantId, $property?->id, $rowNum),
+                    'guests' => $this->processGuestRow($normalized, $tenantId, $property?->id, $rowNum),
+                    'expenses' => $this->processExpenseRow($normalized, $tenantId, $property?->id, $user->id, $rowNum),
+                    'rooms' => $this->processRoomRow($normalized, $tenantId, $property?->id, $rowNum),
+                    'room_types' => $this->processRoomTypeRow($normalized, $tenantId, $property?->id, $rowNum),
+                    default => ['status' => 'error', 'message' => "Unsupported type: {$type}"],
+                };
+
+                if ($res['status'] === 'created') {
+                    $created++;
+                } elseif ($res['status'] === 'updated') {
+                    $updated++;
+                } else {
+                    $skipped++;
+                    if (! empty($res['message'])) {
+                        $errors[] = "Row {$rowNum}: {$res['message']}";
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully imported {$created} new and updated {$updated} records.",
+                'created' => $created,
+                'updated' => $updated,
+                'skipped' => $skipped,
+                'errors' => $errors,
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Batch import failed: '.$e->getMessage(),
+                'errors' => [$e->getMessage()],
+            ], 422);
+        }
     }
 
     /**
@@ -639,6 +767,8 @@ class SpreadsheetDataEntryController extends Controller
         $occupancy = strtolower($data['occupancystatus'] ?? $data['status'] ?? 'vacant');
         $hkStatus = strtolower($data['housekeepingstatus'] ?? $data['hkstatus'] ?? 'clean');
 
+        $basePrice = $this->cleanAmount($data['baseprice'] ?? $data['basepricetzs'] ?? $data['price'] ?? 80000);
+
         $roomType = RoomType::firstOrCreate([
             'tenant_id' => $tenantId,
             'name' => $roomTypeName,
@@ -648,9 +778,13 @@ class SpreadsheetDataEntryController extends Controller
             'base_occupancy' => 2,
             'max_adults' => 2,
             'max_children' => 1,
-            'base_price_minor' => 8000000, // 80,000 TZS default
+            'base_price_minor' => $basePrice > 0 ? $basePrice : 8000000,
             'is_active' => true,
         ]);
+
+        if ($basePrice > 0 && $roomType->wasRecentlyCreated === false && isset($data['baseprice'])) {
+            $roomType->update(['base_price_minor' => $basePrice]);
+        }
 
         $room = Room::where('tenant_id', $tenantId)
             ->where('room_number', $roomNumber)
@@ -675,6 +809,58 @@ class SpreadsheetDataEntryController extends Controller
             'floor' => $floor,
             'status_occupancy' => $occupancy,
             'status_hk' => $hkStatus,
+            'is_active' => true,
+        ]);
+
+        return ['status' => 'created'];
+    }
+
+    /**
+     * Process single row for Room Type
+     */
+    protected function processRoomTypeRow(array $data, string $tenantId, ?string $propertyId, int $rowNum): array
+    {
+        $name = $data['roomtypename'] ?? $data['name'] ?? $data['roomtype'] ?? '';
+        if (empty($name)) {
+            return ['status' => 'error', 'message' => 'Missing room type name'];
+        }
+
+        $code = strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $data['code'] ?? $name), 0, 10));
+        $price = $this->cleanAmount($data['basepricetzs'] ?? $data['baseprice'] ?? $data['price'] ?? 180000);
+        $baseOcc = (int) ($data['baseoccupancy'] ?? $data['occupancy'] ?? 2);
+        $maxAdults = (int) ($data['maxadults'] ?? 2);
+        $maxChildren = (int) ($data['maxchildren'] ?? 1);
+        $desc = $data['description'] ?? null;
+
+        $roomType = RoomType::withoutGlobalScopes()->where('tenant_id', $tenantId)
+            ->where(function ($q) use ($code, $name) {
+                $q->where('code', $code)->orWhere('name', $name);
+            })->first();
+
+        if ($roomType) {
+            $roomType->update([
+                'name' => $name,
+                'base_price_minor' => $price,
+                'base_occupancy' => $baseOcc,
+                'max_adults' => $maxAdults,
+                'max_children' => $maxChildren,
+                'description' => $desc ?: $roomType->description,
+            ]);
+
+            return ['status' => 'updated'];
+        }
+
+        RoomType::withoutGlobalScopes()->create([
+            'tenant_id' => $tenantId,
+            'property_id' => $propertyId,
+            'code' => $code,
+            'name' => $name,
+            'base_occupancy' => $baseOcc,
+            'max_adults' => $maxAdults,
+            'max_children' => $maxChildren,
+            'base_price_minor' => $price,
+            'amenities' => ['King Bed', 'WiFi', 'Air Conditioning', 'En-suite Bathroom'],
+            'description' => $desc,
             'is_active' => true,
         ]);
 
@@ -747,14 +933,25 @@ class SpreadsheetDataEntryController extends Controller
             ],
             'rooms' => [
                 'title' => 'Hotel Rooms & Lodging Units',
-                'description' => 'Bulk register property rooms, suites, floor levels, and initial housekeeping states.',
-                'headers' => ['Room Number', 'Room Type', 'Floor', 'Occupancy Status', 'Housekeeping Status'],
+                'description' => 'Bulk register property rooms, suites, floor levels, pricing, and initial housekeeping states.',
+                'headers' => ['Room Number', 'Room Type', 'Floor', 'Base Price (TZS)', 'Occupancy Status', 'Housekeeping Status'],
                 'sample_rows' => [
-                    ['101', 'Deluxe King Suite', '1', 'vacant', 'clean'],
-                    ['102', 'Deluxe Twin Room', '1', 'vacant', 'clean'],
-                    ['201', 'Executive Ocean Suite', '2', 'vacant', 'inspected'],
-                    ['202', 'Standard Single Room', '2', 'vacant', 'clean'],
-                    ['301', 'Presidential Penthouse', '3', 'vacant', 'inspected'],
+                    ['101', 'Deluxe King Suite', '1', '120000', 'vacant', 'clean'],
+                    ['102', 'Deluxe Twin Room', '1', '100000', 'vacant', 'clean'],
+                    ['201', 'Executive Ocean Suite', '2', '250000', 'vacant', 'inspected'],
+                    ['202', 'Standard Single Room', '2', '60000', 'vacant', 'clean'],
+                    ['301', 'Presidential Penthouse', '3', '500000', 'vacant', 'inspected'],
+                ],
+            ],
+            'room_types' => [
+                'title' => 'Room Types & Pricing Categories',
+                'description' => 'Bulk configure room categories, base rates, adult/child guest capacity, and amenities.',
+                'headers' => ['Room Type Name', 'Code', 'Base Price (TZS)', 'Base Occupancy', 'Max Adults', 'Max Children', 'Amenities', 'Description'],
+                'sample_rows' => [
+                    ['Standard Single Room', 'SGL', '60000', '1', '1', '0', 'Single Bed, WiFi, AC', 'Compact cozy single room'],
+                    ['Standard Executive Room', 'EXEC', '180000', '2', '2', '1', 'King Bed, Free WiFi, Air Conditioning, Safe Box', 'Executive room with working desk'],
+                    ['Deluxe Ocean Suite', 'OCN', '280000', '2', '3', '2', 'King Bed, Balcony, Sea View, Mini Bar', 'Spacious luxury oceanfront suite'],
+                    ['Presidential Villa', 'PVIL', '650000', '4', '4', '2', 'Private Pool, Butler, Kitchenette, King Bed', 'Exclusive VIP private villa'],
                 ],
             ],
         ];

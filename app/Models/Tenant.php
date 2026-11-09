@@ -199,8 +199,8 @@ class Tenant extends Model
             'name' => 'CSV Data Hub & Bulk Imports',
             'category' => 'Data Management',
             'description' => 'Bulk CSV imports/exports for rooms, guests, inventory, and historical data.',
-            'default_starter' => false,
-            'default_pro' => false,
+            'default_starter' => true,
+            'default_pro' => true,
             'default_enterprise' => true,
         ],
         'multi_branch' => [

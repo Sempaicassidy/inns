@@ -360,12 +360,11 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     });
 
     // 15. Universal Spreadsheet CSV Data Entry (Importer & Exporter)
-    Route::middleware('tenant.feature:data_entry_hub')->group(function () {
-        Route::get('/data-entry', [SpreadsheetDataEntryController::class, 'index'])->name('data-entry.index');
-        Route::get('/data-entry/template/{type}', [SpreadsheetDataEntryController::class, 'downloadTemplate'])->name('data-entry.template');
-        Route::get('/data-entry/export/{type}', [SpreadsheetDataEntryController::class, 'exportCsv'])->name('data-entry.export');
-        Route::post('/data-entry/import/{type}', [SpreadsheetDataEntryController::class, 'importCsv'])->name('data-entry.import');
-    });
+    Route::get('/data-entry', [SpreadsheetDataEntryController::class, 'index'])->name('data-entry.index');
+    Route::get('/data-entry/template/{type}', [SpreadsheetDataEntryController::class, 'downloadTemplate'])->name('data-entry.template');
+    Route::get('/data-entry/export/{type}', [SpreadsheetDataEntryController::class, 'exportCsv'])->name('data-entry.export');
+    Route::post('/data-entry/import/{type}', [SpreadsheetDataEntryController::class, 'importCsv'])->name('data-entry.import');
+    Route::post('/data-entry/batch-save/{type}', [SpreadsheetDataEntryController::class, 'batchSave'])->name('data-entry.batch-save');
 
     // Profile Settings
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

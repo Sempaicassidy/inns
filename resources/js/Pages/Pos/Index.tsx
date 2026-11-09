@@ -22,6 +22,8 @@ import {
     Clock,
 } from 'lucide-react';
 import { useState } from 'react';
+import ReceiptModal from '@/Components/ReceiptModal';
+import { ReceiptData, printThermalReceipt } from '@/Utils/receiptPrinter';
 
 interface PosCategory {
     id: string;
@@ -73,6 +75,7 @@ interface PosIndexProps extends PageProps {
 }
 
 export default function PosIndex({
+    auth,
     categories = [],
     items = [],
     activeStays = [],
@@ -83,6 +86,9 @@ export default function PosIndex({
     const [searchQuery, setSearchQuery] = useState('');
     const [cart, setCart] = useState<{ item: PosItem; quantity: number }[]>([]);
     const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
+    const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+    const [currentReceiptData, setCurrentReceiptData] = useState<ReceiptData | null>(null);
+    const [isRecentOrdersOpen, setIsRecentOrdersOpen] = useState(false);
 
     const { data: orderData, setData: setOrderData, post: submitOrder, processing, reset } = useForm({
         order_type: 'dine_in' as 'dine_in' | 'room_delivery' | 'takeaway',
@@ -166,13 +172,85 @@ export default function PosIndex({
             quantity: c.quantity,
         }));
 
+        const receiptSnapshot: ReceiptData = {
+            hotelName: (auth?.tenant as any)?.name || 'THE INNS RESTAURANT & BAR',
+            hotelAddress: (auth?.property as any)?.address || (auth?.tenant as any)?.address || undefined,
+            hotelPhone: (auth?.property as any)?.phone || (auth?.tenant as any)?.phone || undefined,
+            tin: (auth?.tenant as any)?.tin || undefined,
+            vrn: (auth?.tenant as any)?.vrn || undefined,
+            receiptNumber: `ORD-${Date.now().toString().slice(-6)}`,
+            receiptType: 'POS RECEIPT',
+            dateTime: new Date().toLocaleString(),
+            cashierName: auth?.user?.name || 'Server',
+            guestName: orderData.guest_name || 'Walk-in Guest',
+            tableName: orderData.table_number ? `Table ${orderData.table_number}` : (orderData.order_type === 'room_delivery' ? 'Room Delivery' : 'Takeaway / Counter'),
+            items: cart.map(c => ({
+                description: c.item.name,
+                quantity: c.quantity,
+                unit_price: c.item.price_minor,
+                amount: c.item.price_minor * c.quantity,
+            })),
+            subtotal: subtotalMinor,
+            tax: taxMinor,
+            taxRatePercent: 18,
+            grandTotal: totalMinor,
+            paymentMethod: orderData.payment_method,
+            amountPaid: totalMinor,
+            balanceDue: 0,
+            amountsAreMinor: true,
+            footerText: 'Thank you for dining with us!',
+        };
+
         submitOrder(route('pos.store'), {
             onSuccess: () => {
+                setCurrentReceiptData(receiptSnapshot);
+                setIsReceiptModalOpen(true);
                 clearCart();
                 reset();
                 setIsMobileCartOpen(false);
             },
         });
+    };
+
+    const handlePrintOrder = (order: PosOrder) => {
+        const orderReceipt: ReceiptData = {
+            hotelName: (auth?.tenant as any)?.name || 'THE INNS RESTAURANT & BAR',
+            hotelAddress: (auth?.property as any)?.address || (auth?.tenant as any)?.address || undefined,
+            hotelPhone: (auth?.property as any)?.phone || (auth?.tenant as any)?.phone || undefined,
+            tin: (auth?.tenant as any)?.tin || undefined,
+            vrn: (auth?.tenant as any)?.vrn || undefined,
+            receiptNumber: order.order_number,
+            receiptType: 'POS RECEIPT',
+            dateTime: new Date(order.created_at).toLocaleString(),
+            cashierName: auth?.user?.name || 'Server',
+            guestName: order.guest_name || 'Walk-in Guest',
+            tableName: order.table_number ? `Table ${order.table_number}` : order.order_type.replace('_', ' ').toUpperCase(),
+            items: (order.items && order.items.length > 0)
+                ? order.items.map(it => ({
+                    description: it.item_name,
+                    quantity: it.quantity,
+                    unit_price: it.total_minor / (it.quantity || 1),
+                    amount: it.total_minor,
+                }))
+                : [{
+                    description: `POS Order #${order.order_number}`,
+                    quantity: 1,
+                    unit_price: order.total_minor,
+                    amount: order.total_minor,
+                }],
+            subtotal: order.total_minor,
+            tax: Math.round(order.total_minor * 0.18),
+            taxRatePercent: 18,
+            grandTotal: order.total_minor,
+            paymentMethod: order.payment_method,
+            amountPaid: order.total_minor,
+            balanceDue: 0,
+            amountsAreMinor: true,
+            footerText: 'Thank you for dining with us!',
+        };
+
+        setCurrentReceiptData(orderReceipt);
+        setIsReceiptModalOpen(true);
     };
 
     const filteredItems = items.filter((item) => {
@@ -204,6 +282,14 @@ export default function PosIndex({
                         
                     </div>
                     <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={() => setIsRecentOrdersOpen(true)}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition shadow-2xs cursor-pointer"
+                        >
+                            <Receipt className="w-4 h-4 text-slate-500" />
+                            <span>Recent Receipts ({recentOrders.length})</span>
+                        </button>
                         <div className="bg-white border border-[#E2E8F0] rounded-lg px-4 py-2">
                             <span className="text-xs text-[#64748B]">Today's Sales</span>
                             <div className="text-lg font-bold text-[#1E293B]">{formatCurrency(stats.today_total_minor)}</div>
@@ -447,6 +533,97 @@ export default function PosIndex({
                     </div>
                 </div>
             </div>
+
+            {/* Receipt Modal for Instant Thermal Print */}
+            {currentReceiptData && (
+                <ReceiptModal
+                    isOpen={isReceiptModalOpen}
+                    onClose={() => setIsReceiptModalOpen(false)}
+                    receiptData={currentReceiptData}
+                    title="Order Receipt (POS)"
+                />
+            )}
+
+            {/* Recent Orders & Receipts History Modal */}
+            {isRecentOrdersOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+                    <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
+                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80 shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                                    <Receipt className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-extrabold text-slate-900">Recent POS Receipts</h3>
+                                    <p className="text-xs text-slate-500">View and reprint past order thermal receipts</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsRecentOrdersOpen(false)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 overflow-y-auto space-y-3 flex-1 text-xs">
+                            {recentOrders.length === 0 ? (
+                                <div className="text-center py-12 text-slate-400">
+                                    <Receipt className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                                    <p>No recent POS orders found.</p>
+                                </div>
+                            ) : (
+                                recentOrders.map((ord) => (
+                                    <div
+                                        key={ord.id}
+                                        className="p-4 rounded-2xl border border-slate-200 hover:border-blue-300 bg-white transition flex items-center justify-between gap-4"
+                                    >
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-extrabold text-slate-900 font-mono">#{ord.order_number}</span>
+                                                <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-bold text-[10px] uppercase">
+                                                    {ord.order_type.replace('_', ' ')}
+                                                </span>
+                                                <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold text-[10px] uppercase">
+                                                    {ord.payment_method}
+                                                </span>
+                                            </div>
+                                            <div className="text-slate-500 text-[11px]">
+                                                {ord.guest_name || 'Walk-in'} {ord.table_number ? `• Table ${ord.table_number}` : ''} • {new Date(ord.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-3">
+                                            <span className="font-extrabold text-sm text-slate-900">
+                                                {formatCurrency(ord.total_minor)}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => handlePrintOrder(ord)}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl border border-blue-200 transition cursor-pointer"
+                                            >
+                                                <Printer className="w-3.5 h-3.5" />
+                                                <span>Print Receipt</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        <div className="px-6 py-3 border-t border-slate-100 bg-slate-50/80 flex justify-end shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setIsRecentOrdersOpen(false)}
+                                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-bold transition cursor-pointer"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </AuthenticatedLayout>
     );
 }

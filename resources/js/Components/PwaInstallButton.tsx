@@ -69,7 +69,7 @@ export default function PwaInstallButton({ className = '' }: { className?: strin
                 className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 cursor-pointer border border-slate-700/60 active:scale-[0.98]"
             >
                 <Download className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>Sakinisha App (Install PWA)</span>
+                <span>Install App (PWA)</span>
             </button>
 
             {/* Help / Manual Install Guide Modal */}

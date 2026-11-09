@@ -10,12 +10,11 @@
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
         <!-- Favicon & Icons -->
-        <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}?v={{ time() }}">
-        <link rel="shortcut icon" href="{{ asset('favicon.ico') }}?v={{ time() }}">
-        <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}?v={{ time() }}">
+        <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
+        <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
+        <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
 
-        @if (($page['component'] ?? '') !== 'Welcome')
-        <!-- PWA Configuration: Enabled starting from Login & throughout all modules (Excluded from Landing Page) -->
+        <!-- PWA Configuration: Service Worker & Web App Manifest -->
         <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
         <meta name="mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-capable" content="yes">
@@ -26,17 +25,16 @@
         <script>
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
-                    navigator.serviceWorker.register('{{ asset('sw.js') }}?v={{ time() }}')
+                    navigator.serviceWorker.register('{{ asset('sw.js') }}')
                         .then(function(reg) {
-                            console.log('[THE INNS PWA] Active for', reg.scope);
+                            console.log('[THE INNS PWA] Service Worker registered for scope:', reg.scope);
                         })
                         .catch(function(err) {
-                            console.warn('[THE INNS PWA] SW Init note:', err);
+                            console.warn('[THE INNS PWA] Service Worker registration failed:', err);
                         });
                 });
             }
         </script>
-        @endif
 
         <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
         <link rel="preconnect" href="https://fonts.googleapis.com">

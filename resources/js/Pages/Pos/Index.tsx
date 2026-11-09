@@ -201,6 +201,24 @@ export default function PosIndex({
             footerText: 'Thank you for dining with us!',
         };
 
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+            import('@/Services/offlineSync').then(({ default: offlineSync }) => {
+                offlineSync.queueOfflineAction({
+                    url: route('pos.store'),
+                    method: 'POST',
+                    data: orderData,
+                    title: `POS Order: ${receiptSnapshot.receiptNumber} (${orderData.guest_name})`,
+                    module: 'pos',
+                });
+                setCurrentReceiptData(receiptSnapshot);
+                setIsReceiptModalOpen(true);
+                clearCart();
+                reset();
+                setIsMobileCartOpen(false);
+            });
+            return;
+        }
+
         submitOrder(route('pos.store'), {
             onSuccess: () => {
                 setCurrentReceiptData(receiptSnapshot);
@@ -208,6 +226,24 @@ export default function PosIndex({
                 clearCart();
                 reset();
                 setIsMobileCartOpen(false);
+            },
+            onError: () => {
+                if (typeof navigator !== 'undefined' && !navigator.onLine) {
+                    import('@/Services/offlineSync').then(({ default: offlineSync }) => {
+                        offlineSync.queueOfflineAction({
+                            url: route('pos.store'),
+                            method: 'POST',
+                            data: orderData,
+                            title: `POS Order: ${receiptSnapshot.receiptNumber} (${orderData.guest_name})`,
+                            module: 'pos',
+                        });
+                        setCurrentReceiptData(receiptSnapshot);
+                        setIsReceiptModalOpen(true);
+                        clearCart();
+                        reset();
+                        setIsMobileCartOpen(false);
+                    });
+                }
             },
         });
     };

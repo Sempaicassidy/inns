@@ -1,26 +1,35 @@
-const CACHE_NAME = 'the-inns-pwa-v8';
-const OFFLINE_URL = './offline.html';
+const CACHE_NAME = 'the-inns-pwa-v10';
+const OFFLINE_URL = '/offline.html';
+const APP_SHELL_KEY = '/app-shell';
 
 const STATIC_PRECACHE = [
-    './favicon.png',
-    './favicon.ico',
-    './apple-touch-icon.png',
-    './logo.png',
-    './images/logo.png',
-    './offline.html',
-    './pwa-icons/icon-192x192.png',
-    './pwa-icons/icon-512x512.png',
-    './pwa-icons/maskable-icon-192x192.png'
+    '/',
+    '/manifest.webmanifest',
+    '/offline.html',
+    '/favicon.png',
+    '/favicon.ico',
+    '/apple-touch-icon.png',
+    '/logo.png',
+    '/pwa-icons/icon-72x72.png',
+    '/pwa-icons/icon-96x96.png',
+    '/pwa-icons/icon-128x128.png',
+    '/pwa-icons/icon-144x144.png',
+    '/pwa-icons/icon-152x152.png',
+    '/pwa-icons/icon-192x192.png',
+    '/pwa-icons/icon-384x384.png',
+    '/pwa-icons/icon-512x512.png',
+    '/pwa-icons/maskable-icon-192x192.png',
+    '/pwa-icons/maskable-icon-512x512.png'
 ];
 
-// Install event: pre-cache static assets safely
+// Install event: pre-cache static core assets safely
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             return Promise.all(
                 STATIC_PRECACHE.map((asset) => {
                     return cache.add(asset).catch((err) => {
-                        console.warn('[SW] Non-fatal precache error:', asset, err);
+                        console.warn('[SW] Non-fatal precache item:', asset, err);
                     });
                 })
             );
@@ -29,7 +38,7 @@ self.addEventListener('install', (event) => {
     self.skipWaiting();
 });
 
-// Activate event: purge outdated caches immediately and claim clients
+// Activate event: purge outdated caches immediately and claim all client windows
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((keys) => {
@@ -44,7 +53,7 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Fetch event: smart caching router
+// Fetch event: resilient offline-first routing engine
 self.addEventListener('fetch', (event) => {
     const req = event.request;
     const url = new URL(req.url);
@@ -52,8 +61,46 @@ self.addEventListener('fetch', (event) => {
     // Only intercept HTTP/HTTPS requests
     if (!url.protocol.startsWith('http')) return;
 
-    // 1. Navigation requests (HTML pages like /dashboard, /calendar, /housekeeping, /reservations)
+    // 1. Navigation requests (Full page loads / refreshes)
     if (req.mode === 'navigate') {
+        event.respondWith(
+            fetch(req)
+                .then((networkRes) => {
+                    if (networkRes && networkRes.status === 200) {
+                        const copy = networkRes.clone();
+                        caches.open(CACHE_NAME).then((cache) => {
+                            cache.put(req, copy.clone());
+                            // Store authenticated HTML pages as App Shell fallback
+                            if (!url.pathname.includes('/login') && !url.pathname.includes('/register')) {
+                                cache.put(APP_SHELL_KEY, copy);
+                            }
+                        });
+                    }
+                    return networkRes;
+                })
+                .catch(async () => {
+                    // Try exact cached page first
+                    const cachedPage = await caches.match(req);
+                    if (cachedPage) return cachedPage;
+
+                    // Fallback to cached App Shell so the React Inertia app boots up offline
+                    const appShell = await caches.match(APP_SHELL_KEY);
+                    if (appShell) return appShell;
+
+                    // Fallback to standalone offline.html
+                    const offlineFallback = await caches.match(OFFLINE_URL);
+                    if (offlineFallback) return offlineFallback;
+
+                    return new Response('Offline - THE INNS', {
+                        headers: { 'Content-Type': 'text/html' }
+                    });
+                })
+        );
+        return;
+    }
+
+    // 2. Inertia.js AJAX Page Navigation (X-Inertia requests)
+    if (req.headers.get('x-inertia') === 'true') {
         event.respondWith(
             fetch(req)
                 .then((networkRes) => {
@@ -63,46 +110,64 @@ self.addEventListener('fetch', (event) => {
                     }
                     return networkRes;
                 })
-                .catch(() => {
-                    // Offline fallback: check if requested page was cached, else serve offline.html
-                    return caches.match(req).then((cached) => {
-                        if (cached) return cached;
-                        return caches.match(OFFLINE_URL);
+                .catch(async () => {
+                    // Match previous Inertia visit from cache
+                    const cachedInertia = await caches.match(req);
+                    if (cachedInertia) return cachedInertia;
+
+                    // Safe synthetic Inertia JSON response if unvisited page is clicked offline
+                    return new Response(JSON.stringify({
+                        component: 'Dashboard',
+                        props: {
+                            is_offline: true,
+                            offline_notice: 'Working in Offline Standby Mode. Operations and records will synchronize automatically upon reconnect.'
+                        },
+                        url: url.pathname,
+                        version: ''
+                    }), {
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Inertia': 'true'
+                        }
                     });
                 })
         );
         return;
     }
 
-    // Only handle GET requests for remaining caching logic
+    // Only handle GET requests for asset caching
     if (req.method !== 'GET') {
         return;
     }
 
-    // 2. Vite Build Assets (CSS, JS, Web Workers, Images in /build/)
-    // Strategy: Stale-While-Revalidate (Instant offline response + background cache update)
+    // 3. Vite Build Assets (CSS, JS, Fonts, Workers in /build/)
+    // Strategy: Cache-First with background revalidation (Immediate offline availability)
     if (url.pathname.includes('/build/')) {
         event.respondWith(
-            caches.open(CACHE_NAME).then((cache) => {
-                return cache.match(req).then((cachedRes) => {
-                    const fetchPromise = fetch(req)
-                        .then((networkRes) => {
-                            if (networkRes && networkRes.status === 200) {
-                                cache.put(req, networkRes.clone());
-                            }
-                            return networkRes;
-                        })
-                        .catch(() => cachedRes);
+            caches.open(CACHE_NAME).then(async (cache) => {
+                const cachedRes = await cache.match(req);
+                if (cachedRes) {
+                    // Background refresh if online
+                    fetch(req).then((netRes) => {
+                        if (netRes && netRes.status === 200) {
+                            cache.put(req, netRes);
+                        }
+                    }).catch(() => {});
+                    return cachedRes;
+                }
 
-                    // Return cached asset immediately if available, else wait for network
-                    return cachedRes || fetchPromise;
+                return fetch(req).then((networkRes) => {
+                    if (networkRes && networkRes.status === 200) {
+                        cache.put(req, networkRes.clone());
+                    }
+                    return networkRes;
                 });
             })
         );
         return;
     }
 
-    // 3. Static Assets & Images (logo, favicon, PWA icons, Google Fonts, Bootstrap CDN)
+    // 4. Static Assets & External CDNs (Fonts, Icons, Logos, Bootstrap)
     if (
         url.pathname.includes('/pwa-icons/') ||
         url.pathname.includes('/images/') ||
@@ -135,11 +200,11 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // 4. Default GET requests: Network first with cache fallback
+    // 5. Default GET requests: Network first with Cache fallback
     event.respondWith(
         fetch(req)
             .then((networkRes) => {
-                if (networkRes && networkRes.status === 200 && networkRes.type === 'basic') {
+                if (networkRes && networkRes.status === 200) {
                     const copy = networkRes.clone();
                     caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
                 }
@@ -151,7 +216,7 @@ self.addEventListener('fetch', (event) => {
     );
 });
 
-// Background Sync Event (when connection is re-established)
+// Background Sync Event (Triggered when internet connectivity is re-established)
 self.addEventListener('sync', (event) => {
     if (event.tag === 'the-inns-sync-queue' || event.tag === 'the-inns-offline-sync') {
         event.waitUntil(
@@ -173,12 +238,12 @@ self.addEventListener('message', (event) => {
         const title = event.data.title || 'THE INNS Notification';
         const options = {
             body: event.data.body || 'New operational update received.',
-            icon: event.data.icon || './pwa-icons/icon-192x192.png',
-            badge: event.data.badge || './pwa-icons/icon-192x192.png',
+            icon: event.data.icon || '/pwa-icons/icon-192x192.png',
+            badge: event.data.badge || '/pwa-icons/icon-192x192.png',
             tag: event.data.tag || 'the-inns-alert-' + Date.now(),
             vibrate: [200, 100, 200],
             data: {
-                url: event.data.url || './dashboard'
+                url: event.data.url || '/dashboard'
             },
             actions: [
                 { action: 'open', title: 'View Details' },
@@ -197,9 +262,9 @@ self.addEventListener('push', (event) => {
     let payload = {
         title: 'THE INNS Notification',
         body: 'New update received.',
-        icon: './pwa-icons/icon-192x192.png',
-        badge: './pwa-icons/icon-192x192.png',
-        url: './dashboard'
+        icon: '/pwa-icons/icon-192x192.png',
+        badge: '/pwa-icons/icon-192x192.png',
+        url: '/dashboard'
     };
 
     if (event.data) {
@@ -212,12 +277,12 @@ self.addEventListener('push', (event) => {
 
     const options = {
         body: payload.body,
-        icon: payload.icon || './pwa-icons/icon-192x192.png',
-        badge: payload.badge || './pwa-icons/icon-192x192.png',
+        icon: payload.icon || '/pwa-icons/icon-192x192.png',
+        badge: payload.badge || '/pwa-icons/icon-192x192.png',
         tag: payload.tag || 'the-inns-push-' + Date.now(),
         vibrate: [200, 100, 200],
         data: {
-            url: payload.url || './dashboard'
+            url: payload.url || '/dashboard'
         },
         actions: [
             { action: 'open', title: 'Open in PWA' },
@@ -238,7 +303,7 @@ self.addEventListener('notificationclick', (event) => {
         return;
     }
 
-    const targetUrl = event.notification.data?.url || './dashboard';
+    const targetUrl = event.notification.data?.url || '/dashboard';
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {

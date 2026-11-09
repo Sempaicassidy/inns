@@ -28,7 +28,7 @@ class HousekeepingController extends Controller
         $search = $request->input('search');
 
         $user = $request->user();
-        $property = $user->property ?? Property::find(session('current_property_id')) ?? Property::first();
+        $property = $this->resolveActiveProperty($request);
         if ($property) {
             RoomType::ensureDefaultsForProperty($property);
             RatePlan::ensureDefaultsForProperty($property);
@@ -224,8 +224,8 @@ class HousekeepingController extends Controller
         ]);
 
         $user = $request->user();
-        $property = $user->property ?? Property::first();
-        $tenantId = $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
+        $property = $this->resolveActiveProperty($request);
+        $tenantId = $property?->tenant_id ?? $user?->tenant_id ?? Tenant::first()?->id;
 
         Room::create([
             'tenant_id' => $tenantId,
@@ -338,8 +338,8 @@ class HousekeepingController extends Controller
         ]);
 
         $user = $request->user();
-        $property = $user->property ?? Property::first();
-        $tenantId = $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
+        $property = $this->resolveActiveProperty($request);
+        $tenantId = $property?->tenant_id ?? $user?->tenant_id ?? Tenant::first()?->id;
 
         HousekeepingTask::create([
             'tenant_id' => $tenantId,

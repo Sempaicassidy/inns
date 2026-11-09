@@ -16,11 +16,11 @@ class RoomTypeController extends Controller
      */
     public function index(Request $request)
     {
-        $user = $request->user();
-        $property = $user?->property ?? Property::find(session('current_property_id')) ?? Property::first();
+        $property = $this->resolveActiveProperty($request);
 
         if ($property) {
-            $roomTypes = RoomType::where('property_id', $property->id)
+            $roomTypes = RoomType::withoutGlobalScopes()
+                ->where('property_id', $property->id)
                 ->withCount('rooms')
                 ->where('is_active', true)
                 ->get();
@@ -36,6 +36,7 @@ class RoomTypeController extends Controller
             return response()->json([
                 'success' => true,
                 'roomTypes' => $roomTypes,
+                'property' => $property,
             ]);
         }
 
@@ -48,6 +49,7 @@ class RoomTypeController extends Controller
     public function store(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
+            'property_id' => 'nullable|string',
             'name' => 'required|string|max:100',
             'code' => 'nullable|string|max:20',
             'base_price' => 'required|numeric|min:0',
@@ -59,14 +61,14 @@ class RoomTypeController extends Controller
         ]);
 
         $user = $request->user();
-        $property = $user?->property ?? Property::find(session('current_property_id')) ?? Property::first();
-        $tenantId = $user?->tenant_id ?? $property?->tenant_id;
+        $property = $this->resolveActiveProperty($request);
+        $tenantId = $property?->tenant_id ?? $user?->tenant_id;
 
         if (! $property) {
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No active property found. Please select a property first.',
+                    'message' => 'No active property found. Please configure a branch or property first.',
                 ], 422);
             }
             return back()->withErrors(['property' => 'No active property found.']);

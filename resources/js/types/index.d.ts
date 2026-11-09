@@ -68,6 +68,8 @@ export interface Property {
 
 export interface RoomType {
     id: string;
+    tenant_id?: string;
+    property_id?: string;
     code: string;
     name: string;
     base_occupancy: number;
@@ -76,6 +78,8 @@ export interface RoomType {
     base_price_minor: number;
     amenities?: string[];
     description?: string;
+    is_active?: boolean;
+    rooms_count?: number;
     rate_plans?: RatePlan[];
 }
 

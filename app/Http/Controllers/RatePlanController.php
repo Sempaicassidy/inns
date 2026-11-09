@@ -16,11 +16,11 @@ class RatePlanController extends Controller
      */
     public function index(Request $request)
     {
-        $user = $request->user();
-        $property = $user?->property ?? Property::find(session('current_property_id')) ?? Property::first();
+        $property = $this->resolveActiveProperty($request);
 
         if ($property) {
-            $ratePlans = RatePlan::where('property_id', $property->id)
+            $ratePlans = RatePlan::withoutGlobalScopes()
+                ->where('property_id', $property->id)
                 ->where('is_active', true)
                 ->get();
 
@@ -35,6 +35,7 @@ class RatePlanController extends Controller
             return response()->json([
                 'success' => true,
                 'ratePlans' => $ratePlans,
+                'property' => $property,
             ]);
         }
 
@@ -47,6 +48,7 @@ class RatePlanController extends Controller
     public function store(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
+            'property_id' => 'nullable|string',
             'name' => 'required|string|max:100',
             'meal_plan' => 'required|in:RO,BB,HB,FB,AI',
             'code' => 'nullable|string|max:30',
@@ -55,10 +57,16 @@ class RatePlanController extends Controller
         ]);
 
         $user = $request->user();
-        $property = $user?->property ?? Property::find(session('current_property_id')) ?? Property::first();
-        $tenantId = $user?->tenant_id ?? $property?->tenant_id;
+        $property = $this->resolveActiveProperty($request);
+        $tenantId = $property?->tenant_id ?? $user?->tenant_id;
 
         if (! $property) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No active property found. Please configure a branch or property first.',
+                ], 422);
+            }
             return back()->withErrors(['property' => 'No active property found.']);
         }
 

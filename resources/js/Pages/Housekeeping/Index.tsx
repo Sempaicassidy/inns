@@ -1,7 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import RoomArrangementGrid from '@/Components/RoomArrangementGrid';
 import { HousekeepingTask, PageProps, RatePlan, Room, RoomType, User } from '@/types';
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     AlertCircle,
     BedDouble,
@@ -72,6 +72,9 @@ export default function HousekeepingIndex({
     stats,
     business_date,
 }: HousekeepingIndexProps) {
+    const { auth } = usePage<PageProps>().props as any;
+    const activePropertyId = auth?.property?.id || '';
+
     const [viewMode, setViewMode] = useState<'cards' | 'table' | 'queue'>('cards');
     const [selectedStatusTab, setSelectedStatusTab] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState<string>(() => {
@@ -96,6 +99,7 @@ export default function HousekeepingIndex({
     const [savingPlan, setSavingPlan] = useState(false);
     const [planError, setPlanError] = useState('');
     const [newPlanForm, setNewPlanForm] = useState({
+        property_id: activePropertyId,
         name: '',
         meal_plan: 'BB',
         code: '',
@@ -130,7 +134,10 @@ export default function HousekeepingIndex({
                     'X-CSRF-TOKEN': token,
                     'X-Requested-With': 'XMLHttpRequest',
                 },
-                body: JSON.stringify(newPlanForm),
+                body: JSON.stringify({
+                    ...newPlanForm,
+                    property_id: newPlanForm.property_id || activePropertyId,
+                }),
             });
 
             const contentType = res.headers.get('content-type') || '';
@@ -146,7 +153,7 @@ export default function HousekeepingIndex({
             if (json.success && json.ratePlan) {
                 setLocalRatePlans(prev => [...prev, json.ratePlan]);
                 setIsAddPlanInlineOpen(false);
-                setNewPlanForm({ name: '', meal_plan: 'BB', code: '', is_resident_only: false });
+                setNewPlanForm({ property_id: activePropertyId, name: '', meal_plan: 'BB', code: '', is_resident_only: false });
             } else if (json.errors) {
                 const firstErr = Object.values(json.errors)[0];
                 setPlanError(Array.isArray(firstErr) ? (firstErr as any)[0] : String(firstErr));
@@ -168,6 +175,7 @@ export default function HousekeepingIndex({
     const [savingRoomType, setSavingRoomType] = useState(false);
     const [roomTypeError, setRoomTypeError] = useState('');
     const [roomTypeForm, setRoomTypeForm] = useState({
+        property_id: activePropertyId,
         name: '',
         code: '',
         base_price: '180000',
@@ -216,6 +224,7 @@ export default function HousekeepingIndex({
     const handleOpenEditRoomType = (rt: RoomType) => {
         setEditingRoomTypeId(rt.id);
         setRoomTypeForm({
+            property_id: rt.property_id || activePropertyId,
             name: rt.name,
             code: rt.code,
             base_price: String((rt.base_price_minor || 0) / 100),
@@ -248,7 +257,10 @@ export default function HousekeepingIndex({
                     'X-CSRF-TOKEN': token,
                     'X-Requested-With': 'XMLHttpRequest',
                 },
-                body: JSON.stringify(roomTypeForm),
+                body: JSON.stringify({
+                    ...roomTypeForm,
+                    property_id: roomTypeForm.property_id || activePropertyId,
+                }),
             });
 
             const contentType = res.headers.get('content-type') || '';
@@ -270,6 +282,7 @@ export default function HousekeepingIndex({
                 setIsAddRoomTypeOpen(false);
                 setEditingRoomTypeId(null);
                 setRoomTypeForm({
+                    property_id: activePropertyId,
                     name: '',
                     code: '',
                     base_price: '180000',
@@ -1699,6 +1712,7 @@ export default function HousekeepingIndex({
                                     onClick={() => {
                                         setEditingRoomTypeId(null);
                                         setRoomTypeForm({
+                                            property_id: activePropertyId,
                                             name: '',
                                             code: '',
                                             base_price: '180000',

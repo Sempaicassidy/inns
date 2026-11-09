@@ -481,7 +481,7 @@ export default function SaasAdminDashboard({
     const defaultHeroSlides: HeroSlideItem[] = [
         {
             id: 'slide_1',
-            badge: cms_content?.hero_badge || 'Centralized Hospitality OS 2026',
+            badge: cms_content?.hero_badge || 'Hotel PMS Cloud',
             title: cms_content?.hero_title || 'Complete Modern Cloud PMS for Hotels, Lodges & Resorts',
             subtitle: cms_content?.hero_subtitle || 'Manage rooms, front desk, reservations, legal contracts, invoices, payment receipts, POS, and financial reporting seamlessly on one unified cloud platform.',
             image: cms_content?.hero_image || '/uploads/cms/hero_1794042362.png',
@@ -601,7 +601,7 @@ export default function SaasAdminDashboard({
         hero_subtitle: cms_content?.hero_subtitle || 'Manage rooms, front desk, reservations, legal contracts, invoices, payment receipts, POS, and financial reporting seamlessly on one unified cloud platform.',
         hero_cta_text: cms_content?.hero_cta_text || 'Start 14-Day Free Trial',
         demo_cta_text: cms_content?.demo_cta_text || 'Schedule a Live Platform Demo',
-        hero_badge: cms_content?.hero_badge || 'Centralized Hospitality OS 2026',
+        hero_badge: cms_content?.hero_badge || 'Hotel PMS Cloud',
         demo_cta_phone: cms_content?.demo_cta_phone || '+255 744 396 220',
         hero_image: null as File | null,
         remove_hero_image: false,
@@ -3061,7 +3061,7 @@ export default function SaasAdminDashboard({
                                                                         required
                                                                         value={slide.badge}
                                                                         onChange={(e) => handleUpdateSlideField(idx, 'badge', e.target.value)}
-                                                                        placeholder="e.g. Centralized Hospitality OS 2026"
+                                                                        placeholder="e.g. Hotel PMS Cloud"
                                                                         className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-blue-500"
                                                                     />
                                                                 </div>

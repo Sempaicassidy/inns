@@ -136,7 +136,7 @@ export default function HousekeepingIndex({
                 },
                 body: JSON.stringify({
                     ...newPlanForm,
-                    property_id: newPlanForm.property_id || activePropertyId,
+                    property_id: newPlanForm.property_id || activePropertyId || undefined,
                 }),
             });
 
@@ -259,7 +259,7 @@ export default function HousekeepingIndex({
                 },
                 body: JSON.stringify({
                     ...roomTypeForm,
-                    property_id: roomTypeForm.property_id || activePropertyId,
+                    property_id: roomTypeForm.property_id || activePropertyId || undefined,
                 }),
             });
 

@@ -16,12 +16,17 @@ abstract class Controller
         $request = $request ?? request();
         $user = $request?->user();
 
-        // 1. Explicit property_id in request input/header/query
-        $propertyId = $request?->input('property_id')
-            ?? $request?->route('property_id')
-            ?? $request?->header('X-Property-ID')
-            ?? session('current_property_id')
-            ?? $user?->property_id;
+        // 1. Explicit property_id in request input/header/query/session/user (skip empty strings)
+        $rawPropertyId = $request?->input('property_id')
+            ?: $request?->route('property_id')
+            ?: $request?->header('X-Property-ID')
+            ?: session('current_property_id')
+            ?: $user?->property_id;
+
+        $propertyId = is_string($rawPropertyId) ? trim($rawPropertyId) : null;
+        if ($propertyId === '') {
+            $propertyId = null;
+        }
 
         $property = null;
 
@@ -39,38 +44,44 @@ abstract class Controller
         }
 
         // 3. Fall back to active branch of user's tenant
-        if (! $property && $user?->tenant_id) {
+        $tenantId = $user?->tenant_id ?? session('current_tenant_id');
+        $tenant = $user?->tenant ?? ($tenantId ? \App\Models\Tenant::withoutGlobalScopes()->find($tenantId) : null) ?? \App\Models\Tenant::withoutGlobalScopes()->first();
+
+        if (! $property && $tenant) {
             $property = Property::withoutGlobalScopes()
-                ->where('tenant_id', $user->tenant_id)
+                ->where('tenant_id', $tenant->id)
                 ->where('is_active', true)
                 ->orderByDesc('is_main')
                 ->first();
 
             if (! $property) {
                 $property = Property::withoutGlobalScopes()
-                    ->where('tenant_id', $user->tenant_id)
+                    ->where('tenant_id', $tenant->id)
                     ->first();
             }
         }
 
-        // 4. Fall back to any active property in system (for superadmin or single property setup)
+        // 4. Fall back to any active property in system
         if (! $property) {
-            if ($user?->isSuperAdmin()) {
-                $property = Property::withoutGlobalScopes()->where('is_active', true)->first()
-                    ?? Property::withoutGlobalScopes()->first();
-            } else {
-                $property = Property::withoutGlobalScopes()->where('is_active', true)->first()
-                    ?? Property::withoutGlobalScopes()->first();
-            }
+            $property = Property::withoutGlobalScopes()->where('is_active', true)->first()
+                ?? Property::withoutGlobalScopes()->first();
         }
 
-        // 5. If tenant exists but has ZERO properties, auto-provision main property (self-healing)
-        if (! $property && $user?->tenant) {
-            $tenantName = $user->tenant->name ?: 'Main Hotel & Suites';
+        // 5. If ZERO properties exist anywhere, auto-provision main property (guaranteed self-healing)
+        if (! $property) {
+            if (! $tenant) {
+                $tenant = \App\Models\Tenant::withoutGlobalScopes()->create([
+                    'name' => 'Main Hotel & Suites',
+                    'domain' => 'hotel.local',
+                    'is_active' => true,
+                ]);
+            }
+
+            $tenantName = $tenant->name ?: 'Main Hotel & Suites';
             $code = strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $tenantName), 0, 4)) ?: 'MAIN';
 
             $property = Property::withoutGlobalScopes()->create([
-                'tenant_id' => $user->tenant_id,
+                'tenant_id' => $tenant->id,
                 'name' => $tenantName,
                 'code' => $code,
                 'is_main' => true,

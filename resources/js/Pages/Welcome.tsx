@@ -633,7 +633,7 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                                                     <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
                                                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
                                                     <span className="ml-2 font-mono font-bold text-slate-600 hidden sm:inline">
-                                                        THE INNS • Serengeti Safari Lodge & Resort
+                                                        THE INNS - Serengeti Safari Lodge & Resort
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center gap-1.5 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">

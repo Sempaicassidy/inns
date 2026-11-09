@@ -104,13 +104,13 @@ class WhatsAppService
         $checkIn = $reservation->check_in_date->format('d M Y');
         $checkOut = $reservation->check_out_date->format('d M Y');
 
-        $body = "🏨 *{$hotelName}*\n"
-            ."Habari {$guest->full_name},\n\n"
-            ."Hifadhi yako ya chumba imethibitishwa kikamilifu!\n"
-            ."📌 *Booking Ref:* #{$reservation->code}\n"
-            ."📅 *Kuingia (Check-in):* {$checkIn} (14:00)\n"
-            ."📅 *Kutoka (Check-out):* {$checkOut} (11:00)\n\n"
-            .'Tunakutakia mapumziko mema. Kwa maelezo zaidi au usafiri wa uwanja wa ndege, tuandikie hapa!';
+        $body = "*{$hotelName}*\n"
+            ."Hello {$guest->full_name},\n\n"
+            ."Your room reservation is confirmed!\n"
+            ."*Booking Ref:* #{$reservation->code}\n"
+            ."*Check-in:* {$checkIn} (14:00)\n"
+            ."*Check-out:* {$checkOut} (11:00)\n\n"
+            ."We look forward to welcoming you. Reply here if you need airport transfer or assistance!";
 
         return $this->sendMessage(
             $guest->phone ?? '+255712000000',
@@ -136,18 +136,18 @@ class WhatsAppService
         $wifiSsid = $tenant?->settings['wifi_ssid'] ?? 'THE-INNS-GUEST';
         $wifiPassword = $tenant?->settings['wifi_password'] ?? 'welcome2026';
 
-        $body = "✨ *Karibu Sana {$hotelName}!*\n\n"
-            ."Habari {$guest?->full_name},\n"
-            ."Umekamilisha usajili kwenye *Chumba {$room?->room_number}*.\n\n"
-            ."📶 *Wi-Fi Network:* {$wifiSsid}\n"
-            ."🔑 *Password:* {$wifiPassword}\n"
-            ."🍳 *Breakfast Time:* 06:30 - 10:30 AM (Main Restaurant)\n"
-            ."📞 *Room Service / Reception:* Piga 0 au piga simu hii.\n\n"
-            .'Furahia ukaaji wako!';
+        $body = "*Welcome to {$hotelName}*\n\n"
+            ."Hello {$guest?->full_name},\n"
+            ."Your check-in for *Room {$room?->room_number}* is complete.\n\n"
+            ."*Wi-Fi Network:* {$wifiSsid}\n"
+            ."*Password:* {$wifiPassword}\n"
+            ."*Breakfast Hours:* 06:30 - 10:30 AM (Main Restaurant)\n"
+            ."*Reception / Room Service:* Dial 0 or reply here.\n\n"
+            .'Enjoy your stay!';
 
         return $this->sendMessage(
             $guest?->phone ?? '+255712000000',
-            $guest?->full_name ?? 'Mgeni',
+            $guest?->full_name ?? 'Guest',
             'welcome_checkin',
             $body,
             'hotel_welcome_stay',
@@ -167,17 +167,17 @@ class WhatsAppService
         $currency = $tenant?->settings['currency'] ?? $property?->currency ?? 'TZS';
         $total = number_format($folio->balance_minor / 100, 2);
 
-        $body = "🧾 *{$hotelName} - Stakabadhi ya Malipo*\n\n"
-            ."Habari {$guest?->full_name},\n"
-            ."Asante sana kwa kuchagua kukaa nasi.\n"
-            ."📄 *Folio Ref:* #{$folio->folio_number}\n"
-            ."💵 *Kiasi Kamili:* {$currency} {$total}\n"
-            ."Hali ya Malipo: *Imelipwa (Settled)*\n\n"
-            .'Tunakutakia safari njema na tunatarajia kukukaribisha tena hivi karibuni!';
+        $body = "*{$hotelName} - Official Receipt*\n\n"
+            ."Hello {$guest?->full_name},\n"
+            ."Thank you for staying with us.\n"
+            ."*Folio Ref:* #{$folio->folio_number}\n"
+            ."*Total Amount:* {$currency} {$total}\n"
+            ."Payment Status: *Settled*\n\n"
+            .'We wish you safe travels and look forward to welcoming you back soon!';
 
         return $this->sendMessage(
             $guest?->phone ?? '+255712000000',
-            $guest?->full_name ?? 'Mgeni',
+            $guest?->full_name ?? 'Guest',
             'folio_invoice',
             $body,
             'hotel_folio_receipt',

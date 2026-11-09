@@ -66,6 +66,46 @@ export default function OfflineSyncManager() {
         };
     }, []);
 
+    // Automatic system pre-caching when online: Pre-caches core modules and Inertia states
+    useEffect(() => {
+        if (typeof window === 'undefined' || !navigator.onLine || !('caches' in window)) return;
+
+        const downloadSystemForOffline = async () => {
+            try {
+                const cache = await caches.open('the-inns-pwa-v12');
+                const corePages = ['/dashboard', '/pos', '/housekeeping', '/reservations', '/calendar'];
+
+                for (const path of corePages) {
+                    // Precache full HTML page
+                    fetch(path, { headers: { Accept: 'text/html' } })
+                        .then((res) => {
+                            if (res.ok) cache.put(path, res.clone());
+                        })
+                        .catch(() => {});
+
+                    // Precache Inertia JSON response
+                    fetch(path, {
+                        headers: {
+                            Accept: 'text/html, application/xhtml+xml',
+                            'X-Inertia': 'true',
+                            'X-Inertia-Version':
+                                document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                        },
+                    })
+                        .then((res) => {
+                            if (res.ok) cache.put(path, res.clone());
+                        })
+                        .catch(() => {});
+                }
+            } catch (err) {
+                console.warn('[OfflineManager] System download note:', err);
+            }
+        };
+
+        const timer = setTimeout(downloadSystemForOffline, 2000);
+        return () => clearTimeout(timer);
+    }, [isOnline]);
+
     const handleManualSync = async () => {
         if (!navigator.onLine) {
             alert('Cannot synchronize: No internet connection detected yet.');
@@ -146,7 +186,7 @@ export default function OfflineSyncManager() {
                         className="flex items-center gap-2.5 px-4 py-2.5 bg-emerald-900/95 backdrop-blur-md text-emerald-300 border border-emerald-400/40 rounded-2xl shadow-xl hover:bg-emerald-900 transition cursor-pointer text-xs font-bold"
                     >
                         <Wifi className="w-4 h-4 text-emerald-400" />
-                        <span>Online • {pendingActions.length} record(s) ready to sync</span>
+                        <span>Online | {pendingActions.length} record(s) ready to sync</span>
                         <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black">
                             Sync Now
                         </span>

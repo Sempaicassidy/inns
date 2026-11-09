@@ -1,13 +1,13 @@
-const CACHE_NAME = 'the-inns-pwa-v11';
-const OFFLINE_URL = '/offline.html';
+const CACHE_NAME = 'the-inns-pwa-v13';
 const APP_SHELL_KEY = '/app-shell';
 
 const STATIC_PRECACHE = [
     '/',
     '/login',
     '/dashboard',
+    '/pos',
+    '/housekeeping',
     '/manifest.webmanifest',
-    '/offline.html',
     '/favicon.png',
     '/favicon.ico',
     '/apple-touch-icon.png',
@@ -24,11 +24,11 @@ const STATIC_PRECACHE = [
     '/pwa-icons/maskable-icon-512x512.png'
 ];
 
-// Install event: pre-cache static assets AND all Vite production chunks from manifest
+// Install event: download system assets, app shell, and Vite production bundles
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then(async (cache) => {
-            // 1. Precache static core assets
+            // 1. Precache static assets
             await Promise.all(
                 STATIC_PRECACHE.map((asset) => {
                     return cache.add(asset).catch((err) => {
@@ -37,7 +37,7 @@ self.addEventListener('install', (event) => {
                 })
             );
 
-            // 2. Precache active authenticated App Shell HTML
+            // 2. Precache active authenticated App Shell HTML from /dashboard
             try {
                 const shellRes = await fetch('/dashboard');
                 if (shellRes && shellRes.status === 200) {
@@ -45,10 +45,10 @@ self.addEventListener('install', (event) => {
                     await cache.put('/dashboard', shellRes);
                 }
             } catch (e) {
-                // In offline install or unauthenticated state
+                // Offline install or unauthenticated
             }
 
-            // 3. Precache all compiled Vite production JS/CSS bundles
+            // 3. Precache all compiled Vite production JS/CSS bundles from manifest.json
             try {
                 const manifestRes = await fetch('/build/manifest.json');
                 if (manifestRes && manifestRes.status === 200) {
@@ -63,10 +63,10 @@ self.addEventListener('install', (event) => {
                             return cache.add(url).catch(() => {});
                         })
                     );
-                    console.log('[SW] Pre-cached', assetUrls.length, 'Vite production assets for offline mode');
+                    console.log('[SW v12] Downloaded', assetUrls.length, 'Vite system assets for full offline operation');
                 }
             } catch (err) {
-                console.warn('[SW] Manifest bundle precache note:', err);
+                console.warn('[SW v12] Manifest bundle precache note:', err);
             }
         })
     );
@@ -88,7 +88,7 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Fetch event: resilient offline-first routing engine
+// Fetch event: full offline application routing engine
 self.addEventListener('fetch', (event) => {
     const req = event.request;
     const url = new URL(req.url);
@@ -96,8 +96,8 @@ self.addEventListener('fetch', (event) => {
     // Only intercept HTTP/HTTPS requests
     if (!url.protocol.startsWith('http')) return;
 
-    // 1. Navigation requests (Full page loads / refreshes)
-    // Never trap user on offline.html if ANY application HTML is cached!
+    // 1. Navigation requests (Full page loads, direct URL entry, browser refreshes)
+    // ALWAYS serve the actual application shell - never show an empty offline error page!
     if (req.mode === 'navigate') {
         event.respondWith(
             fetch(req)
@@ -134,16 +134,16 @@ self.addEventListener('fetch', (event) => {
                     for (const key of keys) {
                         const res = await cache.match(key);
                         const contentType = res?.headers?.get('content-type') || '';
-                        if (contentType.includes('text/html') && !key.url.includes('offline.html')) {
+                        if (contentType.includes('text/html')) {
                             return res;
                         }
                     }
 
-                    // 5. Fallback to interactive offline launcher
-                    const offlineFallback = await cache.match(OFFLINE_URL);
-                    if (offlineFallback) return offlineFallback;
+                    // 5. Final fallback to cached root
+                    const rootFallback = await cache.match('/');
+                    if (rootFallback) return rootFallback;
 
-                    return new Response('Offline - THE INNS', {
+                    return new Response('<!DOCTYPE html><html><head><meta http-equiv="refresh" content="1;url=/dashboard"></head><body style="background:#0F172A;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;"><p>Opening THE INNS in Offline Mode...</p></body></html>', {
                         headers: { 'Content-Type': 'text/html' }
                     });
                 })
@@ -167,7 +167,11 @@ self.addEventListener('fetch', (event) => {
                     const cachedInertia = await caches.match(req);
                     if (cachedInertia) return cachedInertia;
 
-                    // Safe synthetic Inertia JSON response if unvisited page is clicked offline
+                    // Try matching /dashboard Inertia state
+                    const dashboardInertia = await caches.match('/dashboard');
+                    if (dashboardInertia) return dashboardInertia;
+
+                    // Return synthetic Inertia response so the React SPA never crashes
                     return new Response(JSON.stringify({
                         component: 'Dashboard',
                         props: {
@@ -193,13 +197,12 @@ self.addEventListener('fetch', (event) => {
     }
 
     // 3. Vite Build Assets (CSS, JS, Fonts, Workers in /build/)
-    // Strategy: Cache-First with background revalidation (Immediate offline availability)
+    // Strategy: Cache-First with background revalidation
     if (url.pathname.includes('/build/')) {
         event.respondWith(
             caches.open(CACHE_NAME).then(async (cache) => {
                 const cachedRes = await cache.match(req);
                 if (cachedRes) {
-                    // Background refresh if online
                     fetch(req).then((netRes) => {
                         if (netRes && netRes.status === 200) {
                             cache.put(req, netRes);
@@ -281,10 +284,7 @@ self.addEventListener('sync', (event) => {
     }
 });
 
-// ============================================================
-// PWA NOTIFICATION POPUP HANDLERS
-// ============================================================
-
+// PWA Notification & Message Handlers
 self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
         const title = event.data.title || 'THE INNS Notification';
@@ -309,7 +309,7 @@ self.addEventListener('message', (event) => {
     }
 });
 
-// Web Push event (when server pushes payload)
+// Web Push event
 self.addEventListener('push', (event) => {
     let payload = {
         title: 'THE INNS Notification',
@@ -347,16 +347,12 @@ self.addEventListener('push', (event) => {
     );
 });
 
-// Handle notification click event: focus or open the PWA window and navigate
+// Notification click
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
-
-    if (event.action === 'close') {
-        return;
-    }
+    if (event.action === 'close') return;
 
     const targetUrl = event.notification.data?.url || '/dashboard';
-
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
             for (const client of clientList) {

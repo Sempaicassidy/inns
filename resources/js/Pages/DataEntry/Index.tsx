@@ -1097,7 +1097,7 @@ export default function SpreadsheetDataEntryIndex({ stats, defaultProperty }: Da
                                                         )}
                                                         {colDef?.notes && (
                                                             <span className="text-slate-400 text-[11px] hidden md:inline">
-                                                                • {colDef.notes}
+                                                                | {colDef.notes}
                                                             </span>
                                                         )}
                                                     </div>
@@ -1106,7 +1106,7 @@ export default function SpreadsheetDataEntryIndex({ stats, defaultProperty }: Da
                                         </div>
                                     ) : (
                                         <span className="text-slate-500 italic">
-                                            Click any cell to edit • Press <kbd className="font-mono font-bold px-1 py-0.5 rounded bg-white border border-slate-300 text-[10px]">Tab</kbd> or <kbd className="font-mono font-bold px-1 py-0.5 rounded bg-white border border-slate-300 text-[10px]">Enter</kbd> to navigate
+                                            Click any cell to edit | Press <kbd className="font-mono font-bold px-1 py-0.5 rounded bg-white border border-slate-300 text-[10px]">Tab</kbd> or <kbd className="font-mono font-bold px-1 py-0.5 rounded bg-white border border-slate-300 text-[10px]">Enter</kbd> to navigate
                                         </span>
                                     )}
                                 </div>
@@ -1268,11 +1268,11 @@ export default function SpreadsheetDataEntryIndex({ stats, defaultProperty }: Da
                                         <span className="font-bold text-slate-800">
                                             Total Rows: <span className="font-mono">{gridRows.length}</span>
                                         </span>
-                                        <span>•</span>
+                                        <span className="text-slate-300">|</span>
                                         <span className="text-emerald-700 font-bold">
                                             Populated: <span className="font-mono">{populatedRowCount}</span>
                                         </span>
-                                        <span>•</span>
+                                        <span className="text-slate-300">|</span>
                                         <span className="text-slate-500">
                                             Empty: <span className="font-mono">{gridRows.length - populatedRowCount}</span>
                                         </span>

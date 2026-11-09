@@ -1,9 +1,11 @@
-const CACHE_NAME = 'the-inns-pwa-v10';
+const CACHE_NAME = 'the-inns-pwa-v11';
 const OFFLINE_URL = '/offline.html';
 const APP_SHELL_KEY = '/app-shell';
 
 const STATIC_PRECACHE = [
     '/',
+    '/login',
+    '/dashboard',
     '/manifest.webmanifest',
     '/offline.html',
     '/favicon.png',
@@ -22,23 +24,56 @@ const STATIC_PRECACHE = [
     '/pwa-icons/maskable-icon-512x512.png'
 ];
 
-// Install event: pre-cache static core assets safely
+// Install event: pre-cache static assets AND all Vite production chunks from manifest
 self.addEventListener('install', (event) => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            return Promise.all(
+        caches.open(CACHE_NAME).then(async (cache) => {
+            // 1. Precache static core assets
+            await Promise.all(
                 STATIC_PRECACHE.map((asset) => {
                     return cache.add(asset).catch((err) => {
                         console.warn('[SW] Non-fatal precache item:', asset, err);
                     });
                 })
             );
+
+            // 2. Precache active authenticated App Shell HTML
+            try {
+                const shellRes = await fetch('/dashboard');
+                if (shellRes && shellRes.status === 200) {
+                    await cache.put(APP_SHELL_KEY, shellRes.clone());
+                    await cache.put('/dashboard', shellRes);
+                }
+            } catch (e) {
+                // In offline install or unauthenticated state
+            }
+
+            // 3. Precache all compiled Vite production JS/CSS bundles
+            try {
+                const manifestRes = await fetch('/build/manifest.json');
+                if (manifestRes && manifestRes.status === 200) {
+                    await cache.put('/build/manifest.json', manifestRes.clone());
+                    const manifest = await manifestRes.json();
+                    const assetUrls = Object.values(manifest)
+                        .map((entry) => (entry.file ? `/build/${entry.file}` : null))
+                        .filter(Boolean);
+
+                    await Promise.all(
+                        assetUrls.map((url) => {
+                            return cache.add(url).catch(() => {});
+                        })
+                    );
+                    console.log('[SW] Pre-cached', assetUrls.length, 'Vite production assets for offline mode');
+                }
+            } catch (err) {
+                console.warn('[SW] Manifest bundle precache note:', err);
+            }
         })
     );
     self.skipWaiting();
 });
 
-// Activate event: purge outdated caches immediately and claim all client windows
+// Activate event: purge outdated caches and take control of all open clients immediately
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((keys) => {
@@ -62,6 +97,7 @@ self.addEventListener('fetch', (event) => {
     if (!url.protocol.startsWith('http')) return;
 
     // 1. Navigation requests (Full page loads / refreshes)
+    // Never trap user on offline.html if ANY application HTML is cached!
     if (req.mode === 'navigate') {
         event.respondWith(
             fetch(req)
@@ -79,16 +115,32 @@ self.addEventListener('fetch', (event) => {
                     return networkRes;
                 })
                 .catch(async () => {
-                    // Try exact cached page first
-                    const cachedPage = await caches.match(req);
+                    const cache = await caches.open(CACHE_NAME);
+
+                    // 1. Try exact requested page from cache
+                    const cachedPage = await cache.match(req);
                     if (cachedPage) return cachedPage;
 
-                    // Fallback to cached App Shell so the React Inertia app boots up offline
-                    const appShell = await caches.match(APP_SHELL_KEY);
+                    // 2. Try App Shell key (boots full React Inertia app offline)
+                    const appShell = await cache.match(APP_SHELL_KEY);
                     if (appShell) return appShell;
 
-                    // Fallback to standalone offline.html
-                    const offlineFallback = await caches.match(OFFLINE_URL);
+                    // 3. Try /dashboard
+                    const dashboardPage = await cache.match('/dashboard');
+                    if (dashboardPage) return dashboardPage;
+
+                    // 4. Try ANY cached HTML page from the system to boot the app
+                    const keys = await cache.keys();
+                    for (const key of keys) {
+                        const res = await cache.match(key);
+                        const contentType = res?.headers?.get('content-type') || '';
+                        if (contentType.includes('text/html') && !key.url.includes('offline.html')) {
+                            return res;
+                        }
+                    }
+
+                    // 5. Fallback to interactive offline launcher
+                    const offlineFallback = await cache.match(OFFLINE_URL);
                     if (offlineFallback) return offlineFallback;
 
                     return new Response('Offline - THE INNS', {
@@ -135,7 +187,7 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Only handle GET requests for asset caching
+    // Only handle GET requests for remaining asset caches
     if (req.method !== 'GET') {
         return;
     }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Offline Mode - THE INNS</title>
+    <title>THE INNS - Offline Application Launcher</title>
     <style>
         * {
             box-sizing: border-box;
@@ -21,16 +21,16 @@
             padding: 24px;
         }
         .offline-card {
-            background: rgba(255, 255, 255, 0.06);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(212, 175, 55, 0.3);
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 28px;
             max-width: 480px;
             width: 100%;
             padding: 36px 28px;
             text-align: center;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
             animation: fadeIn 0.4s ease-out;
         }
         @keyframes fadeIn {
@@ -38,9 +38,9 @@
             to { opacity: 1; transform: translateY(0); }
         }
         .icon-wrapper {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 20px auto;
+            width: 76px;
+            height: 76px;
+            margin: 0 auto 18px auto;
             border-radius: 50%;
             background: rgba(212, 175, 55, 0.15);
             border: 2px solid #D4AF37;
@@ -50,8 +50,8 @@
             position: relative;
         }
         .icon-wrapper svg {
-            width: 40px;
-            height: 40px;
+            width: 38px;
+            height: 38px;
             stroke: #D4AF37;
         }
         .pulse-dot {
@@ -60,98 +60,96 @@
             right: 2px;
             width: 14px;
             height: 14px;
-            background: #F59E0B;
+            background: #10B981;
             border: 2px solid #0B192C;
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
         @keyframes pulse {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
         h1 {
             font-size: 24px;
             font-weight: 800;
             letter-spacing: -0.5px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             color: #ffffff;
         }
         .badge {
             display: inline-block;
-            background: rgba(245, 158, 11, 0.2);
-            color: #FCD34D;
-            border: 1px solid rgba(245, 158, 11, 0.4);
+            background: rgba(16, 185, 129, 0.2);
+            color: #34D399;
+            border: 1px solid rgba(16, 185, 129, 0.4);
             border-radius: 9999px;
             padding: 4px 14px;
             font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 18px;
+            margin-bottom: 16px;
         }
         p {
-            font-size: 14px;
+            font-size: 13.5px;
             line-height: 1.6;
             color: #CBD5E1;
-            margin-bottom: 24px;
+            margin-bottom: 22px;
         }
-        .info-box {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 24px;
-            text-align: left;
-            font-size: 13px;
+        .modules-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
         }
-        .info-row {
+        .module-btn {
             display: flex;
             align-items: center;
-            gap: 10px;
-            color: #E2E8F0;
-            margin-bottom: 8px;
+            justify-content: space-between;
+            padding: 14px 18px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            color: #ffffff;
+            font-size: 13.5px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.2s ease;
         }
-        .info-row:last-child {
-            margin-bottom: 0;
+        .module-btn:hover {
+            background: rgba(255, 255, 255, 0.16);
+            border-color: #D4AF37;
+            transform: translateY(-1px);
         }
-        .info-row span.icon {
-            color: #D4AF37;
-            font-weight: bold;
+        .module-btn span.badge-ready {
+            font-size: 10px;
+            background: rgba(16, 185, 129, 0.25);
+            color: #34D399;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-weight: 700;
         }
-        .btn {
+        .btn-reconnect {
             display: block;
             width: 100%;
-            padding: 14px 20px;
+            padding: 13px 20px;
             border-radius: 14px;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 700;
             cursor: pointer;
             text-decoration: none;
-            transition: all 0.2s ease;
-            margin-bottom: 10px;
-        }
-        .btn-primary {
             background: #D4AF37;
             color: #1E3A5F;
             border: none;
+            transition: all 0.2s ease;
             box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35);
         }
-        .btn-primary:hover {
+        .btn-reconnect:hover {
             background: #e2bd46;
-            transform: translateY(-1px);
-        }
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.08);
-            color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-        }
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.14);
         }
         .sync-status {
-            margin-top: 18px;
-            font-size: 12px;
+            margin-top: 16px;
+            font-size: 11.5px;
             color: #94A3B8;
         }
     </style>
@@ -161,55 +159,66 @@
         <div class="icon-wrapper">
             <div class="pulse-dot"></div>
             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
         </div>
 
-        <h1>Offline Standby Mode</h1>
-        <div class="badge">Local Cache Active</div>
+        <h1>Offline Application Ready</h1>
+        <div class="badge">Local Cache & Storage Active</div>
 
         <p>
-            You are currently working offline. All system pages and locally stored data remain active on this device.
+            You are currently working offline. Select any module below to continue operations locally:
         </p>
 
-        <div class="info-box">
-            <div class="info-row">
-                <span class="icon">✓</span>
-                <span>Offline Data Collection: <strong>Active</strong></span>
-            </div>
-            <div class="info-row">
-                <span class="icon">✓</span>
-                <span>Automatic Database Sync: <strong>Enabled on reconnection</strong></span>
-            </div>
-            <div class="info-row">
-                <span class="icon">⚡</span>
-                <span>Front Desk & Housekeeping modules available</span>
-            </div>
+        <div class="modules-grid">
+            <a href="/dashboard" class="module-btn">
+                <span>🏨 Front Desk & Dashboard</span>
+                <span class="badge-ready">Ready</span>
+            </a>
+            <a href="/pos" class="module-btn">
+                <span>🍽️ Restaurant & Bar POS</span>
+                <span class="badge-ready">Ready</span>
+            </a>
+            <a href="/housekeeping" class="module-btn">
+                <span>🧹 Housekeeping & Rooms</span>
+                <span class="badge-ready">Ready</span>
+            </a>
+            <a href="/reservations" class="module-btn">
+                <span>📋 Reservations Manager</span>
+                <span class="badge-ready">Ready</span>
+            </a>
         </div>
 
-        <button class="btn btn-primary" onclick="window.location.reload()">
-            Check Connection & Reconnect
-        </button>
-
-        <button class="btn btn-secondary" onclick="window.history.back()">
-            Go Back to Cached Page
+        <button class="btn-reconnect" onclick="window.location.reload()">
+            Refresh & Sync
         </button>
 
         <div class="sync-status" id="connection-status">
-            Checking network status...
+            Local data collection active • Changes auto-sync upon reconnection
         </div>
     </div>
 
     <script>
+        // Automatic launcher: If cached application shell exists, navigate immediately into the app
+        if ('caches' in window) {
+            caches.open('the-inns-pwa-v11').then(function(cache) {
+                return cache.match('/dashboard').then(function(res) {
+                    if (res) {
+                        window.location.replace('/dashboard');
+                    }
+                });
+            }).catch(function() {});
+        }
+
         function updateStatus() {
             var statusEl = document.getElementById('connection-status');
             if (navigator.onLine) {
-                statusEl.innerHTML = '<span style="color:#34D399;font-weight:bold;">● Connection detected! Reloading...</span>';
+                statusEl.innerHTML = '<span style="color:#34D399;font-weight:bold;">● Connection restored! Syncing...</span>';
                 setTimeout(function() {
-                    window.location.reload();
-                }, 1000);
+                    window.location.replace('/dashboard');
+                }, 800);
             } else {
-                statusEl.innerHTML = '● No internet connection detected. Working locally.';
+                statusEl.innerHTML = '● No internet connection. Operating in local storage mode.';
             }
         }
 
@@ -219,4 +228,3 @@
     </script>
 </body>
 </html>
-

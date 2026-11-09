@@ -8,9 +8,12 @@ import {
     Check,
     CheckCircle2,
     Columns3,
+    Copy,
     DollarSign,
     Download,
+    Eraser,
     FileSpreadsheet,
+    Info,
     Package,
     Plus,
     RefreshCw,
@@ -22,7 +25,7 @@ import {
     Users,
     X,
 } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 interface SchemaInfo {
     id: string;
@@ -250,6 +253,11 @@ export default function SpreadsheetDataEntryIndex({ stats, defaultProperty }: Da
     ]);
     const [savingGrid, setSavingGrid] = useState(false);
     const [gridFeedback, setGridFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+    const [activeCell, setActiveCell] = useState<{ row: number; colIdx: number; colName: string } | null>(null);
+
+    const populatedRowCount = useMemo(() => {
+        return gridRows.filter((r) => Object.values(r).some((v) => v && v.trim() !== '')).length;
+    }, [gridRows]);
 
     const handleGridCellChange = (rowIndex: number, colName: string, val: string) => {
         setGridRows((prev) => {
@@ -263,8 +271,172 @@ export default function SpreadsheetDataEntryIndex({ stats, defaultProperty }: Da
         setGridRows((prev) => [...prev, {}]);
     };
 
+    const addMultipleGridRows = (count: number) => {
+        setGridRows((prev) => {
+            const appended = Array.from({ length: count }, () => ({}));
+            return [...prev, ...appended];
+        });
+    };
+
+    const duplicateGridRow = (index: number) => {
+        setGridRows((prev) => {
+            const updated = [...prev];
+            const rowToClone = { ...(updated[index] || {}) };
+            updated.splice(index + 1, 0, rowToClone);
+            return updated;
+        });
+    };
+
     const removeGridRow = (index: number) => {
-        setGridRows((prev) => prev.filter((_, i) => i !== index));
+        setGridRows((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : [{}]));
+    };
+
+    const clearEmptyGridRows = () => {
+        setGridRows((prev) => {
+            const filtered = prev.filter((r) => Object.values(r).some((v) => v && v.trim() !== ''));
+            return filtered.length > 0 ? filtered : [{}, {}, {}, {}, {}];
+        });
+    };
+
+    const resetGrid = () => {
+        if (confirm('Are you sure you want to clear all cells in the grid?')) {
+            setGridRows([{}, {}, {}, {}, {}]);
+            setActiveCell(null);
+            setGridFeedback(null);
+        }
+    };
+
+    const loadSampleData = () => {
+        if (!activeSchema.sampleRows || activeSchema.sampleRows.length === 0) return;
+        const allCols = activeSchema.columns.map((c) => c.name);
+        const newRows: Array<Record<string, string>> = activeSchema.sampleRows.map((rowVals) => {
+            const obj: Record<string, string> = {};
+            allCols.forEach((colName, idx) => {
+                if (rowVals[idx] !== undefined) {
+                    obj[colName] = rowVals[idx];
+                }
+            });
+            return obj;
+        });
+        setGridRows(newRows);
+        setGridFeedback({
+            type: 'success',
+            message: `Loaded ${newRows.length} sample rows for ${activeSchema.name}. Edit any cell or click Save to import!`,
+        });
+    };
+
+    // Keyboard navigation (Enter, ArrowDown, ArrowUp, Tab)
+    const handleCellKeyDown = (
+        e: React.KeyboardEvent<HTMLInputElement>,
+        rIdx: number,
+        cIdx: number
+    ) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (rIdx === gridRows.length - 1) {
+                setGridRows((prev) => [...prev, {}]);
+                setTimeout(() => {
+                    const nextInput = document.getElementById(`grid-cell-${rIdx + 1}-${cIdx}`);
+                    nextInput?.focus();
+                }, 20);
+            } else {
+                const nextInput = document.getElementById(`grid-cell-${rIdx + 1}-${cIdx}`);
+                nextInput?.focus();
+            }
+        } else if (e.key === 'ArrowDown') {
+            if (rIdx < gridRows.length - 1) {
+                e.preventDefault();
+                const nextInput = document.getElementById(`grid-cell-${rIdx + 1}-${cIdx}`);
+                nextInput?.focus();
+            }
+        } else if (e.key === 'ArrowUp') {
+            if (rIdx > 0) {
+                e.preventDefault();
+                const prevInput = document.getElementById(`grid-cell-${rIdx - 1}-${cIdx}`);
+                prevInput?.focus();
+            }
+        } else if (e.key === 'Tab' && !e.shiftKey) {
+            if (cIdx === activeSelectedColumns.length - 1) {
+                e.preventDefault();
+                if (rIdx === gridRows.length - 1) {
+                    setGridRows((prev) => [...prev, {}]);
+                }
+                setTimeout(() => {
+                    const nextRowFirstInput = document.getElementById(`grid-cell-${rIdx + 1}-0`);
+                    nextRowFirstInput?.focus();
+                }, 20);
+            }
+        }
+    };
+
+    // Excel / Google Sheets Multi-Cell & Multi-Row Clipboard Paste
+    const handlePasteIntoGrid = (
+        e: React.ClipboardEvent<HTMLInputElement>,
+        startRow: number,
+        startColIndex: number
+    ) => {
+        const text = e.clipboardData.getData('text');
+        if (!text) return;
+
+        if (text.includes('\t') || text.includes('\n')) {
+            e.preventDefault();
+            const rawRows = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+            const cleanRows = rawRows.filter((r, i) => i < rawRows.length - 1 || r.trim() !== '');
+
+            setGridRows((prev) => {
+                let updated = [...prev];
+                const neededLength = startRow + cleanRows.length;
+                while (updated.length < neededLength) {
+                    updated.push({});
+                }
+
+                cleanRows.forEach((rowStr, rOffset) => {
+                    const targetRowIndex = startRow + rOffset;
+                    const cellValues = rowStr.split('\t');
+                    const targetRowObj = { ...(updated[targetRowIndex] || {}) };
+
+                    cellValues.forEach((val, cOffset) => {
+                        const targetColIndex = startColIndex + cOffset;
+                        if (targetColIndex < activeSelectedColumns.length) {
+                            const colName = activeSelectedColumns[targetColIndex];
+                            targetRowObj[colName] = val.trim();
+                        }
+                    });
+
+                    updated[targetRowIndex] = targetRowObj;
+                });
+
+                return updated;
+            });
+
+            setGridFeedback({
+                type: 'success',
+                message: `Pasted ${cleanRows.length} row(s) from clipboard into table!`,
+            });
+        }
+    };
+
+    const getColumnMinWidth = (colName: string): string => {
+        const lower = colName.toLowerCase();
+        if (lower.includes('name') || lower.includes('description') || lower.includes('notes') || lower.includes('amenities')) {
+            return 'min-w-[220px]';
+        }
+        if (lower.includes('category') || lower.includes('department') || lower.includes('room type')) {
+            return 'min-w-[170px]';
+        }
+        if (lower.includes('price') || lower.includes('cost') || lower.includes('rate')) {
+            return 'min-w-[140px]';
+        }
+        if (lower.includes('quantity') || lower.includes('level') || lower.includes('floor') || lower.includes('occupancy')) {
+            return 'min-w-[130px]';
+        }
+        if (lower.includes('code') || lower.includes('sku') || lower.includes('phone') || lower.includes('room number')) {
+            return 'min-w-[140px]';
+        }
+        if (lower.includes('available') || lower.includes('status') || lower.includes('unit') || lower.includes('gender')) {
+            return 'min-w-[120px]';
+        }
+        return 'min-w-[150px]';
     };
 
     const handleSaveGrid = async () => {
@@ -294,6 +466,7 @@ export default function SpreadsheetDataEntryIndex({ stats, defaultProperty }: Da
             if (json.success) {
                 setGridFeedback({ type: 'success', message: json.message || 'Records saved successfully.' });
                 setGridRows([{}, {}, {}, {}, {}]);
+                setActiveCell(null);
             } else {
                 setGridFeedback({ type: 'error', message: json.message || 'Failed to save records.' });
             }
@@ -303,6 +476,18 @@ export default function SpreadsheetDataEntryIndex({ stats, defaultProperty }: Da
             setSavingGrid(false);
         }
     };
+
+    // Global keyboard shortcut: Ctrl+S to save grid
+    useEffect(() => {
+        const handleGlobalKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's' && activeTab === 'grid') {
+                e.preventDefault();
+                handleSaveGrid();
+            }
+        };
+        window.addEventListener('keydown', handleGlobalKeyDown);
+        return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+    }, [activeTab, gridRows, selectedSchemaKey]);
 
     // 3. Client-Side Smart CSV Parser & Column Mapper State
     const [parsedCsvHeaders, setParsedCsvHeaders] = useState<string[]>([]);
@@ -799,34 +984,143 @@ export default function SpreadsheetDataEntryIndex({ stats, defaultProperty }: Da
 
                     {/* Tab 3: Interactive In-Browser Spreadsheet Grid */}
                     {activeTab === 'grid' && (
-                        <div className="p-6 sm:p-8 space-y-4">
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                        <div className="p-5 sm:p-7 space-y-4">
+                            {/* Top Grid Toolbar */}
+                            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-slate-200 pb-4">
                                 <div>
-                                    <h3 className="font-extrabold text-base text-slate-900">
-                                        Live Spreadsheet Grid ({activeSchema.name})
-                                    </h3>
-                                    <p className="text-xs text-slate-500">
-                                        Type directly into the table cells below, or paste from Excel / Google Sheets, then click Save.
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="font-extrabold text-base text-slate-900">
+                                            Interactive Spreadsheet Grid
+                                        </h3>
+                                        <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-extrabold text-[10px] uppercase border border-blue-200">
+                                            {activeSchema.name}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-slate-500 mt-0.5">
+                                        Full keyboard navigation (Enter, Tab, Arrows). Paste directly from Excel or Google Sheets (Ctrl+V).
                                     </p>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={addGridRow}
-                                        className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer"
-                                    >
-                                        <Plus className="w-3.5 h-3.5" />
-                                        <span>Add Blank Row</span>
-                                    </button>
+
+                                <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-between lg:justify-end">
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                        <button
+                                            type="button"
+                                            onClick={addGridRow}
+                                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer"
+                                            title="Add 1 blank row"
+                                        >
+                                            <Plus className="w-3.5 h-3.5" />
+                                            <span>Row</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => addMultipleGridRows(5)}
+                                            className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer"
+                                            title="Add 5 blank rows"
+                                        >
+                                            +5 Rows
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => addMultipleGridRows(10)}
+                                            className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer hidden sm:inline-block"
+                                            title="Add 10 blank rows"
+                                        >
+                                            +10 Rows
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={loadSampleData}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold text-xs rounded-xl transition cursor-pointer"
+                                            title="Fill sample rows for quick testing"
+                                        >
+                                            <FileSpreadsheet className="w-3.5 h-3.5 text-amber-700" />
+                                            <span>Fill Samples</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={clearEmptyGridRows}
+                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 font-bold text-xs rounded-xl transition cursor-pointer"
+                                            title="Remove blank rows"
+                                        >
+                                            <Eraser className="w-3.5 h-3.5 text-slate-500" />
+                                            <span>Clear Empty</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={resetGrid}
+                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-50 hover:bg-rose-50 text-slate-500 hover:text-rose-600 font-bold text-xs rounded-xl transition cursor-pointer"
+                                            title="Clear all rows"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                            <span>Reset</span>
+                                        </button>
+                                    </div>
+
                                     <button
                                         type="button"
                                         onClick={handleSaveGrid}
                                         disabled={savingGrid}
-                                        className="inline-flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition cursor-pointer disabled:opacity-60"
+                                        className="inline-flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition cursor-pointer disabled:opacity-60 ml-auto lg:ml-0"
                                     >
                                         <Save className="w-4 h-4" />
                                         <span>{savingGrid ? 'Saving Records...' : 'Save & Import Grid'}</span>
                                     </button>
+                                </div>
+                            </div>
+
+                            {/* Active Cell / Formula Bar Inspector */}
+                            <div className="bg-slate-50/90 border border-slate-200 rounded-2xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+                                <div className="flex items-center gap-3">
+                                    <span className="px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-mono font-bold text-xs border border-blue-200 shadow-2xs">
+                                        {activeCell ? `R${activeCell.row + 1} : C${activeCell.colIdx + 1}` : 'Active Cell'}
+                                    </span>
+                                    {activeCell ? (
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className="font-extrabold text-slate-900">{activeCell.colName}</span>
+                                            {(() => {
+                                                const colDef = activeSchema.columns.find((c) => c.name === activeCell.colName);
+                                                return (
+                                                    <div className="flex items-center gap-2 text-slate-500">
+                                                        <span className="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 text-[10px] font-semibold">
+                                                            {colDef?.type || 'Text'}
+                                                        </span>
+                                                        {colDef?.required ? (
+                                                            <span className="text-rose-600 font-bold text-[10px]">* Required</span>
+                                                        ) : (
+                                                            <span className="text-slate-400 text-[10px]">Optional</span>
+                                                        )}
+                                                        {colDef?.example && (
+                                                            <span className="text-slate-500 text-[11px] hidden sm:inline">
+                                                                (Example: <code className="text-blue-700 font-mono">{colDef.example}</code>)
+                                                            </span>
+                                                        )}
+                                                        {colDef?.notes && (
+                                                            <span className="text-slate-400 text-[11px] hidden md:inline">
+                                                                • {colDef.notes}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+                                    ) : (
+                                        <span className="text-slate-500 italic">
+                                            Click any cell to edit • Press <kbd className="font-mono font-bold px-1 py-0.5 rounded bg-white border border-slate-300 text-[10px]">Tab</kbd> or <kbd className="font-mono font-bold px-1 py-0.5 rounded bg-white border border-slate-300 text-[10px]">Enter</kbd> to navigate
+                                        </span>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center gap-3 text-[11px] text-slate-500">
+                                    <span className="hidden sm:inline">
+                                        <kbd className="px-1.5 py-0.5 rounded bg-white border border-slate-300 font-mono font-bold text-[10px]">↵</kbd> Next row
+                                    </span>
+                                    <span className="hidden sm:inline">
+                                        <kbd className="px-1.5 py-0.5 rounded bg-white border border-slate-300 font-mono font-bold text-[10px]">⇥</kbd> Next cell
+                                    </span>
+                                    <span className="hidden md:inline">
+                                        <kbd className="px-1.5 py-0.5 rounded bg-white border border-slate-300 font-mono font-bold text-[10px]">Ctrl+V</kbd> Paste from Excel
+                                    </span>
                                 </div>
                             </div>
 
@@ -839,61 +1133,161 @@ export default function SpreadsheetDataEntryIndex({ stats, defaultProperty }: Da
                                     }`}
                                 >
                                     {gridFeedback.type === 'success' ? (
-                                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                                     ) : (
-                                        <AlertCircle className="w-4 h-4 text-rose-600" />
+                                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
                                     )}
                                     <span>{gridFeedback.message}</span>
                                 </div>
                             )}
 
-                            {/* Spreadsheet Table */}
-                            <div className="overflow-x-auto rounded-2xl border border-slate-200">
-                                <table className="w-full text-xs text-left">
-                                    <thead className="bg-slate-100 text-slate-700 font-extrabold border-b border-slate-200">
-                                        <tr>
-                                            <th className="py-2.5 px-3 text-center w-12">#</th>
-                                            {activeSelectedColumns.map((colName) => (
-                                                <th key={colName} className="py-2.5 px-3 whitespace-nowrap">
-                                                    {colName}
+                            {/* Responsive Spreadsheet Grid Table */}
+                            <div className="rounded-2xl border border-slate-300 shadow-xs bg-white overflow-hidden">
+                                <div className="overflow-x-auto max-h-[580px] overflow-y-auto">
+                                    <table className="w-full text-xs border-collapse text-left">
+                                        <thead>
+                                            <tr className="bg-slate-100 text-slate-800 font-extrabold select-none">
+                                                {/* Sticky top-left corner */}
+                                                <th className="sticky top-0 left-0 z-30 bg-slate-200 border-r border-b border-slate-300 py-2.5 px-3 text-center w-12 font-mono text-[11px] shadow-2xs">
+                                                    #
                                                 </th>
-                                            ))}
-                                            <th className="py-2.5 px-3 text-center w-12">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100 bg-white">
-                                        {gridRows.map((row, rIdx) => (
-                                            <tr key={rIdx} className="hover:bg-slate-50/50">
-                                                <td className="py-2 px-3 text-center font-bold text-slate-400 font-mono">
-                                                    {rIdx + 1}
-                                                </td>
-                                                {activeSelectedColumns.map((colName) => (
-                                                    <td key={colName} className="p-1">
-                                                        <input
-                                                            type="text"
-                                                            value={row[colName] || ''}
-                                                            onChange={(e) => handleGridCellChange(rIdx, colName, e.target.value)}
-                                                            placeholder={`e.g. ${
-                                                                activeSchema.columns.find((c) => c.name === colName)?.example || ''
-                                                            }`}
-                                                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium"
-                                                        />
-                                                    </td>
-                                                ))}
-                                                <td className="py-2 px-3 text-center">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeGridRow(rIdx)}
-                                                        className="p-1 text-slate-400 hover:text-rose-600 rounded transition cursor-pointer"
-                                                        title="Delete row"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </td>
+                                                {activeSelectedColumns.map((colName) => {
+                                                    const colDef = activeSchema.columns.find((c) => c.name === colName);
+                                                    return (
+                                                        <th
+                                                            key={colName}
+                                                            className={`sticky top-0 z-20 bg-slate-100 border-r border-b border-slate-300 py-2.5 px-3 font-extrabold whitespace-nowrap shadow-2xs ${getColumnMinWidth(
+                                                                colName
+                                                            )}`}
+                                                        >
+                                                            <div className="flex items-center justify-between gap-1.5">
+                                                                <span className="truncate">{colName}</span>
+                                                                {colDef?.required && (
+                                                                    <span
+                                                                        className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"
+                                                                        title="Required column"
+                                                                    />
+                                                                )}
+                                                            </div>
+                                                        </th>
+                                                    );
+                                                })}
+                                                {/* Sticky top-right Actions header */}
+                                                <th className="sticky top-0 right-0 z-30 bg-slate-200 border-l border-b border-slate-300 py-2.5 px-3 text-center w-20 font-bold shadow-2xs">
+                                                    Action
+                                                </th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-200 bg-white">
+                                            {gridRows.map((row, rIdx) => {
+                                                const hasData = Object.values(row).some((v) => v && v.trim() !== '');
+                                                return (
+                                                    <tr
+                                                        key={rIdx}
+                                                        className={`group transition ${
+                                                            activeCell?.row === rIdx
+                                                                ? 'bg-blue-50/20'
+                                                                : hasData
+                                                                ? 'bg-white'
+                                                                : 'bg-slate-50/30'
+                                                        } hover:bg-blue-50/30`}
+                                                    >
+                                                        {/* Sticky Left Row Number */}
+                                                        <td className="sticky left-0 z-10 bg-slate-100 group-hover:bg-blue-50 border-r border-slate-200 py-1 px-2 text-center font-bold text-slate-500 font-mono text-[11px] select-none">
+                                                            {rIdx + 1}
+                                                        </td>
+
+                                                        {/* Interactive Flush Cells */}
+                                                        {activeSelectedColumns.map((colName, cIdx) => {
+                                                            const val = row[colName] || '';
+                                                            const isFocused =
+                                                                activeCell?.row === rIdx && activeCell?.colIdx === cIdx;
+
+                                                            return (
+                                                                <td
+                                                                    key={colName}
+                                                                    className={`p-0 border-r border-slate-200 relative ${getColumnMinWidth(
+                                                                        colName
+                                                                    )} ${
+                                                                        isFocused
+                                                                            ? 'ring-2 ring-blue-600 ring-inset bg-blue-50/50 z-10'
+                                                                            : ''
+                                                                    }`}
+                                                                >
+                                                                    <input
+                                                                        id={`grid-cell-${rIdx}-${cIdx}`}
+                                                                        type="text"
+                                                                        value={val}
+                                                                        onChange={(e) =>
+                                                                            handleGridCellChange(rIdx, colName, e.target.value)
+                                                                        }
+                                                                        onFocus={() =>
+                                                                            setActiveCell({ row: rIdx, colIdx: cIdx, colName })
+                                                                        }
+                                                                        onKeyDown={(e) => handleCellKeyDown(e, rIdx, cIdx)}
+                                                                        onPaste={(e) => handlePasteIntoGrid(e, rIdx, cIdx)}
+                                                                        autoComplete="off"
+                                                                        spellCheck={false}
+                                                                        className="w-full h-10 px-3 py-2 text-xs text-slate-900 border-none outline-none bg-transparent font-medium"
+                                                                    />
+                                                                </td>
+                                                            );
+                                                        })}
+
+                                                        {/* Sticky Right Action Buttons */}
+                                                        <td className="sticky right-0 z-10 bg-white group-hover:bg-blue-50 border-l border-slate-200 py-1 px-2 text-center">
+                                                            <div className="flex items-center justify-center gap-1 opacity-70 group-hover:opacity-100 transition">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => duplicateGridRow(rIdx)}
+                                                                    className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-100/60 rounded transition cursor-pointer"
+                                                                    title="Duplicate row"
+                                                                >
+                                                                    <Copy className="w-3.5 h-3.5" />
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => removeGridRow(rIdx)}
+                                                                    className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-100/60 rounded transition cursor-pointer"
+                                                                    title="Delete row"
+                                                                >
+                                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Bottom Status Bar */}
+                                <div className="bg-slate-100 border-t border-slate-300 px-4 py-2 flex flex-wrap items-center justify-between gap-3 text-[11px] text-slate-600 select-none">
+                                    <div className="flex items-center gap-3">
+                                        <span className="font-bold text-slate-800">
+                                            Total Rows: <span className="font-mono">{gridRows.length}</span>
+                                        </span>
+                                        <span>•</span>
+                                        <span className="text-emerald-700 font-bold">
+                                            Populated: <span className="font-mono">{populatedRowCount}</span>
+                                        </span>
+                                        <span>•</span>
+                                        <span className="text-slate-500">
+                                            Empty: <span className="font-mono">{gridRows.length - populatedRowCount}</span>
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={addGridRow}
+                                            className="text-blue-700 hover:text-blue-900 font-bold cursor-pointer hover:underline"
+                                        >
+                                            + Add blank row at bottom
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}

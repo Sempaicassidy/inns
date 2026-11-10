@@ -1,72 +1,94 @@
-const CACHE_NAME = 'the-inns-pwa-v13';
-const APP_SHELL_KEY = '/app-shell';
+const CACHE_NAME = 'the-inns-pwa-v14';
+const APP_SHELL_KEY = '__the_inns_app_shell__';
 
-const STATIC_PRECACHE = [
-    '/',
-    '/login',
-    '/dashboard',
-    '/pos',
-    '/housekeeping',
-    '/manifest.webmanifest',
-    '/favicon.png',
-    '/favicon.ico',
-    '/apple-touch-icon.png',
-    '/logo.png',
-    '/pwa-icons/icon-72x72.png',
-    '/pwa-icons/icon-96x96.png',
-    '/pwa-icons/icon-128x128.png',
-    '/pwa-icons/icon-144x144.png',
-    '/pwa-icons/icon-152x152.png',
-    '/pwa-icons/icon-192x192.png',
-    '/pwa-icons/icon-384x384.png',
-    '/pwa-icons/icon-512x512.png',
-    '/pwa-icons/maskable-icon-192x192.png',
-    '/pwa-icons/maskable-icon-512x512.png'
+// Helper: Safely resolve relative paths against the service worker scope
+// Works seamlessly in WAMP subfolder (http://localhost/inns/) and custom domain (https://hotel.com/)
+const toScopeUrl = (path) => {
+    if (!path) return self.registration.scope;
+    if (typeof path === 'string' && (path.startsWith('http://') || path.startsWith('https://'))) {
+        return path;
+    }
+    const clean = String(path).replace(/^\/+/, '');
+    return new URL(clean, self.registration.scope).href;
+};
+
+const RELATIVE_PRECACHE = [
+    '',
+    'login',
+    'dashboard',
+    'pos',
+    'housekeeping',
+    'reservations',
+    'calendar',
+    'manifest.webmanifest',
+    'favicon.png',
+    'favicon.ico',
+    'apple-touch-icon.png',
+    'logo.png',
+    'pwa-icons/icon-72x72.png',
+    'pwa-icons/icon-96x96.png',
+    'pwa-icons/icon-128x128.png',
+    'pwa-icons/icon-144x144.png',
+    'pwa-icons/icon-152x152.png',
+    'pwa-icons/icon-192x192.png',
+    'pwa-icons/icon-384x384.png',
+    'pwa-icons/icon-512x512.png',
+    'pwa-icons/maskable-icon-192x192.png',
+    'pwa-icons/maskable-icon-512x512.png'
 ];
 
 // Install event: download system assets, app shell, and Vite production bundles
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then(async (cache) => {
-            // 1. Precache static assets
+            // 1. Precache static assets resolved against registration scope
             await Promise.all(
-                STATIC_PRECACHE.map((asset) => {
-                    return cache.add(asset).catch((err) => {
-                        console.warn('[SW] Non-fatal precache item:', asset, err);
+                RELATIVE_PRECACHE.map((relPath) => {
+                    const fullUrl = toScopeUrl(relPath);
+                    return cache.add(fullUrl).catch((err) => {
+                        console.warn('[SW v14] Precache item skip:', fullUrl, err);
                     });
                 })
             );
 
-            // 2. Precache active authenticated App Shell HTML from /dashboard
+            // 2. Precache active authenticated App Shell HTML from dashboard
             try {
-                const shellRes = await fetch('/dashboard');
+                const dashUrl = toScopeUrl('dashboard');
+                const shellRes = await fetch(dashUrl);
                 if (shellRes && shellRes.status === 200) {
                     await cache.put(APP_SHELL_KEY, shellRes.clone());
-                    await cache.put('/dashboard', shellRes);
+                    await cache.put(dashUrl, shellRes);
                 }
             } catch (e) {
-                // Offline install or unauthenticated
+                // Offline or unauthenticated
             }
 
-            // 3. Precache all compiled Vite production JS/CSS bundles from manifest.json
+            // 3. Precache all compiled Vite production JS/CSS bundles from build/manifest.json
             try {
-                const manifestRes = await fetch('/build/manifest.json');
+                const manifestUrl = toScopeUrl('build/manifest.json');
+                const manifestRes = await fetch(manifestUrl);
                 if (manifestRes && manifestRes.status === 200) {
-                    await cache.put('/build/manifest.json', manifestRes.clone());
+                    await cache.put(manifestUrl, manifestRes.clone());
                     const manifest = await manifestRes.json();
-                    const assetUrls = Object.values(manifest)
-                        .map((entry) => (entry.file ? `/build/${entry.file}` : null))
-                        .filter(Boolean);
+                    const bundleUrls = [];
+                    for (const entry of Object.values(manifest)) {
+                        if (entry.file) {
+                            bundleUrls.push(toScopeUrl('build/' + entry.file));
+                        }
+                        if (Array.isArray(entry.css)) {
+                            entry.css.forEach((cssFile) => {
+                                bundleUrls.push(toScopeUrl('build/' + cssFile));
+                            });
+                        }
+                    }
 
                     await Promise.all(
-                        assetUrls.map((url) => {
-                            return cache.add(url).catch(() => {});
-                        })
+                        bundleUrls.map((url) => cache.add(url).catch(() => {}))
                     );
-                    console.log('[SW v12] Downloaded', assetUrls.length, 'Vite system assets for full offline operation');
+                    console.log('[SW v14] Precached', bundleUrls.length, 'Vite bundles for offline operation');
                 }
             } catch (err) {
-                console.warn('[SW v12] Manifest bundle precache note:', err);
+                console.warn('[SW v14] Manifest precache note:', err);
             }
         })
     );
@@ -125,8 +147,8 @@ self.addEventListener('fetch', (event) => {
                     const appShell = await cache.match(APP_SHELL_KEY);
                     if (appShell) return appShell;
 
-                    // 3. Try /dashboard
-                    const dashboardPage = await cache.match('/dashboard');
+                    // 3. Try dashboard under current scope
+                    const dashboardPage = await cache.match(toScopeUrl('dashboard'));
                     if (dashboardPage) return dashboardPage;
 
                     // 4. Try ANY cached HTML page from the system to boot the app
@@ -140,12 +162,13 @@ self.addEventListener('fetch', (event) => {
                     }
 
                     // 5. Final fallback to cached root
-                    const rootFallback = await cache.match('/');
+                    const rootFallback = await cache.match(toScopeUrl(''));
                     if (rootFallback) return rootFallback;
 
-                    return new Response('<!DOCTYPE html><html><head><meta http-equiv="refresh" content="1;url=/dashboard"></head><body style="background:#0F172A;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;"><p>Opening THE INNS in Offline Mode...</p></body></html>', {
-                        headers: { 'Content-Type': 'text/html' }
-                    });
+                    return new Response(
+                        `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="1;url=${toScopeUrl('dashboard')}"></head><body style="background:#0F172A;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;"><p>Opening THE INNS in Offline Mode...</p></body></html>`,
+                        { headers: { 'Content-Type': 'text/html' } }
+                    );
                 })
         );
         return;
@@ -163,12 +186,14 @@ self.addEventListener('fetch', (event) => {
                     return networkRes;
                 })
                 .catch(async () => {
+                    const cache = await caches.open(CACHE_NAME);
+
                     // Match previous Inertia visit from cache
-                    const cachedInertia = await caches.match(req);
+                    const cachedInertia = await cache.match(req);
                     if (cachedInertia) return cachedInertia;
 
-                    // Try matching /dashboard Inertia state
-                    const dashboardInertia = await caches.match('/dashboard');
+                    // Try matching dashboard Inertia state
+                    const dashboardInertia = await cache.match(toScopeUrl('dashboard'));
                     if (dashboardInertia) return dashboardInertia;
 
                     // Return synthetic Inertia response so the React SPA never crashes
@@ -176,7 +201,7 @@ self.addEventListener('fetch', (event) => {
                         component: 'Dashboard',
                         props: {
                             is_offline: true,
-                            offline_notice: 'Working in Offline Standby Mode. Operations and records will synchronize automatically upon reconnect.'
+                            offline_notice: 'Working in Offline Mode. Operations and records will synchronize automatically upon reconnect.'
                         },
                         url: url.pathname,
                         version: ''
@@ -216,7 +241,7 @@ self.addEventListener('fetch', (event) => {
                         cache.put(req, networkRes.clone());
                     }
                     return networkRes;
-                });
+                }).catch(() => cache.match(req));
             })
         );
         return;
@@ -265,9 +290,7 @@ self.addEventListener('fetch', (event) => {
                 }
                 return networkRes;
             })
-            .catch(() => {
-                return caches.match(req);
-            })
+            .catch(() => caches.match(req))
     );
 });
 
@@ -290,12 +313,12 @@ self.addEventListener('message', (event) => {
         const title = event.data.title || 'THE INNS Notification';
         const options = {
             body: event.data.body || 'New operational update received.',
-            icon: event.data.icon || '/pwa-icons/icon-192x192.png',
-            badge: event.data.badge || '/pwa-icons/icon-192x192.png',
+            icon: toScopeUrl('pwa-icons/icon-192x192.png'),
+            badge: toScopeUrl('pwa-icons/icon-192x192.png'),
             tag: event.data.tag || 'the-inns-alert-' + Date.now(),
             vibrate: [200, 100, 200],
             data: {
-                url: event.data.url || '/dashboard'
+                url: event.data.url || toScopeUrl('dashboard')
             },
             actions: [
                 { action: 'open', title: 'View Details' },
@@ -314,9 +337,9 @@ self.addEventListener('push', (event) => {
     let payload = {
         title: 'THE INNS Notification',
         body: 'New update received.',
-        icon: '/pwa-icons/icon-192x192.png',
-        badge: '/pwa-icons/icon-192x192.png',
-        url: '/dashboard'
+        icon: toScopeUrl('pwa-icons/icon-192x192.png'),
+        badge: toScopeUrl('pwa-icons/icon-192x192.png'),
+        url: toScopeUrl('dashboard')
     };
 
     if (event.data) {
@@ -329,12 +352,12 @@ self.addEventListener('push', (event) => {
 
     const options = {
         body: payload.body,
-        icon: payload.icon || '/pwa-icons/icon-192x192.png',
-        badge: payload.badge || '/pwa-icons/icon-192x192.png',
+        icon: payload.icon || toScopeUrl('pwa-icons/icon-192x192.png'),
+        badge: payload.badge || toScopeUrl('pwa-icons/icon-192x192.png'),
         tag: payload.tag || 'the-inns-push-' + Date.now(),
         vibrate: [200, 100, 200],
         data: {
-            url: payload.url || '/dashboard'
+            url: payload.url || toScopeUrl('dashboard')
         },
         actions: [
             { action: 'open', title: 'Open in PWA' },
@@ -352,7 +375,7 @@ self.addEventListener('notificationclick', (event) => {
     event.notification.close();
     if (event.action === 'close') return;
 
-    const targetUrl = event.notification.data?.url || '/dashboard';
+    const targetUrl = event.notification.data?.url || toScopeUrl('dashboard');
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
             for (const client of clientList) {

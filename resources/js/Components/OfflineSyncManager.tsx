@@ -72,8 +72,16 @@ export default function OfflineSyncManager() {
 
         const downloadSystemForOffline = async () => {
             try {
-                const cache = await caches.open('the-inns-pwa-v12');
-                const corePages = ['/dashboard', '/pos', '/housekeeping', '/reservations', '/calendar'];
+                const cache = await caches.open('the-inns-pwa-v14');
+                const isSubfolder = window.location.pathname.startsWith('/inns');
+                const prefix = isSubfolder ? '/inns' : '';
+                const corePages = [
+                    `${prefix}/dashboard`,
+                    `${prefix}/pos`,
+                    `${prefix}/housekeeping`,
+                    `${prefix}/reservations`,
+                    `${prefix}/calendar`
+                ];
 
                 for (const path of corePages) {
                     // Precache full HTML page

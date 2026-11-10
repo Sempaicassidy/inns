@@ -25,6 +25,7 @@ import {
 import { useState } from 'react';
 import ReceiptModal from '@/Components/ReceiptModal';
 import { ReceiptData, printThermalReceipt, printKOTReceipt } from '@/Utils/receiptPrinter';
+import { queueOperation } from '@/offline/queue';
 
 interface PosCategory {
     id: string;
@@ -205,6 +206,27 @@ export default function PosIndex({
         };
 
         if (typeof navigator !== 'undefined' && !navigator.onLine) {
+            if ((auth?.tenant as any)?.id) {
+                queueOperation({
+                    tenantId: (auth.tenant as any).id,
+                    type: 'pos_order',
+                    action: 'create',
+                    payload: {
+                        ...orderData,
+                        order_number: receiptSnapshot.receiptNumber,
+                        total_minor: totalMinor,
+                        grand_total: totalMinor,
+                        items: cart.map(c => ({
+                            item_id: c.item.id,
+                            name: c.item.name,
+                            quantity: c.quantity,
+                            price_minor: c.item.price_minor,
+                            amount: c.item.price_minor * c.quantity,
+                        })),
+                    },
+                }).catch(() => {});
+            }
+
             import('@/Services/offlineSync').then(({ default: offlineSync }) => {
                 offlineSync.queueOfflineAction({
                     url: route('pos.store'),
@@ -232,6 +254,27 @@ export default function PosIndex({
             },
             onError: () => {
                 if (typeof navigator !== 'undefined' && !navigator.onLine) {
+                    if ((auth?.tenant as any)?.id) {
+                        queueOperation({
+                            tenantId: (auth.tenant as any).id,
+                            type: 'pos_order',
+                            action: 'create',
+                            payload: {
+                                ...orderData,
+                                order_number: receiptSnapshot.receiptNumber,
+                                total_minor: totalMinor,
+                                grand_total: totalMinor,
+                                items: cart.map(c => ({
+                                    item_id: c.item.id,
+                                    name: c.item.name,
+                                    quantity: c.quantity,
+                                    price_minor: c.item.price_minor,
+                                    amount: c.item.price_minor * c.quantity,
+                                })),
+                            },
+                        }).catch(() => {});
+                    }
+
                     import('@/Services/offlineSync').then(({ default: offlineSync }) => {
                         offlineSync.queueOfflineAction({
                             url: route('pos.store'),

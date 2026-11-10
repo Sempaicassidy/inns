@@ -1,4 +1,4 @@
-const CACHE_NAME = 'the-inns-pwa-v15';
+const CACHE_NAME = 'the-inns-pwa-v16';
 const APP_SHELL_KEY = '__the_inns_app_shell__';
 
 // Helper: Safely resolve relative paths against the service worker scope
@@ -277,6 +277,16 @@ self.addEventListener('fetch', (event) => {
                     .catch(() => cached);
             })
         );
+        return;
+    }
+
+    // Never cache authenticated API endpoints, tenant data or auth routes in shared SW cache
+    if (
+        url.pathname.includes('/api/') ||
+        url.pathname.includes('/sanctum/') ||
+        url.pathname.includes('/login') ||
+        url.pathname.includes('/logout')
+    ) {
         return;
     }
 

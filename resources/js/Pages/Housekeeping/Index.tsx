@@ -73,7 +73,8 @@ export default function HousekeepingIndex({
     business_date,
 }: HousekeepingIndexProps) {
     const { auth } = usePage<PageProps>().props as any;
-    const activePropertyId = auth?.property?.id || '';
+    const activePropertyId = auth?.property?.id || auth?.branches?.[0]?.id || auth?.user?.property_id || '';
+    const activePropertyName = auth?.property?.name || auth?.branches?.find((b: any) => b.id === activePropertyId)?.name || 'Main Branch';
 
     const [viewMode, setViewMode] = useState<'cards' | 'table' | 'queue'>('cards');
     const [selectedStatusTab, setSelectedStatusTab] = useState<string>('all');
@@ -1738,10 +1739,34 @@ export default function HousekeepingIndex({
                                         <h5 className="font-bold text-blue-900 text-xs sm:text-sm">
                                             {editingRoomTypeId ? 'Edit Room Type' : 'Create New Room Type'}
                                         </h5>
-                                        <span className="text-[10px] text-blue-600 font-semibold uppercase tracking-wider">
-                                            Pricing & Inventory Setup
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] text-blue-700 bg-blue-100/80 px-2.5 py-0.5 rounded-full font-bold">
+                                                {activePropertyName}
+                                            </span>
+                                            <span className="text-[10px] text-blue-600 font-semibold uppercase tracking-wider hidden sm:inline">
+                                                Pricing & Inventory Setup
+                                            </span>
+                                        </div>
                                     </div>
+
+                                    {Array.isArray(auth?.branches) && auth.branches.length > 1 && (
+                                        <div>
+                                            <label className="block font-semibold text-slate-700 mb-1">
+                                                Target Hotel Property / Branch *
+                                            </label>
+                                            <select
+                                                value={roomTypeForm.property_id || activePropertyId}
+                                                onChange={e => setRoomTypeForm(prev => ({ ...prev, property_id: e.target.value }))}
+                                                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-bold focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                            >
+                                                {auth.branches.map((b: any) => (
+                                                    <option key={b.id} value={b.id}>
+                                                        {b.name} {b.city ? `(${b.city})` : ''}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                                         <div>

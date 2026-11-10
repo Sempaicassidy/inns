@@ -65,6 +65,27 @@ class RoomTypeController extends Controller
         $tenantId = $property?->tenant_id ?? $user?->tenant_id;
 
         if (! $property) {
+            $tenant = $user?->tenant ?? ($tenantId ? \App\Models\Tenant::withoutGlobalScopes()->find($tenantId) : null) ?? \App\Models\Tenant::withoutGlobalScopes()->first();
+            if ($tenant) {
+                $property = Property::withoutGlobalScopes()->where('tenant_id', $tenant->id)->first();
+                if (! $property) {
+                    $property = Property::withoutGlobalScopes()->create([
+                        'tenant_id' => $tenant->id,
+                        'name' => $tenant->name ?? 'Main Hotel Branch',
+                        'code' => 'MAIN',
+                        'city' => 'Arusha',
+                        'is_active' => true,
+                        'is_main' => true,
+                    ]);
+                }
+                if ($user && ! $user->property_id) {
+                    $user->update(['property_id' => $property->id]);
+                }
+                session(['current_property_id' => $property->id]);
+            }
+        }
+
+        if (! $property) {
             if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
                 return response()->json([
                     'success' => false,

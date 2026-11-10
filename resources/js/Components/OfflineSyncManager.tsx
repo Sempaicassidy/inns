@@ -14,15 +14,27 @@ import {
     BedDouble,
     Utensils,
     FileSpreadsheet,
+    Lock,
 } from 'lucide-react';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
+import { offlineEngine } from '@/offline';
+import OfflineUnlockModal from '@/Components/OfflineUnlockModal';
 
 export default function OfflineSyncManager() {
+    const { auth } = usePage<any>().props;
     const [isOnline, setIsOnline] = useState<boolean>(() => (typeof navigator !== 'undefined' ? navigator.onLine : true));
     const [pendingActions, setPendingActions] = useState<OfflineAction[]>([]);
     const [isSyncing, setIsSyncing] = useState<boolean>(false);
     const [showModal, setShowModal] = useState<boolean>(false);
+    const [isUnlockModalOpen, setIsUnlockModalOpen] = useState<boolean>(false);
     const [syncNotification, setSyncNotification] = useState<string | null>(null);
+
+    // Initialize Offline Engine for active tenant
+    useEffect(() => {
+        if (auth?.tenant?.id) {
+            offlineEngine.initialize(auth.tenant.id, auth.user);
+        }
+    }, [auth?.tenant?.id, auth?.user?.id]);
 
     useEffect(() => {
         const handleOnline = () => {
@@ -322,15 +334,30 @@ export default function OfflineSyncManager() {
                         </div>
 
                         {/* Modal Footer */}
-                        <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-                            <span className="text-[11px] text-slate-500">
-                                Network: {isOnline ? 'Online' : 'Offline'}
-                            </span>
+                        <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2.5">
                             <div className="flex items-center gap-2">
+                                <span className="text-[11px] text-slate-500">
+                                    Network: {isOnline ? 'Online' : 'Offline'}
+                                </span>
+                                {!isOnline && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowModal(false);
+                                            setIsUnlockModalOpen(true);
+                                        }}
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg font-bold text-[11px] transition cursor-pointer"
+                                    >
+                                        <Lock className="w-3 h-3 text-amber-700" />
+                                        <span>Unlock Offline PIN</span>
+                                    </button>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                                 <button
                                     type="button"
                                     onClick={() => setShowModal(false)}
-                                    className="px-4 py-2 border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                                    className="px-4 py-2 border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer text-xs"
                                 >
                                     Close
                                 </button>
@@ -338,7 +365,7 @@ export default function OfflineSyncManager() {
                                     type="button"
                                     disabled={isSyncing || !isOnline || pendingActions.length === 0}
                                     onClick={handleManualSync}
-                                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer disabled:opacity-50"
+                                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer disabled:opacity-50 text-xs"
                                 >
                                     {isSyncing ? (
                                         <>
@@ -357,6 +384,12 @@ export default function OfflineSyncManager() {
                     </div>
                 </div>
             )}
+
+            {/* Offline PIN Unlock Modal */}
+            <OfflineUnlockModal
+                isOpen={isUnlockModalOpen}
+                onClose={() => setIsUnlockModalOpen(false)}
+            />
         </>
     );
 }

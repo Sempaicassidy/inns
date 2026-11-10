@@ -4,6 +4,9 @@ import ApplicationLogo from '@/Components/ApplicationLogo';
 import PwaInstallButton from '@/Components/PwaInstallButton';
 import PwaNotificationManager from '@/Components/PwaNotificationManager';
 import OfflineSyncManager from '@/Components/OfflineSyncManager';
+import OfflineStatus from '@/Components/OfflineStatus';
+import OfflineBanner from '@/Components/OfflineBanner';
+import SyncIndicator from '@/Components/SyncIndicator';
 import {
     Activity,
     ArrowDownRight,
@@ -1085,12 +1088,15 @@ export default function AuthenticatedLayout({
                     <span className="font-bold text-lg text-[#D4AF37] truncate max-w-[170px]">{systemName}</span>
                 </div>
 
-                <button
-                    onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                    className="w-9 h-9 rounded-full bg-[#D4AF37] text-[#1E3A5F] font-bold flex items-center justify-center text-sm shadow-xs"
-                >
-                    {user?.name?.charAt(0) || 'U'}
-                </button>
+                <div className="flex items-center gap-2">
+                    <SyncIndicator className="text-[#D4AF37] hover:bg-white/10" />
+                    <button
+                        onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                        className="w-9 h-9 rounded-full bg-[#D4AF37] text-[#1E3A5F] font-bold flex items-center justify-center text-sm shadow-xs"
+                    >
+                        {user?.name?.charAt(0) || 'U'}
+                    </button>
+                </div>
             </div>
 
             {/* MOBILE OVERLAY */}
@@ -1281,6 +1287,9 @@ export default function AuthenticatedLayout({
                         </Link>
                     </div>
                 )}
+                {/* Offline Mode Banner */}
+                <OfflineBanner />
+
                 {/* TOP HEADER */}
                 <header className="px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between bg-white border-b border-slate-100 shadow-2xs">
                     {/* Left: Mobile hamburger & Workspace Context */}
@@ -1313,8 +1322,14 @@ export default function AuthenticatedLayout({
                         </div>
                     </div>
 
-                    {/* Right: Clock, SaaS link (if admin), Notifications, Profile */}
+                    {/* Right: Offline status, Sync Indicator, Clock, SMS balance, Profile */}
                     <div className="flex items-center space-x-2 sm:space-x-3">
+                        {/* Offline Status Badge */}
+                        <OfflineStatus className="hidden sm:inline-flex" />
+
+                        {/* Sync Indicator */}
+                        <SyncIndicator />
+
                         {/* Live Clock */}
                         <div className="hidden sm:flex items-center space-x-1.5 text-xs font-semibold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
                             <Clock className="w-3.5 h-3.5 text-slate-400" />

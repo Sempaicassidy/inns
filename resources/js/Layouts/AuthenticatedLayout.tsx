@@ -201,12 +201,24 @@ export default function AuthenticatedLayout({
         ['accountant', 'senior_accountant', 'finance_officer', 'auditor'].includes(user?.role)
     );
     const isManager = !isSuperAdmin && !isAccountant && !isOwner && (
-        ['general_manager', 'manager', 'admin'].includes(activeRole) ||
-        ['general_manager', 'manager', 'admin'].includes(user?.role)
+        ['general_manager', 'manager', 'admin', 'hr_manager'].includes(activeRole) ||
+        ['general_manager', 'manager', 'admin', 'hr_manager'].includes(user?.role)
     );
-    const isReceptionist = !isSuperAdmin && !isAccountant && !isManager && (
+    const isPosStaff = !isSuperAdmin && !isOwner && !isManager && (
+        ['pos_cashier', 'cashier', 'waiter', 'bartender', 'chef', 'restaurant_cashier', 'restaurant_staff', 'grocery_cashier', 'supermarket_cashier', 'storekeeper'].includes(activeRole) ||
+        ['pos_cashier', 'cashier', 'waiter', 'bartender', 'chef', 'restaurant_cashier', 'restaurant_staff', 'grocery_cashier', 'supermarket_cashier', 'storekeeper'].includes(user?.role)
+    );
+    const isHousekeeper = !isSuperAdmin && !isOwner && !isManager && !isPosStaff && (
+        ['housekeeper', 'housekeeping_supervisor'].includes(activeRole) ||
+        ['housekeeper', 'housekeeping_supervisor'].includes(user?.role)
+    );
+    const isReceptionist = !isSuperAdmin && !isAccountant && !isManager && !isPosStaff && !isHousekeeper && (
         ['receptionist', 'front_desk', 'front_office', 'front_office_manager', 'staff'].includes(activeRole) ||
         ['receptionist', 'front_desk', 'front_office', 'front_office_manager', 'staff'].includes(user?.role)
+    );
+    const canAccessHr = Boolean(
+        (auth as any)?.can_access_hr ??
+        (isSuperAdmin || isOwner || isManager)
     );
 
     const currentTab = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('tab') || 'overview' : 'overview';
@@ -909,6 +921,27 @@ export default function AuthenticatedLayout({
         { name: 'Sign Out', icon: LogOut, isLogout: true },
     ];
 
+    // POS Station / Restaurant / Supermarket / Grocery Staff Navigation Items
+    const posNavItems = [
+        { name: 'Dashboard', href: route('dashboard'), icon: Home, active: route().current('dashboard') },
+        { name: 'POS Terminal (Restaurant & Bar)', href: route('pos.index'), icon: Utensils, active: route().current('pos.*'), feature: 'restaurant_pos' },
+        { name: 'Super / Mini Market POS', href: route('grocery.index'), icon: ShoppingBag, active: route().current('grocery.*'), feature: 'grocery_pos' },
+        { name: 'Restaurant Orders & Menu', href: route('restaurant.index'), icon: Utensils, active: route().current('restaurant.*'), feature: 'restaurant_pos' },
+        { name: 'Central Store & Stock', href: route('inventory.index'), icon: Package, active: route().current('inventory.*'), feature: 'inventory' },
+        { name: 'Shift Progress Reports', href: route('front-office.reports.index'), icon: FileText, active: route().current('front-office.reports.*'), feature: 'front_office_reports' },
+        { name: 'My Profile & Account', href: route('profile.edit'), icon: Settings, active: route().current('profile.*') },
+        { name: 'Sign Out', icon: LogOut, isLogout: true },
+    ];
+
+    // Housekeeping Operations Navigation Items
+    const housekeeperNavItems = [
+        { name: 'Rooms & Availability', href: route('housekeeping.index'), icon: Bed, active: route().current('housekeeping.index'), feature: 'housekeeping' },
+        { name: 'Housekeeping Status', href: route('housekeeping.status'), icon: Activity, active: route().current('housekeeping.status'), feature: 'housekeeping' },
+        { name: 'Maintenance Requests', href: route('maintenance.index'), icon: Wrench, active: route().current('maintenance.*'), feature: 'maintenance' },
+        { name: 'My Profile & Account', href: route('profile.edit'), icon: Settings, active: route().current('profile.*') },
+        { name: 'Sign Out', icon: LogOut, isLogout: true },
+    ];
+
     // Admin/Manager Navigation Items
     const adminNavItems = [
         { name: 'Dashboard', href: route('dashboard'), icon: Home, active: route().current('dashboard') },
@@ -931,7 +964,9 @@ export default function AuthenticatedLayout({
         { name: 'POS Restaurant Report', href: route('restaurant.index'), icon: Utensils, active: route().current('restaurant.*'), feature: 'restaurant_pos' },
         { name: 'Super / Mini Market', href: route('grocery.index'), icon: ShoppingBag, active: route().current('grocery.*'), feature: 'grocery_pos' },
         { name: 'Store Report', href: route('inventory.index'), icon: Package, active: route().current('inventory.*'), feature: 'inventory' },
-        { name: 'Staff & HR System', href: route('hr.index'), icon: UserCheck, active: route().current('hr.*'), feature: 'hr_payroll' },
+        ...(canAccessHr ? [
+            { name: 'Staff & HR System', href: route('hr.index'), icon: UserCheck, active: route().current('hr.*'), feature: 'hr_payroll' },
+        ] : []),
         { name: 'Accounting & Reports', href: route('accounting.index'), icon: DollarSign, active: route().current('accounting.*'), feature: 'accounting' },
         { name: 'Notifications', href: route('whatsapp.index'), icon: MessageSquare, active: route().current('whatsapp.*'), feature: 'whatsapp_sms' },
         { name: 'Hotel & Receipt Branding', href: route('tenant.settings'), icon: Building2, active: route().current('tenant.settings*'), feature: 'branding_settings' },
@@ -970,11 +1005,15 @@ export default function AuthenticatedLayout({
         ? superAdminNavItems
         : (isOwner
             ? ownerNavItems
-            : (isReceptionist
-                ? receptionistNavItems
-                : (isAccountant
-                    ? accountantNavItems
-                    : adminNavItems)));
+            : (isAccountant
+                ? accountantNavItems
+                : (isReceptionist
+                    ? receptionistNavItems
+                    : (isPosStaff
+                        ? posNavItems
+                        : (isHousekeeper
+                            ? housekeeperNavItems
+                            : adminNavItems)))));
     const navItems = (isSuperAdmin || isOwner) ? baseNav : filterItemsByFeature(baseNav);
 
     const getRoleTitle = (role?: string) => {
@@ -984,9 +1023,15 @@ export default function AuthenticatedLayout({
         if (r === 'super_admin') return 'Super Admin (SaaS)';
         if (r === 'owner') return 'Hotel Owner / Director';
         if (r === 'general_manager' || r === 'manager') return 'General Manager';
+        if (r === 'hr_manager') return 'HR Manager';
         if (r === 'accountant' || r === 'senior_accountant' || r === 'finance_officer') return 'Accountant';
-        if (r === 'receptionist' || r === 'front_desk' || r === 'front_office' || r === 'front_office_manager' || r === 'staff') return 'Front Desk Receptionist';
-        if (r === 'housekeeper') return 'Housekeeping';
+        if (r === 'receptionist' || r === 'front_desk' || r === 'front_office' || r === 'front_office_manager') return 'Front Desk Receptionist';
+        if (r === 'cashier' || r === 'pos_cashier') return 'POS Cashier';
+        if (r === 'waiter') return 'Restaurant Waiter';
+        if (r === 'chef') return 'Kitchen Chef';
+        if (r === 'grocery_cashier' || r === 'supermarket_cashier') return 'Supermarket / Grocery Cashier';
+        if (r === 'storekeeper') return 'Store / Inventory Keeper';
+        if (r === 'housekeeper' || r === 'housekeeping_supervisor') return 'Housekeeping';
         if (r === 'auditor') return 'Night Auditor';
         return 'Staff';
     };
@@ -1215,9 +1260,24 @@ export default function AuthenticatedLayout({
                                 );
                             })}
                         </>
+                    ) : isPosStaff ? (
+                        <>
+                            {posNavItems
+                                .filter(item => isFeatureAllowed(item.feature))
+                                .map((item) => renderNavItem(item))}
+                        </>
+                    ) : isHousekeeper ? (
+                        <>
+                            {housekeeperNavItems
+                                .filter(item => isFeatureAllowed(item.feature))
+                                .map((item) => renderNavItem(item))}
+                        </>
                     ) : (
-                        // Admin Flat Navigation
-                        adminNavItems.map((item) => renderNavItem(item))
+                        // Admin / Manager Navigation (Staff & HR only rendered if canAccessHr is true)
+                        adminNavItems
+                            .filter(item => isFeatureAllowed(item.feature))
+                            .filter(item => item.href !== route('hr.index') || canAccessHr)
+                            .map((item) => renderNavItem(item))
                     )}
                 </nav>
 

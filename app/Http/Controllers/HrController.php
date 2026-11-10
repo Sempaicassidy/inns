@@ -26,6 +26,11 @@ class HrController extends Controller
     private function resolveTenantAndProperty(?Request $request): array
     {
         $user = $request?->user();
+
+        if ($user && ! $user->canAccessHr()) {
+            abort(403, 'Unauthorized. Staff and POS station operators cannot access Staff & HR Management.');
+        }
+
         $tenantId = $user?->tenant_id;
 
         if ($tenantId) {

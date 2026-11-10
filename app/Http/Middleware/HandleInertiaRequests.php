@@ -261,6 +261,7 @@ class HandleInertiaRequests extends Middleware
                 'property' => $property,
                 'branches' => $branches,
                 'can_manage_branches' => $canManageBranches,
+                'can_access_hr' => $user ? $user->canAccessHr() : false,
                 'businessDate' => $businessDate,
                 'sms_balance' => $smsWallet?->balance_credits ?? 0,
                 'sms_wallet' => $smsWallet ? [

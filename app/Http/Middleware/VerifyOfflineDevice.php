@@ -57,3 +57,4 @@ class VerifyOfflineDevice
         return $next($request);
     }
 }
+

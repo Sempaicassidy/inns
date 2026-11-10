@@ -28,3 +28,4 @@ Route::prefix('offline')->group(function () {
         Route::get('/changes', [OfflineSyncController::class, 'changes']);
     });
 });
+

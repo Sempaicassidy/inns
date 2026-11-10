@@ -103,3 +103,4 @@ class DeviceController extends Controller
         ]);
     }
 }
+

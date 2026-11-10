@@ -40,3 +40,4 @@ class OfflineDevice extends Model
         $this->update(['last_seen_at' => now()]);
     }
 }
+

@@ -37,3 +37,4 @@ export default function SyncIndicator({ className = '' }: { className?: string }
         </button>
     );
 }
+

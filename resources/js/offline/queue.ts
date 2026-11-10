@@ -101,3 +101,4 @@ export async function getPendingOperations(tenantId: string): Promise<OutboxItem
         .and(item => item.status === 'pending' || item.status === 'failed')
         .toArray();
 }
+

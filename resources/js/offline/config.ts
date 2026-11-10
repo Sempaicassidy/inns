@@ -29,3 +29,4 @@ export const OFFLINE_CONFIG = {
     serviceWorker: `${getBasePath()}/sw.js`,
     cacheVersion: 'saas-offline-v1',
 };
+

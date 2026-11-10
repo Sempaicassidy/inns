@@ -114,3 +114,4 @@ class NetworkManager extends EventTarget {
 }
 
 export const network = new NetworkManager();
+

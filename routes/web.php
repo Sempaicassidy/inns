@@ -234,7 +234,7 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     });
 
     // 8. HR & Staff Management
-    Route::middleware('tenant.feature:hr_payroll')->group(function () {
+    Route::middleware(['tenant.feature:hr_payroll', 'can.hr'])->group(function () {
         Route::get('/hr', [HrController::class, 'index'])->name('hr.index');
         Route::post('/hr/employees', [HrController::class, 'storeEmployee'])->name('hr.employees.store');
         Route::put('/hr/employees/{id}', [HrController::class, 'updateEmployee'])->name('hr.employees.update');

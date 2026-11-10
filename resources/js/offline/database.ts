@@ -169,3 +169,4 @@ export async function clearTenantData(tenantId: string): Promise<void> {
         await db.syncHistory.where('tenantId').equals(tenantId).delete();
     });
 }
+

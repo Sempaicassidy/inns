@@ -35,6 +35,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'status',
         'pin_code',
         'locale',
+        'email_verified_at',
     ];
 
     /**
@@ -144,7 +145,7 @@ class User extends Authenticatable implements MustVerifyEmail
             return $sessionRole;
         }
 
-        return $this->roles_list[0] ?? $this->role ?? 'general_manager';
+        return $this->roles_list[0] ?? $this->role ?? 'staff';
     }
 
     /**
@@ -368,6 +369,46 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return in_array($this->active_role, ['housekeeper', 'housekeeping_supervisor'])
             || count(array_intersect(['housekeeper', 'housekeeping_supervisor'], $this->roles_list)) > 0;
+    }
+
+    public function isPosStaff(): bool
+    {
+        $posRoles = [
+            'pos_cashier', 'cashier', 'waiter', 'bartender', 'chef',
+            'restaurant_cashier', 'restaurant_staff',
+            'grocery_cashier', 'supermarket_cashier', 'storekeeper',
+        ];
+
+        return in_array($this->active_role, $posRoles)
+            || in_array($this->role, $posRoles)
+            || count(array_intersect($posRoles, $this->roles_list)) > 0;
+    }
+
+    public function canAccessHr(): bool
+    {
+        if ($this->isSuperAdmin() || $this->isOwner()) {
+            return true;
+        }
+
+        // Pos cashiers, grocery, restaurant, reception, housekeeping & general staff are strictly denied
+        $restrictedRoles = [
+            'receptionist', 'front_desk', 'front_office', 'staff',
+            'cashier', 'pos_cashier', 'waiter', 'bartender', 'chef',
+            'restaurant_cashier', 'restaurant_staff',
+            'grocery_cashier', 'supermarket_cashier', 'storekeeper',
+            'housekeeper', 'housekeeping_supervisor',
+        ];
+
+        $currentRole = $this->active_role ?: $this->role;
+        if (in_array($currentRole, $restrictedRoles)) {
+            return false;
+        }
+
+        $allowedRoles = ['general_manager', 'manager', 'admin', 'hr_manager'];
+
+        return in_array($currentRole, $allowedRoles)
+            || in_array($this->role, $allowedRoles)
+            || count(array_intersect($allowedRoles, $this->roles_list)) > 0;
     }
 
     public function hasRole(string|array $roles): bool

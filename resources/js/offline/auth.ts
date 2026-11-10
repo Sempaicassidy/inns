@@ -208,3 +208,4 @@ export async function lockOfflineSession(tenantId: string): Promise<void> {
         await db.sessions.put(sess);
     }
 }
+

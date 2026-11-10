@@ -1,4 +1,4 @@
-const CACHE_NAME = 'the-inns-pwa-v14';
+const CACHE_NAME = 'the-inns-pwa-v15';
 const APP_SHELL_KEY = '__the_inns_app_shell__';
 
 // Helper: Safely resolve relative paths against the service worker scope

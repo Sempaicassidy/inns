@@ -192,8 +192,8 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
                                 {auth.tenant?.name || auth.property?.name || 'Hotel Property'}
                             </h2>
                             <p className="text-[11px] sm:text-xs text-slate-500">
-                                {auth.tenant?.receipt_header || 'Official Guest Folio Statement'} &bull; TIN: {auth.tenant?.tin || (auth.property?.tax_config as any)?.tin || '102-458-999'}
-                                {auth.tenant?.vrn ? ` • VRN: ${auth.tenant.vrn}` : ''}
+                                {auth.tenant?.receipt_header || 'Official Guest Folio Statement'} | TIN: {auth.tenant?.tin || (auth.property?.tax_config as any)?.tin || '102-458-999'}
+                                {auth.tenant?.vrn ? ` | VRN: ${auth.tenant.vrn}` : ''}
                             </p>
                         </div>
                     </div>

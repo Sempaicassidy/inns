@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { PageProps } from '@/types';
-import { Head, router, useForm, Link } from '@inertiajs/react';
+import { Head, router, useForm, Link, usePage } from '@inertiajs/react';
 import {
     Utensils,
     Plus,
@@ -20,8 +20,12 @@ import {
     AlertTriangle,
     Layers,
     Tag,
+    Printer,
+    Receipt,
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import ReceiptModal from '@/Components/ReceiptModal';
+import { ReceiptData, printThermalReceipt, printKOTReceipt } from '@/Utils/receiptPrinter';
 
 interface PosCategory {
     id: string;
@@ -103,6 +107,85 @@ export default function RestaurantIndex({
     const [isEditDishOpen, setIsEditDishOpen] = useState(false);
     const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<PosItem | null>(null);
+
+    // Receipt Modal State & Helpers
+    const { auth } = usePage<PageProps>().props;
+    const [selectedReceipt, setSelectedReceipt] = useState<ReceiptData | null>(null);
+    const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+
+    const buildOrderReceipt = (order: RecentOrder): ReceiptData => {
+        let receiptItems: { description: string; quantity: number; unit_price: number; amount: number; notes?: string }[] = [];
+        if (order.items_summary) {
+            const parts = order.items_summary.split(',').map(s => s.trim()).filter(Boolean);
+            receiptItems = parts.map(part => {
+                const match = part.match(/^(\d+)x\s*(.*)$/);
+                if (match) {
+                    const qty = parseInt(match[1], 10);
+                    const desc = match[2];
+                    return {
+                        description: desc,
+                        quantity: qty,
+                        unit_price: Math.round(order.total_minor / (qty || 1)),
+                        amount: Math.round(order.total_minor / parts.length),
+                    };
+                }
+                return {
+                    description: part,
+                    quantity: 1,
+                    unit_price: Math.round(order.total_minor / parts.length),
+                    amount: Math.round(order.total_minor / parts.length),
+                };
+            });
+        }
+
+        if (receiptItems.length === 0) {
+            receiptItems = [{
+                description: `Restaurant Order #${order.order_number}`,
+                quantity: order.items_count || 1,
+                unit_price: order.total_minor,
+                amount: order.total_minor,
+            }];
+        }
+
+        return {
+            hotelName: (auth?.tenant as any)?.name || 'THE INNS RESTAURANT & BAR',
+            hotelAddress: (auth?.property as any)?.address || (auth?.tenant as any)?.address || undefined,
+            hotelPhone: (auth?.property as any)?.phone || (auth?.tenant as any)?.phone || undefined,
+            tin: (auth?.tenant as any)?.tin || undefined,
+            vrn: (auth?.tenant as any)?.vrn || undefined,
+            receiptNumber: order.order_number,
+            receiptType: 'POS RECEIPT',
+            dateTime: order.created_at || new Date().toLocaleString(),
+            cashierName: order.server_name || auth?.user?.name || 'Server',
+            serverName: order.server_name || auth?.user?.name || 'Server',
+            guestName: order.guest_name || 'Walk-in Guest',
+            roomNumber: order.room_number || undefined,
+            tableName: order.table_number || (order.order_type === 'room_delivery' ? `Room ${order.room_number}` : 'Walk-in Counter'),
+            orderType: order.order_type,
+            items: receiptItems,
+            subtotal: order.subtotal_minor || order.total_minor,
+            tax: order.tax_minor || Math.round(order.total_minor * 0.18),
+            taxRatePercent: 18,
+            grandTotal: order.total_minor,
+            paymentMethod: order.payment_method || 'Settled',
+            amountPaid: order.total_minor,
+            balanceDue: 0,
+            notes: order.notes,
+            amountsAreMinor: true,
+            footerText: 'Thank you for dining with us!',
+        };
+    };
+
+    const handleOpenReceipt = (order: RecentOrder) => {
+        setSelectedReceipt(buildOrderReceipt(order));
+        setIsReceiptModalOpen(true);
+    };
+
+    const handleDirectKOT = (order: RecentOrder) => {
+        const r = buildOrderReceipt(order);
+        r.receiptType = 'KITCHEN TICKET';
+        printKOTReceipt(r);
+    };
 
     // Add Dish Form
     const addDishForm = useForm({
@@ -585,13 +668,14 @@ export default function RestaurantIndex({
                                         <th className="py-3 px-4 text-right">Amount</th>
                                         <th className="py-3 px-4 text-center">Payment</th>
                                         <th className="py-3 px-4 text-center">Kitchen Status</th>
+                                        <th className="py-3 px-4 text-center">Receipt &amp; KOT</th>
                                         <th className="py-3 px-4 text-right">Update Status</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 font-medium">
                                     {recentOrders.length === 0 ? (
                                         <tr>
-                                            <td colSpan={9} className="py-8 text-center text-slate-400">
+                                            <td colSpan={10} className="py-8 text-center text-slate-400">
                                                 No restaurant orders recorded yet.
                                             </td>
                                         </tr>
@@ -663,6 +747,28 @@ export default function RestaurantIndex({
                                                     >
                                                         {order.status.toUpperCase()}
                                                     </span>
+                                                </td>
+                                                <td className="py-3 px-4 text-center whitespace-nowrap">
+                                                    <div className="flex items-center justify-center gap-1.5">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDirectKOT(order)}
+                                                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-lg border border-amber-200 transition text-[11px] font-bold cursor-pointer shadow-2xs"
+                                                            title="Print Kitchen Order Ticket (KOT)"
+                                                        >
+                                                            <ChefHat className="w-3.5 h-3.5 text-amber-700" />
+                                                            <span>KOT</span>
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleOpenReceipt(order)}
+                                                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg border border-blue-200 transition text-[11px] font-bold cursor-pointer"
+                                                            title="View &amp; Print Customer Receipt"
+                                                        >
+                                                            <Printer className="w-3.5 h-3.5" />
+                                                            <span>Receipt</span>
+                                                        </button>
+                                                    </div>
                                                 </td>
                                                 <td className="py-3 px-4 text-right">
                                                     <select
@@ -1068,6 +1174,15 @@ export default function RestaurantIndex({
                         </form>
                     </div>
                 </div>
+            )}
+            {/* Dedicated Receipt & KOT Modal */}
+            {selectedReceipt && (
+                <ReceiptModal
+                    isOpen={isReceiptModalOpen}
+                    onClose={() => setIsReceiptModalOpen(false)}
+                    receiptData={selectedReceipt}
+                    title="Restaurant Order Receipt &amp; KOT"
+                />
             )}
         </AuthenticatedLayout>
     );

@@ -20,10 +20,11 @@ import {
     X,
     ArrowRight,
     Clock,
+    ChefHat,
 } from 'lucide-react';
 import { useState } from 'react';
 import ReceiptModal from '@/Components/ReceiptModal';
-import { ReceiptData, printThermalReceipt } from '@/Utils/receiptPrinter';
+import { ReceiptData, printThermalReceipt, printKOTReceipt } from '@/Utils/receiptPrinter';
 
 interface PosCategory {
     id: string;
@@ -182,8 +183,10 @@ export default function PosIndex({
             receiptType: 'POS RECEIPT',
             dateTime: new Date().toLocaleString(),
             cashierName: auth?.user?.name || 'Server',
+            serverName: auth?.user?.name || 'Server',
             guestName: orderData.guest_name || 'Walk-in Guest',
             tableName: orderData.table_number ? `Table ${orderData.table_number}` : (orderData.order_type === 'room_delivery' ? 'Room Delivery' : 'Takeaway / Counter'),
+            orderType: orderData.order_type,
             items: cart.map(c => ({
                 description: c.item.name,
                 quantity: c.quantity,
@@ -248,45 +251,54 @@ export default function PosIndex({
         });
     };
 
-    const handlePrintOrder = (order: PosOrder) => {
-        const orderReceipt: ReceiptData = {
-            hotelName: (auth?.tenant as any)?.name || 'THE INNS RESTAURANT & BAR',
-            hotelAddress: (auth?.property as any)?.address || (auth?.tenant as any)?.address || undefined,
-            hotelPhone: (auth?.property as any)?.phone || (auth?.tenant as any)?.phone || undefined,
-            tin: (auth?.tenant as any)?.tin || undefined,
-            vrn: (auth?.tenant as any)?.vrn || undefined,
-            receiptNumber: order.order_number,
-            receiptType: 'POS RECEIPT',
-            dateTime: new Date(order.created_at).toLocaleString(),
-            cashierName: auth?.user?.name || 'Server',
-            guestName: order.guest_name || 'Walk-in Guest',
-            tableName: order.table_number ? `Table ${order.table_number}` : order.order_type.replace('_', ' ').toUpperCase(),
-            items: (order.items && order.items.length > 0)
-                ? order.items.map(it => ({
-                    description: it.item_name,
-                    quantity: it.quantity,
-                    unit_price: it.total_minor / (it.quantity || 1),
-                    amount: it.total_minor,
-                }))
-                : [{
-                    description: `POS Order #${order.order_number}`,
-                    quantity: 1,
-                    unit_price: order.total_minor,
-                    amount: order.total_minor,
-                }],
-            subtotal: order.total_minor,
-            tax: Math.round(order.total_minor * 0.18),
-            taxRatePercent: 18,
-            grandTotal: order.total_minor,
-            paymentMethod: order.payment_method,
-            amountPaid: order.total_minor,
-            balanceDue: 0,
-            amountsAreMinor: true,
-            footerText: 'Thank you for dining with us!',
-        };
+    const buildOrderReceiptData = (order: PosOrder): ReceiptData => ({
+        hotelName: (auth?.tenant as any)?.name || 'THE INNS RESTAURANT & BAR',
+        hotelAddress: (auth?.property as any)?.address || (auth?.tenant as any)?.address || undefined,
+        hotelPhone: (auth?.property as any)?.phone || (auth?.tenant as any)?.phone || undefined,
+        tin: (auth?.tenant as any)?.tin || undefined,
+        vrn: (auth?.tenant as any)?.vrn || undefined,
+        receiptNumber: order.order_number,
+        receiptType: 'POS RECEIPT',
+        dateTime: new Date(order.created_at).toLocaleString(),
+        cashierName: auth?.user?.name || 'Server',
+        serverName: auth?.user?.name || 'Server',
+        guestName: order.guest_name || 'Walk-in Guest',
+        tableName: order.table_number ? `Table ${order.table_number}` : order.order_type.replace('_', ' ').toUpperCase(),
+        orderType: order.order_type,
+        items: (order.items && order.items.length > 0)
+            ? order.items.map(it => ({
+                description: it.item_name,
+                quantity: it.quantity,
+                unit_price: it.total_minor / (it.quantity || 1),
+                amount: it.total_minor,
+            }))
+            : [{
+                description: `POS Order #${order.order_number}`,
+                quantity: 1,
+                unit_price: order.total_minor,
+                amount: order.total_minor,
+            }],
+        subtotal: order.total_minor,
+        tax: Math.round(order.total_minor * 0.18),
+        taxRatePercent: 18,
+        grandTotal: order.total_minor,
+        paymentMethod: order.payment_method,
+        amountPaid: order.total_minor,
+        balanceDue: 0,
+        amountsAreMinor: true,
+        footerText: 'Thank you for dining with us!',
+    });
 
+    const handlePrintOrder = (order: PosOrder) => {
+        const orderReceipt = buildOrderReceiptData(order);
         setCurrentReceiptData(orderReceipt);
         setIsReceiptModalOpen(true);
+    };
+
+    const handlePrintKOT = (order: PosOrder) => {
+        const orderReceipt = buildOrderReceiptData(order);
+        orderReceipt.receiptType = 'KITCHEN TICKET';
+        printKOTReceipt(orderReceipt);
     };
 
     const filteredItems = items.filter((item) => {
@@ -613,10 +625,10 @@ export default function PosIndex({
                                 recentOrders.map((ord) => (
                                     <div
                                         key={ord.id}
-                                        className="p-4 rounded-2xl border border-slate-200 hover:border-blue-300 bg-white transition flex items-center justify-between gap-4"
+                                        className="p-4 rounded-2xl border border-slate-200 hover:border-blue-300 bg-white transition flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                                     >
                                         <div className="space-y-1">
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex flex-wrap items-center gap-2">
                                                 <span className="font-extrabold text-slate-900 font-mono">#{ord.order_number}</span>
                                                 <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-bold text-[10px] uppercase">
                                                     {ord.order_type.replace('_', ' ')}
@@ -625,22 +637,39 @@ export default function PosIndex({
                                                     {ord.payment_method}
                                                 </span>
                                             </div>
-                                            <div className="text-slate-500 text-[11px]">
-                                                {ord.guest_name || 'Walk-in'} {ord.table_number ? `• Table ${ord.table_number}` : ''} • {new Date(ord.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            <div className="text-slate-500 text-[11px] flex flex-wrap items-center gap-1.5">
+                                                <span className="font-medium text-slate-700">{ord.guest_name || 'Walk-in'}</span>
+                                                {ord.table_number && (
+                                                    <span className="px-1.5 py-0.2 bg-slate-100 rounded text-slate-600 font-semibold text-[10px]">
+                                                        Table {ord.table_number}
+                                                    </span>
+                                                )}
+                                                <span className="text-slate-400">/</span>
+                                                <span>{new Date(ord.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-3">
-                                            <span className="font-extrabold text-sm text-slate-900">
+                                        <div className="flex items-center gap-2 self-end sm:self-auto">
+                                            <span className="font-extrabold text-sm text-slate-900 mr-2">
                                                 {formatCurrency(ord.total_minor)}
                                             </span>
                                             <button
                                                 type="button"
+                                                onClick={() => handlePrintKOT(ord)}
+                                                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-xl border border-amber-200 transition cursor-pointer text-xs"
+                                                title="Print Kitchen Order Ticket"
+                                            >
+                                                <ChefHat className="w-3.5 h-3.5 text-amber-700" />
+                                                <span>KOT</span>
+                                            </button>
+                                            <button
+                                                type="button"
                                                 onClick={() => handlePrintOrder(ord)}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl border border-blue-200 transition cursor-pointer"
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl border border-blue-200 transition cursor-pointer text-xs"
+                                                title="Print Customer Receipt"
                                             >
                                                 <Printer className="w-3.5 h-3.5" />
-                                                <span>Print Receipt</span>
+                                                <span>Receipt</span>
                                             </button>
                                         </div>
                                     </div>

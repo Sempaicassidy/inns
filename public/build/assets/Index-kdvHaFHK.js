@@ -1,0 +1,1 @@
+import{n as e,r as t}from"./app-NI_uvadQ.js";import{t as n}from"./AuthenticatedLayout-XfFJYCB1.js";import{t as r}from"./RoomAvailabilityCalendar-ChNJVs8-.js";var i=e();function a(e){return(0,i.jsxs)(n,{children:[(0,i.jsx)(t,{title:`Room Availability Matrix - THE INNS`}),(0,i.jsx)(r,{...e})]})}export{a as default};

@@ -18,7 +18,6 @@ use App\Models\RoomType;
 use App\Models\Stay;
 use App\Models\Tenant;
 use App\Models\User;
-use App\Models\WhatsAppSetting;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -29,11 +28,17 @@ class PhaseTwoAndThreeTest extends TestCase
     use RefreshDatabase;
 
     protected User $admin;
+
     protected Tenant $tenant;
+
     protected Property $property;
+
     protected Room $room;
+
     protected Guest $guest;
+
     protected Stay $stay;
+
     protected Folio $folio;
 
     protected function setUp(): void
@@ -43,7 +48,7 @@ class PhaseTwoAndThreeTest extends TestCase
         $this->tenant = Tenant::create([
             'name' => 'The Inns Group',
             'slug' => 'the-inns',
-            'plan' => 'Professional',
+            'plan' => 'enterprise',
             'max_branches' => 5,
         ]);
 
@@ -381,7 +386,13 @@ class PhaseTwoAndThreeTest extends TestCase
 
     public function test_saas_admin_tenant_plan_update(): void
     {
-        $response = $this->actingAs($this->admin)->get(route('saas-admin.index'));
+        $superAdmin = User::factory()->create([
+            'role' => 'super_admin',
+            'tenant_id' => null,
+            'property_id' => null,
+        ]);
+
+        $response = $this->actingAs($superAdmin)->get(route('saas-admin.index'));
         $response->assertStatus(200);
 
         $updateData = [
@@ -393,7 +404,7 @@ class PhaseTwoAndThreeTest extends TestCase
             'is_active' => true,
         ];
 
-        $postResp = $this->actingAs($this->admin)->put(route('saas-admin.tenants.update', $this->tenant), $updateData);
+        $postResp = $this->actingAs($superAdmin)->put(route('saas-admin.tenants.update', $this->tenant), $updateData);
         $postResp->assertRedirect();
 
         $this->assertDatabaseHas('tenants', [

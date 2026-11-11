@@ -32,6 +32,7 @@ import {
     X,
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
+import { toastError } from '@/Services/toast';
 
 interface HousekeepingIndexProps extends PageProps {
     rooms: Room[];
@@ -333,16 +334,16 @@ export default function HousekeepingIndex({
             if (json.success) {
                 setLocalRoomTypes(prev => prev.filter(item => item.id !== rt.id));
             } else {
-                alert(json.message || 'Failed to remove room type.');
+                toastError(json.message || 'Failed to remove room type.');
             }
         } catch (err: any) {
-            alert(err?.message || 'Network error deleting room type.');
+            toastError(err?.message || 'Network error deleting room type.');
         }
     };
 
     const handleDeleteRoom = (room: Room) => {
         if (room.status_occupancy === 'occupied') {
-            alert(`Cannot delete Room "${room.room_number}" because it is currently OCCUPIED. Please check out the guest or reassign them to another room first.`);
+            toastError(`Cannot delete Room "${room.room_number}" because it is currently OCCUPIED. Please check out the guest or reassign them to another room first.`);
             return;
         }
 
@@ -1239,7 +1240,7 @@ export default function HousekeepingIndex({
                 <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-150 overflow-hidden">
                         {/* Header */}
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-[#1E3A5F]/5 to-transparent">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-[#1E3A5F]/5">
                             <div>
                                 <h3 className="text-base font-bold text-slate-900">Add New Room</h3>
                                 <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Register Room Inventory</span>

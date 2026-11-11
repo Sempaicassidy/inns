@@ -15,8 +15,11 @@ class SidebarNavigationTest extends TestCase
     use RefreshDatabase;
 
     protected Tenant $tenant;
+
     protected Property $property;
+
     protected User $manager;
+
     protected User $receptionist;
 
     protected function setUp(): void
@@ -27,6 +30,7 @@ class SidebarNavigationTest extends TestCase
             'name' => 'Paradise Inn Group',
             'slug' => 'paradise-inn-group',
             'domain' => 'paradise.local',
+            'plan' => 'enterprise',
         ]);
 
         $this->property = Property::create([
@@ -70,10 +74,7 @@ class SidebarNavigationTest extends TestCase
             'guest.requests.index',
             'whatsapp.index',
             'folios.index',
-            'housekeeping.index',
-            'housekeeping.status',
-            'maintenance.index',
-            'reports.index',
+            'front-office.reports.index',
             'notifications.index',
             'profile.edit',
         ];

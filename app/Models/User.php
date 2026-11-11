@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Notifications\TenantResetPasswordNotification;
+use App\Notifications\TenantVerifyEmailNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -60,23 +62,11 @@ class User extends Authenticatable implements MustVerifyEmail
         'pin_code',
     ];
 
-    public function getTenantIdAttribute($value)
-    {
-        if (app()->environment('testing')) {
-            return $value;
-        }
-
-        return $value ?: Tenant::first()?->id;
-    }
-
-    public function getPropertyIdAttribute($value)
-    {
-        if (app()->environment('testing')) {
-            return $value;
-        }
-
-        return $value ?: Property::first()?->id;
-    }
+    /**
+     * Tenant and property must come from the stored assignment only.
+     * Never silently fall back to the first tenant/property in the system —
+     * that would leak data across tenant boundaries.
+     */
 
     /**
      * Get the attributes that should be cast.
@@ -166,7 +156,7 @@ class User extends Authenticatable implements MustVerifyEmail
         $candidate = $base;
         $counter = 1;
         while (static::where('username', $candidate)->exists()) {
-            $candidate = $base . '_' . $counter;
+            $candidate = $base.'_'.$counter;
             $counter++;
         }
 
@@ -182,7 +172,10 @@ class User extends Authenticatable implements MustVerifyEmail
             'super_admin' => 'saas-admin.index',
             'owner' => 'owner.index',
             'housekeeper', 'housekeeping_supervisor' => 'housekeeping.index',
-            'pos_cashier', 'cashier', 'waiter', 'bartender' => 'pos.index',
+            'pos_cashier', 'cashier', 'waiter', 'bartender', 'chef',
+            'restaurant_cashier', 'restaurant_staff' => 'pos.index',
+            'grocery_cashier', 'supermarket_cashier' => 'grocery.index',
+            'storekeeper', 'procurement_manager' => 'inventory.index',
             'accountant' => 'accounting.index',
             'night_auditor' => 'night-audit.index',
             'hr_manager' => 'hr.index',
@@ -465,7 +458,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function sendPasswordResetNotification($token): void
     {
-        $this->notify(new \App\Notifications\TenantResetPasswordNotification($token));
+        $this->notify(new TenantResetPasswordNotification($token));
     }
 
     /**
@@ -473,6 +466,6 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function sendEmailVerificationNotification(): void
     {
-        $this->notify(new \App\Notifications\TenantVerifyEmailNotification());
+        $this->notify(new TenantVerifyEmailNotification);
     }
 }

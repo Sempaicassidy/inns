@@ -6,13 +6,11 @@ use App\Models\BusinessDate;
 use App\Models\Property;
 use App\Models\Room;
 use App\Models\SaasContract;
-use App\Models\SaasContractAuditLog;
 use App\Models\SaasContractTemplate;
 use App\Models\SaasInvoice;
 use App\Models\SaasInvoiceItem;
 use App\Models\SaasPayment;
 use App\Models\SaasQuotation;
-use App\Models\SaasQuotationItem;
 use App\Models\SaasReceipt;
 use App\Models\SaasSubscription;
 use App\Models\SaasSubscriptionPlan;
@@ -27,12 +25,11 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Models\WhatsAppLog;
 use App\Models\WhatsAppSetting;
-use App\Services\NextSmsService;
-use App\Services\SwalaSmsService;
 use App\Services\SaasContractService;
 use App\Services\SaasPaymentService;
 use App\Services\SaasQuotationService;
 use App\Services\SaasSubscriptionService;
+use App\Services\SwalaSmsService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -58,7 +55,7 @@ class SaasAdminController extends Controller
         $user = $request->user();
 
         // Enforce Super Administrator access
-        if (!$user->isSuperAdmin() && !session()->has('impersonating_original_superadmin_id')) {
+        if (! $user->isSuperAdmin() && ! session()->has('impersonating_original_superadmin_id')) {
             abort(403, 'Unauthorized. Super Administrator access required.');
         }
 
@@ -84,6 +81,7 @@ class SaasAdminController extends Controller
             ->get()
             ->map(function ($t) {
                 $sub = $t->activeSubscription;
+
                 return [
                     'id' => $t->id,
                     'name' => $t->name,
@@ -105,7 +103,7 @@ class SaasAdminController extends Controller
                     'features_count' => count(array_filter($t->getFeaturesMap())),
                     'features_total' => count(Tenant::AVAILABLE_FEATURES),
                     'features_detailed' => $t->getFeaturesDetailedList(),
-                    'properties' => $t->properties->map(fn($p) => [
+                    'properties' => $t->properties->map(fn ($p) => [
                         'id' => $p->id,
                         'name' => $p->name,
                         'code' => $p->code,
@@ -116,10 +114,10 @@ class SaasAdminController extends Controller
             });
 
         // 3. Real SaaS Subscription Plans
-        $plans = SaasSubscriptionPlan::withCount(['subscriptions' => fn($q) => $q->where('status', 'active')])
+        $plans = SaasSubscriptionPlan::withCount(['subscriptions' => fn ($q) => $q->where('status', 'active')])
             ->orderBy('display_order')
             ->get()
-            ->map(fn($p) => [
+            ->map(fn ($p) => [
                 'id' => $p->id,
                 'name' => $p->name,
                 'code' => $p->code,
@@ -137,7 +135,7 @@ class SaasAdminController extends Controller
         $subscriptions = SaasSubscription::with(['tenant', 'plan'])
             ->latest('starts_at')
             ->get()
-            ->map(fn($s) => [
+            ->map(fn ($s) => [
                 'id' => $s->id,
                 'tenant_id' => $s->tenant_id,
                 'tenant_name' => $s->tenant?->name ?? 'Hotel',
@@ -157,7 +155,7 @@ class SaasAdminController extends Controller
             ->latest()
             ->take(25)
             ->get()
-            ->map(fn($q) => [
+            ->map(fn ($q) => [
                 'id' => $q->id,
                 'quotation_number' => $q->quotation_number,
                 'tenant_id' => $q->tenant_id,
@@ -170,7 +168,7 @@ class SaasAdminController extends Controller
                 'status' => $q->status,
                 'valid_until' => $q->valid_until ? Carbon::parse($q->valid_until)->format('d M Y') : 'N/A',
                 'created_at' => $q->created_at->format('d M Y'),
-                'items' => $q->items->map(fn($i) => [
+                'items' => $q->items->map(fn ($i) => [
                     'description' => $i->description,
                     'quantity' => $i->quantity,
                     'unit_price_tzs' => $i->unit_price_minor / 100,
@@ -183,7 +181,7 @@ class SaasAdminController extends Controller
             ->latest()
             ->take(25)
             ->get()
-            ->map(fn($inv) => [
+            ->map(fn ($inv) => [
                 'id' => $inv->id,
                 'invoice_number' => $inv->invoice_number,
                 'tenant_id' => $inv->tenant_id,
@@ -197,7 +195,7 @@ class SaasAdminController extends Controller
                 'issue_date' => Carbon::parse($inv->issue_date)->format('d M Y'),
                 'due_date' => Carbon::parse($inv->due_date)->format('d M Y'),
                 'paid_at' => $inv->paid_at ? Carbon::parse($inv->paid_at)->format('d M Y H:i') : null,
-                'items' => $inv->items->map(fn($item) => [
+                'items' => $inv->items->map(fn ($item) => [
                     'description' => $item->description,
                     'quantity' => $item->quantity,
                     'total_tzs' => $item->total_minor / 100,
@@ -209,7 +207,7 @@ class SaasAdminController extends Controller
             ->latest()
             ->take(25)
             ->get()
-            ->map(fn($p) => [
+            ->map(fn ($p) => [
                 'id' => $p->id,
                 'payment_reference' => $p->payment_reference,
                 'tenant_id' => $p->tenant_id,
@@ -228,7 +226,7 @@ class SaasAdminController extends Controller
             ->latest()
             ->take(25)
             ->get()
-            ->map(fn($r) => [
+            ->map(fn ($r) => [
                 'id' => $r->id,
                 'receipt_number' => $r->receipt_number,
                 'tenant_name' => $r->tenant?->name ?? $r->customer_name,
@@ -244,7 +242,7 @@ class SaasAdminController extends Controller
             ->latest()
             ->take(25)
             ->get()
-            ->map(fn($c) => [
+            ->map(fn ($c) => [
                 'id' => $c->id,
                 'contract_number' => $c->contract_number,
                 'tenant_id' => $c->tenant_id,
@@ -260,7 +258,7 @@ class SaasAdminController extends Controller
                 'valid_from' => $c->valid_from ? Carbon::parse($c->valid_from)->format('d M Y') : 'N/A',
                 'valid_until' => $c->valid_until ? Carbon::parse($c->valid_until)->format('d M Y') : 'N/A',
                 'rendered_content' => $c->rendered_content,
-                'audit_logs' => $c->auditLogs->map(fn($l) => [
+                'audit_logs' => $c->auditLogs->map(fn ($l) => [
                     'action' => $l->action,
                     'actor' => $l->actor_id ?? $l->actor_type,
                     'ip' => $l->ip_address,
@@ -268,7 +266,7 @@ class SaasAdminController extends Controller
                 ]),
             ]);
 
-        $contractTemplates = SaasContractTemplate::where('is_active', true)->get()->map(fn($t) => [
+        $contractTemplates = SaasContractTemplate::where('is_active', true)->get()->map(fn ($t) => [
             'id' => $t->id,
             'name' => $t->name,
             'category' => $t->category,
@@ -278,7 +276,7 @@ class SaasAdminController extends Controller
         ]);
 
         // 10. Real SMS & Messaging Data
-        $smsWallets = SmsWallet::with('tenant')->get()->map(fn($w) => [
+        $smsWallets = SmsWallet::with('tenant')->get()->map(fn ($w) => [
             'id' => $w->id,
             'tenant_id' => $w->tenant_id,
             'tenant_name' => $w->tenant?->name ?? 'Unknown Hotel',
@@ -293,7 +291,7 @@ class SaasAdminController extends Controller
             ->latest('issued_at')
             ->take(15)
             ->get()
-            ->map(fn($i) => [
+            ->map(fn ($i) => [
                 'id' => $i->id,
                 'tenant_name' => $i->tenant?->name ?? 'Hotel',
                 'credits' => $i->credits_issued,
@@ -303,7 +301,7 @@ class SaasAdminController extends Controller
                 'date' => Carbon::parse($i->issued_at)->format('d M Y H:i'),
             ]);
 
-        $smsPackages = SmsCreditPackage::orderBy('display_order')->get()->map(fn($p) => [
+        $smsPackages = SmsCreditPackage::orderBy('display_order')->get()->map(fn ($p) => [
             'id' => $p->id,
             'name' => $p->name,
             'credits_count' => $p->credits_count,
@@ -316,7 +314,7 @@ class SaasAdminController extends Controller
             ->latest()
             ->take(20)
             ->get()
-            ->map(fn($tx) => [
+            ->map(fn ($tx) => [
                 'id' => $tx->id,
                 'reference' => $tx->reference,
                 'tenant_name' => $tx->tenant?->name ?? 'Hotel',
@@ -329,7 +327,7 @@ class SaasAdminController extends Controller
 
         // 11. WhatsApp Gateway Live Settings & Logs
         $waSetting = WhatsAppSetting::first();
-        $whatsAppLogs = WhatsAppLog::latest()->take(15)->get()->map(fn($l) => [
+        $whatsAppLogs = WhatsAppLog::latest()->take(15)->get()->map(fn ($l) => [
             'id' => $l->id,
             'recipient_phone' => $l->recipient_phone,
             'recipient_name' => $l->recipient_name,
@@ -344,7 +342,7 @@ class SaasAdminController extends Controller
             ->latest()
             ->take(20)
             ->get()
-            ->map(fn($n) => [
+            ->map(fn ($n) => [
                 'id' => $n->id,
                 'title' => $n->title,
                 'message' => $n->message,
@@ -377,7 +375,7 @@ class SaasAdminController extends Controller
             ->latest()
             ->take(60)
             ->get()
-            ->map(fn($u) => [
+            ->map(fn ($u) => [
                 'id' => $u->id,
                 'name' => $u->name,
                 'username' => $u->username,
@@ -595,7 +593,7 @@ class SaasAdminController extends Controller
             ],
         ], is_array($cachedCms) ? $cachedCms : []);
 
-        if (empty($cmsContent['hero_slides']) || !is_array($cmsContent['hero_slides'])) {
+        if (empty($cmsContent['hero_slides']) || ! is_array($cmsContent['hero_slides'])) {
             $cmsContent['hero_slides'] = $defaultHeroSlides;
         }
 
@@ -816,7 +814,7 @@ class SaasAdminController extends Controller
                 'selling_price_minor' => 0,
                 'amount_paid_minor' => 0,
                 'payment_method' => 'promo',
-                'payment_reference' => 'WELCOME-' . strtoupper(Str::random(6)),
+                'payment_reference' => 'WELCOME-'.strtoupper(Str::random(6)),
                 'is_verified' => true,
                 'issued_by_user_id' => auth()->id(),
                 'issued_at' => Carbon::now(),
@@ -831,7 +829,7 @@ class SaasAdminController extends Controller
             if ($masterTemplate) {
                 $this->contractService->createContractFromTemplate($tenant, $masterTemplate, [
                     'plan_name' => ucwords($validated['plan']),
-                    'monthly_fee' => 'TZS ' . number_format($tenant->subscription_price),
+                    'monthly_fee' => 'TZS '.number_format($tenant->subscription_price),
                     'billing_cycle' => 'Monthly',
                 ]);
             }
@@ -913,7 +911,7 @@ class SaasAdminController extends Controller
      */
     public function toggleTenantStatus(Request $request, Tenant $tenant): RedirectResponse
     {
-        $newStatus = !$tenant->is_active;
+        $newStatus = ! $tenant->is_active;
         $tenant->update([
             'is_active' => $newStatus,
             'subscription_status' => $newStatus ? 'active' : 'suspended',
@@ -928,6 +926,7 @@ class SaasAdminController extends Controller
         }
 
         $statusText = $newStatus ? 'Reactivated' : 'Suspended';
+
         return redirect()->back()->with('success', "Tenant {$tenant->name} has been {$statusText}.");
     }
 
@@ -962,23 +961,23 @@ class SaasAdminController extends Controller
             ->where('id', '!=', $superAdminUser->id)
             ->where(function ($q) {
                 $q->where('role', 'general_manager')
-                  ->orWhere('role', 'owner')
-                  ->orWhere('roles', 'like', '%general_manager%');
+                    ->orWhere('role', 'owner')
+                    ->orWhere('roles', 'like', '%general_manager%');
             })
             ->first();
 
-        if (!$targetUser) {
+        if (! $targetUser) {
             $targetUser = User::where('tenant_id', $tenant->id)
                 ->where('id', '!=', $superAdminUser->id)
                 ->first();
         }
 
-        if (!$targetUser) {
+        if (! $targetUser) {
             // Auto-create a dedicated tenant manager if tenant has no accounts yet
             $prop = $tenant->properties()->first();
             $targetUser = User::create([
-                'name' => $tenant->name . ' General Manager',
-                'email' => 'manager@' . ($tenant->subdomain ?: 'hotel') . '.inns.com',
+                'name' => $tenant->name.' General Manager',
+                'email' => 'manager@'.($tenant->subdomain ?: 'hotel').'.inns.com',
                 'password' => Hash::make('Secret123!'),
                 'tenant_id' => $tenant->id,
                 'property_id' => $prop?->id,
@@ -990,7 +989,7 @@ class SaasAdminController extends Controller
 
         // Ensure target user does not carry platform super_admin role during impersonation
         if (is_array($targetUser->roles) && in_array('super_admin', $targetUser->roles)) {
-            $cleanedRoles = array_values(array_filter($targetUser->roles, fn($r) => $r !== 'super_admin'));
+            $cleanedRoles = array_values(array_filter($targetUser->roles, fn ($r) => $r !== 'super_admin'));
             $targetUser->roles = empty($cleanedRoles) ? ['general_manager'] : $cleanedRoles;
             if ($targetUser->role === 'super_admin') {
                 $targetUser->role = 'general_manager';
@@ -1027,6 +1026,7 @@ class SaasAdminController extends Controller
             if ($superAdmin && ($superAdmin->role === 'super_admin' || in_array('super_admin', (array) $superAdmin->roles) || $superAdmin->isSuperAdmin())) {
                 session(['active_role' => 'super_admin']);
                 Auth::login($superAdmin);
+
                 return redirect()->route('saas-admin.index')->with('success', 'Returned to Super Admin Portal.');
             }
         }
@@ -1078,6 +1078,7 @@ class SaasAdminController extends Controller
     public function convertQuotationToInvoice(SaasQuotation $quotation): RedirectResponse
     {
         $invoice = $this->quotationService->acceptQuotation($quotation);
+
         return redirect()->back()->with('success', "Quotation {$quotation->quotation_number} converted into Invoice {$invoice->invoice_number}.");
     }
 
@@ -1162,6 +1163,7 @@ class SaasAdminController extends Controller
     public function verifyPayment(SaasPayment $payment): RedirectResponse
     {
         $receipt = $this->paymentService->verifyPayment($payment);
+
         return redirect()->back()->with('success', "Payment {$payment->payment_reference} verified! Official Receipt {$receipt->receipt_number} generated.");
     }
 
@@ -1183,7 +1185,7 @@ class SaasAdminController extends Controller
 
         $contract = $this->contractService->createContractFromTemplate($tenant, $template, [
             'plan_name' => $validated['plan_name'] ?? ucwords($tenant->plan),
-            'monthly_fee' => $validated['monthly_fee'] ?? ('TZS ' . number_format($tenant->subscription_price)),
+            'monthly_fee' => $validated['monthly_fee'] ?? ('TZS '.number_format($tenant->subscription_price)),
             'billing_cycle' => $validated['billing_cycle'] ?? 'Monthly',
         ]);
 
@@ -1207,7 +1209,7 @@ class SaasAdminController extends Controller
             'signer_email' => $validated['signer_email'],
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
-            'signature_data' => 'DIGITAL_SHA256_' . strtoupper(Str::random(12)),
+            'signature_data' => 'DIGITAL_SHA256_'.strtoupper(Str::random(12)),
         ]);
 
         return redirect()->back()->with('success', "Contract {$contract->contract_number} has been signed with SHA-256 integrity verification.");
@@ -1227,16 +1229,19 @@ class SaasAdminController extends Controller
             'notes' => 'nullable|string|max:255',
         ]);
 
-        DB::transaction(function () use ($validated) {
-            $wallet = SmsWallet::firstOrCreate(
-                ['tenant_id' => $validated['tenant_id']],
-                [
+        $pricingRule = SmsPricingRule::getEffectiveRule($validated['tenant_id']);
+        $costPerCreditMinor = (int) ($pricingRule->provider_cost_per_credit_minor ?? 0);
+        $pricePerCreditMinor = (int) ($pricingRule->selling_price_per_credit_minor ?? 0);
+
+        DB::transaction(function () use ($validated, $costPerCreditMinor, $pricePerCreditMinor) {
+            $wallet = SmsWallet::where('tenant_id', $validated['tenant_id'])->lockForUpdate()->first()
+                ?? SmsWallet::create([
+                    'tenant_id' => $validated['tenant_id'],
                     'balance_credits' => 0,
                     'total_credits_purchased' => 0,
                     'total_credits_used' => 0,
                     'status' => 'active',
-                ]
-            );
+                ]);
 
             // Increment credits
             $wallet->balance_credits += $validated['credits'];
@@ -1251,11 +1256,11 @@ class SaasAdminController extends Controller
                 'tenant_id' => $validated['tenant_id'],
                 'sms_wallet_id' => $wallet->id,
                 'credits_issued' => $validated['credits'],
-                'unit_cost_minor' => 1600,
-                'selling_price_minor' => 2000,
+                'unit_cost_minor' => $costPerCreditMinor,
+                'selling_price_minor' => $pricePerCreditMinor,
                 'amount_paid_minor' => (int) ($validated['amount_paid'] * 100),
                 'payment_method' => $validated['payment_method'],
-                'payment_reference' => $validated['payment_reference'] ?: 'ISSUE-' . strtoupper(Str::random(8)),
+                'payment_reference' => $validated['payment_reference'] ?: 'ISSUE-'.strtoupper(Str::random(8)),
                 'is_verified' => true,
                 'issued_by_user_id' => auth()->id(),
                 'issued_at' => Carbon::now(),
@@ -1266,13 +1271,13 @@ class SaasAdminController extends Controller
             SmsWalletTransaction::create([
                 'tenant_id' => $validated['tenant_id'],
                 'sms_wallet_id' => $wallet->id,
-                'reference' => 'TXN-' . strtoupper(Str::random(10)),
+                'reference' => 'TXN-'.strtoupper(Str::random(10)),
                 'type' => 'allocation',
                 'credits' => $validated['credits'],
                 'balance_after' => $wallet->balance_credits,
-                'rate_per_credit_minor' => 2000,
+                'rate_per_credit_minor' => $pricePerCreditMinor,
                 'amount_minor' => (int) ($validated['amount_paid'] * 100),
-                'currency' => 'TZS',
+                'currency' => $pricingRule->currency ?? 'TZS',
                 'description' => "Super Admin manual issuance ({$validated['credits']} credits)",
                 'performed_by_user_id' => auth()->id(),
             ]);
@@ -1303,10 +1308,10 @@ class SaasAdminController extends Controller
                 'username' => $validated['username'],
                 'is_active' => $validated['is_active'],
             ];
-            if (!empty($validated['password'])) {
+            if (! empty($validated['password'])) {
                 $updateData['password'] = $validated['password'];
             }
-            if (!empty($validated['api_token'])) {
+            if (! empty($validated['api_token'])) {
                 $updateData['api_token'] = $validated['api_token'];
             }
 
@@ -1315,10 +1320,13 @@ class SaasAdminController extends Controller
             if (str_contains(strtolower($validated['base_url']), 'swalasms.com')) {
                 $updateData['provider_name'] = 'SwalaSMS';
                 try {
-                    $balRes = Http::withoutVerifying()
-                        ->timeout(10)
+                    $http = Http::timeout(10);
+                    if (! filter_var(config('swalasms.verify_tls', true), FILTER_VALIDATE_BOOLEAN)) {
+                        $http = $http->withoutVerifying();
+                    }
+                    $balRes = $http
                         ->withToken($activeKey)
-                        ->get(rtrim($validated['base_url'], '/') . '/v1/balance');
+                        ->get(rtrim($validated['base_url'], '/').'/v1/balance');
                     if ($balRes->successful() && isset($balRes->json()['data']['balance'])) {
                         $updateData['balance_credits_cached'] = (int) $balRes->json()['data']['balance'];
                         $updateData['balance_checked_at'] = now();
@@ -1347,10 +1355,10 @@ class SaasAdminController extends Controller
         $result = $smsService->sendSms($validated['phone'], $validated['message']);
 
         if ($result['success']) {
-            return redirect()->back()->with('success', "SMS dispatched successfully via SwalaSMS to {$validated['phone']}! (UID: " . ($result['message_id'] ?? 'OK') . ")");
+            return redirect()->back()->with('success', "SMS dispatched successfully via SwalaSMS to {$validated['phone']}! (UID: ".($result['message_id'] ?? 'OK').')');
         }
 
-        return redirect()->back()->with('error', "Failed to dispatch SMS: " . ($result['error'] ?? 'Gateway request failed.'));
+        return redirect()->back()->with('error', 'Failed to dispatch SMS: '.($result['error'] ?? 'Gateway request failed.'));
     }
 
     /**
@@ -1374,7 +1382,7 @@ class SaasAdminController extends Controller
                 'sender_phone_number' => $validated['sender_phone_number'],
                 'is_active' => $validated['is_active'],
             ];
-            if (!empty($validated['access_token'])) {
+            if (! empty($validated['access_token'])) {
                 $updateData['access_token'] = $validated['access_token'];
             }
             $setting->update($updateData);
@@ -1403,7 +1411,7 @@ class SaasAdminController extends Controller
             'message_type' => 'superadmin_test',
             'message_body' => $validated['message'],
             'status' => 'delivered',
-            'external_message_id' => 'WAMID.' . strtoupper(Str::random(16)),
+            'external_message_id' => 'WAMID.'.strtoupper(Str::random(16)),
         ]);
 
         return redirect()->back()->with('success', "Test WhatsApp message sent to {$validated['recipient_name']} ({$validated['recipient_phone']}) and logged.");
@@ -1421,7 +1429,7 @@ class SaasAdminController extends Controller
         ]);
 
         $targetQuery = User::whereIn('role', ['general_manager', 'owner', 'manager']);
-        if (!empty($validated['target_tenant_id']) && $validated['target_tenant_id'] !== 'all') {
+        if (! empty($validated['target_tenant_id']) && $validated['target_tenant_id'] !== 'all') {
             $targetQuery->where('tenant_id', $validated['target_tenant_id']);
         }
 
@@ -1473,7 +1481,7 @@ class SaasAdminController extends Controller
         }
 
         $propertyId = null;
-        if (!empty($validated['tenant_id'])) {
+        if (! empty($validated['tenant_id'])) {
             $propertyId = Property::where('tenant_id', $validated['tenant_id'])->where('is_main', true)->value('id')
                 ?? Property::where('tenant_id', $validated['tenant_id'])->value('id');
         }
@@ -1502,11 +1510,12 @@ class SaasAdminController extends Controller
      */
     public function toggleUserStatus(User $user): RedirectResponse
     {
-        $newStatus = !($user->is_active ?? true);
+        $newStatus = ! ($user->is_active ?? true);
         $user->is_active = $newStatus;
         $user->save();
 
         $statusLabel = $newStatus ? 'activated' : 'deactivated';
+
         return redirect()->back()->with('success', "User {$user->name} has been {$statusLabel}.");
     }
 
@@ -1517,7 +1526,7 @@ class SaasAdminController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:100',
-            'email' => 'required|email|max:100|unique:users,email,' . $user->id,
+            'email' => 'required|email|max:100|unique:users,email,'.$user->id,
             'role' => 'required|string',
             'tenant_id' => 'nullable|exists:tenants,id',
             'password' => 'nullable|string|min:6',
@@ -1532,7 +1541,7 @@ class SaasAdminController extends Controller
         }
 
         $propertyId = $user->property_id;
-        if (!empty($validated['tenant_id']) && $validated['tenant_id'] != $user->tenant_id) {
+        if (! empty($validated['tenant_id']) && $validated['tenant_id'] != $user->tenant_id) {
             $propertyId = Property::where('tenant_id', $validated['tenant_id'])->where('is_main', true)->value('id')
                 ?? Property::where('tenant_id', $validated['tenant_id'])->value('id');
         } elseif (empty($validated['tenant_id'])) {
@@ -1554,7 +1563,7 @@ class SaasAdminController extends Controller
             $updateData['username'] = User::generateUniqueUsername($validated['name'], $validated['email']);
         }
 
-        if (!empty($validated['password'])) {
+        if (! empty($validated['password'])) {
             $updateData['password'] = Hash::make($validated['password']);
         }
 
@@ -1595,7 +1604,7 @@ class SaasAdminController extends Controller
         ]);
 
         $currentSettings = cache('cms_landing_settings', []);
-        if (!is_array($currentSettings)) {
+        if (! is_array($currentSettings)) {
             $currentSettings = [];
         }
 
@@ -1608,15 +1617,15 @@ class SaasAdminController extends Controller
             $slides = $rawSlides;
         }
 
-        if (!empty($slides)) {
+        if (! empty($slides)) {
             foreach ($slides as $idx => &$slide) {
                 // Check if a new file was uploaded for this slide index
                 $fileKey = "slide_file_{$idx}";
                 if ($request->hasFile($fileKey)) {
                     $file = $request->file($fileKey);
-                    $filename = 'hero_slide_' . ($idx + 1) . '_' . time() . '.' . $file->getClientOriginalExtension();
+                    $filename = 'hero_slide_'.($idx + 1).'_'.time().'.'.$file->getClientOriginalExtension();
                     $file->move(public_path('uploads/cms'), $filename);
-                    $slide['image'] = '/uploads/cms/' . $filename;
+                    $slide['image'] = '/uploads/cms/'.$filename;
                 }
             }
             unset($slide);
@@ -1632,9 +1641,9 @@ class SaasAdminController extends Controller
             }
         } elseif ($request->hasFile('hero_image')) {
             $file = $request->file('hero_image');
-            $filename = 'hero_' . time() . '.' . $file->getClientOriginalExtension();
+            $filename = 'hero_'.time().'.'.$file->getClientOriginalExtension();
             $file->move(public_path('uploads/cms'), $filename);
-            $validated['hero_image'] = '/uploads/cms/' . $filename;
+            $validated['hero_image'] = '/uploads/cms/'.$filename;
         } elseif ($request->filled('hero_image') && is_string($request->input('hero_image'))) {
             $validated['hero_image'] = $request->input('hero_image');
         } elseif ($request->has('remove_hero_image') && $request->boolean('remove_hero_image')) {

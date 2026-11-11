@@ -19,12 +19,13 @@ class ProfileController extends Controller
     public function edit(Request $request): Response
     {
         $user = $request->user();
-        $isPrivileged = $user->isSuperAdmin() || in_array($user->role, ['general_manager', 'owner', 'manager', 'admin']);
+        $isPrivileged = $user->isSuperAdmin()
+            || count(array_intersect($user->roles_list, ['general_manager', 'owner', 'manager', 'admin'])) > 0;
 
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => session('status'),
-            'canDeleteAccount' => !$isPrivileged,
+            'canDeleteAccount' => ! $isPrivileged,
         ]);
     }
 
@@ -52,7 +53,8 @@ class ProfileController extends Controller
         $user = $request->user();
 
         // Prevent Super Admins and Hotel Managers/Owners from self-deleting accounts
-        if ($user->isSuperAdmin() || in_array($user->role, ['general_manager', 'owner', 'manager', 'admin'])) {
+        if ($user->isSuperAdmin()
+            || count(array_intersect($user->roles_list, ['general_manager', 'owner', 'manager', 'admin'])) > 0) {
             return Redirect::back()->with('error', 'Administrator and Manager accounts cannot be self-deleted to maintain operational continuity and financial audit logs.');
         }
 

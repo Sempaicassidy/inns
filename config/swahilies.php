@@ -17,7 +17,7 @@ return [
     |
     */
 
-    'api_key' => env('SWALASMS_API_KEY', env('SWAHILIES_API_KEY', 'swl_live_3rRTD7pHVgLewdEEmDZNvk762gvfkMefkzl7ESSQ6xQi7QNL')),
+    'api_key' => env('SWALASMS_API_KEY', env('SWAHILIES_API_KEY')),
 
     'base_url' => env('SWALASMS_BASE_URL', env('SWAHILIES_BASE_URL', 'https://api.swalasms.com')),
 
@@ -27,6 +27,8 @@ return [
 
     'currency' => env('SWALASMS_CURRENCY', env('SWAHILIES_CURRENCY', 'TZS')),
 
-    'webhook_secret' => env('SWALASMS_WEBHOOK_SECRET', env('SWAHILIES_WEBHOOK_SECRET', null)),
+    'webhook_secret' => env('SWALASMS_WEBHOOK_SECRET', env('SWAHILIES_WEBHOOK_SECRET')),
+
+    'verify_tls' => env('SWAHILIES_VERIFY_TLS', env('SWALASMS_VERIFY_TLS', true)),
 
 ];

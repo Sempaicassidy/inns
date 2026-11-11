@@ -693,7 +693,7 @@ export default function Dashboard({
                             <button
                                 type="button"
                                 onClick={() => setShowRequisitionModal(true)}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-xs rounded-xl shadow-xs transition cursor-pointer"
+                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs rounded-xl shadow-xs transition cursor-pointer"
                                 title="Request expenditure or supplies approval from Hotel Owner"
                             >
                                 <CheckSquare className="w-3.5 h-3.5" />
@@ -731,10 +731,10 @@ export default function Dashboard({
                             {ownerDirectives.map((dir: any) => (
                                 <div
                                     key={dir.id}
-                                    className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-[#1E3A5F] to-slate-900 text-white border border-[#D4AF37]/50 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                                    className="p-4 rounded-2xl bg-[#1E3A5F] text-white border border-[#D4AF37]/50 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                                 >
                                     <div className="flex items-start gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#D4AF37] to-amber-600 text-slate-950 flex items-center justify-center shrink-0 shadow">
+                                        <div className="w-10 h-10 rounded-xl bg-[#D4AF37] text-slate-950 flex items-center justify-center shrink-0 shadow">
                                             <Crown className="w-5 h-5" />
                                         </div>
                                         <div>
@@ -1149,7 +1149,7 @@ export default function Dashboard({
                                 <button
                                     type="submit"
                                     disabled={requisitionForm.processing}
-                                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black shadow transition"
+                                    className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black shadow transition"
                                 >
                                     Submit Request to Owner
                                 </button>

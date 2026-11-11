@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { offlineEngine, OfflineEngineStatus } from '@/offline/offline-engine';
 import { network } from '@/offline/network';
-import { getActiveOfflineSession, verifyOfflinePin, lockOfflineSession, LocalSession } from '@/offline';
+import { getActiveOfflineSession, verifyOfflinePin, lockOfflineSession, listProvisionedSessions, LocalSession } from '@/offline';
 
 export function useOffline() {
     const [status, setStatus] = useState<OfflineEngineStatus>(
@@ -10,6 +10,7 @@ export function useOffline() {
     const [pendingCount, setPendingCount] = useState<number>(0);
     const [isSyncing, setIsSyncing] = useState<boolean>(false);
     const [offlineSession, setOfflineSession] = useState<LocalSession | null>(null);
+    const [provisionedSessions, setProvisionedSessions] = useState<LocalSession[]>([]);
 
     useEffect(() => {
         const onStatus = (event: any) => {
@@ -30,6 +31,7 @@ export function useOffline() {
         // Check local session
         if (offlineEngine.tenantId) {
             getActiveOfflineSession(offlineEngine.tenantId).then(setOfflineSession);
+            listProvisionedSessions(offlineEngine.tenantId).then(setProvisionedSessions);
         }
 
         return () => {
@@ -47,20 +49,20 @@ export function useOffline() {
         }
     };
 
-    const unlock = async (pin: string) => {
+    const unlock = async (userId: number, pin: string) => {
         if (!offlineEngine.tenantId) {
             return { success: false, error: 'No active tenant ID configured.' };
         }
-        const res = await verifyOfflinePin(offlineEngine.tenantId, pin);
+        const res = await verifyOfflinePin(offlineEngine.tenantId, userId, pin);
         if (res.success && res.session) {
             setOfflineSession(res.session);
         }
         return res;
     };
 
-    const lock = async () => {
+    const lock = async (userId?: number) => {
         if (offlineEngine.tenantId) {
-            await lockOfflineSession(offlineEngine.tenantId);
+            await lockOfflineSession(offlineEngine.tenantId, userId);
             setOfflineSession(null);
         }
     };
@@ -72,6 +74,7 @@ export function useOffline() {
         isSyncing,
         pendingCount,
         offlineSession,
+        provisionedSessions,
         syncNow,
         unlock,
         lock,

@@ -73,6 +73,9 @@ class Folio extends Model
 
         if ($this->balance_minor <= 0 && $this->status === 'open' && $charges > 0) {
             $this->status = 'settled';
+        } elseif ($this->balance_minor > 0 && $this->status === 'settled') {
+            // New charges on a settled folio reopen it
+            $this->status = 'open';
         }
 
         $this->save();

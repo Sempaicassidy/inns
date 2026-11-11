@@ -11,8 +11,11 @@ use App\Models\PosOrderItem;
 use App\Models\Property;
 use App\Models\Room;
 use App\Models\Stay;
+use App\Services\LedgerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -88,22 +91,35 @@ class PosController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $user = $request->user();
+        $tenantId = $user->tenant_id;
+        $property = $this->resolveActiveProperty($request);
+
         $validated = $request->validate([
             'order_type' => 'required|in:dine_in,room_delivery,takeaway',
             'table_number' => 'nullable|string|max:20',
-            'room_id' => 'nullable|exists:rooms,id',
-            'stay_id' => 'nullable|exists:stays,id',
-            'folio_id' => 'nullable|exists:folios,id',
+            'room_id' => [
+                'nullable',
+                Rule::exists('rooms', 'id')->where('tenant_id', $tenantId)->where('property_id', $property?->id),
+            ],
+            'stay_id' => [
+                'nullable',
+                Rule::exists('stays', 'id')->where('tenant_id', $tenantId),
+            ],
+            'folio_id' => [
+                'nullable',
+                Rule::exists('folios', 'id')->where('tenant_id', $tenantId),
+            ],
             'guest_name' => 'nullable|string|max:100',
             'payment_method' => 'required|in:cash,card,mpesa,room_folio',
             'items' => 'required|array|min:1',
-            'items.*.item_id' => 'required|exists:pos_items,id',
+            'items.*.item_id' => [
+                'required',
+                Rule::exists('pos_items', 'id')->where('tenant_id', $tenantId)->where('department', 'restaurant'),
+            ],
             'items.*.quantity' => 'required|integer|min:1',
             'notes' => 'nullable|string',
         ]);
-
-        $user = $request->user();
-        $property = $user->property ?? Property::first();
 
         // Calculate subtotal and lines
         $subtotal = 0;
@@ -133,50 +149,81 @@ class PosController extends Controller
 
         $paymentStatus = $validated['payment_method'] === 'room_folio' ? 'posted_to_room' : 'paid';
 
-        $order = PosOrder::create([
-            'tenant_id' => $user->tenant_id,
-            'property_id' => $property->id,
-            'user_id' => $user->id,
-            'order_number' => $orderNumber,
-            'outlet_type' => 'restaurant',
-            'order_type' => $validated['order_type'],
-            'table_number' => $validated['table_number'] ?? null,
-            'room_id' => $validated['room_id'] ?? null,
-            'stay_id' => $validated['stay_id'] ?? null,
-            'guest_name' => $validated['guest_name'] ?? 'Walk-in Guest',
-            'subtotal_minor' => $subtotal,
-            'tax_minor' => $tax,
-            'total_minor' => $total,
-            'payment_status' => $paymentStatus,
-            'payment_method' => $validated['payment_method'],
-            'folio_id' => $validated['folio_id'] ?? null,
-            'status' => 'served',
-            'notes' => $validated['notes'] ?? null,
-        ]);
+        $order = DB::transaction(function () use ($validated, $user, $tenantId, $property, $orderLines, $subtotal, $tax, $total, $orderNumber, $paymentStatus) {
+            $order = PosOrder::create([
+                'tenant_id' => $tenantId,
+                'property_id' => $property?->id,
+                'user_id' => $user->id,
+                'order_number' => $orderNumber,
+                'outlet_type' => 'restaurant',
+                'order_type' => $validated['order_type'],
+                'table_number' => $validated['table_number'] ?? null,
+                'room_id' => $validated['room_id'] ?? null,
+                'stay_id' => $validated['stay_id'] ?? null,
+                'guest_name' => $validated['guest_name'] ?? 'Walk-in Guest',
+                'subtotal_minor' => $subtotal,
+                'tax_minor' => $tax,
+                'total_minor' => $total,
+                'payment_status' => $paymentStatus,
+                'payment_method' => $validated['payment_method'],
+                'folio_id' => $validated['folio_id'] ?? null,
+                'status' => 'served',
+                'notes' => $validated['notes'] ?? null,
+            ]);
 
-        foreach ($orderLines as $line) {
-            $line['pos_order_id'] = $order->id;
-            PosOrderItem::create($line);
-        }
-
-        // If posted to guest room folio, attach FolioLine!
-        if ($validated['payment_method'] === 'room_folio' && ! empty($validated['folio_id'])) {
-            $folio = Folio::find($validated['folio_id']);
-            if ($folio) {
-                FolioLine::create([
-                    'tenant_id' => $user->tenant_id,
-                    'folio_id' => $folio->id,
-                    'business_date' => today()->toDateString(),
-                    'line_type' => 'restaurant',
-                    'description' => "Restaurant Order #{$orderNumber} (".count($orderLines).' items)',
-                    'amount_minor' => $total,
-                    'tax_minor' => $tax,
-                    'posted_by' => $user->id,
-                ]);
-
-                $folio->recalculateBalance();
+            foreach ($orderLines as $line) {
+                $line['pos_order_id'] = $order->id;
+                PosOrderItem::create($line);
             }
-        }
+
+            // If posted to guest room folio, attach FolioLine!
+            if ($validated['payment_method'] === 'room_folio' && ! empty($validated['folio_id'])) {
+                $folio = Folio::where('tenant_id', $tenantId)->find($validated['folio_id']);
+                if ($folio) {
+                    FolioLine::create([
+                        'tenant_id' => $tenantId,
+                        'folio_id' => $folio->id,
+                        'business_date' => today()->toDateString(),
+                        'line_type' => 'restaurant',
+                        'description' => "Restaurant Order #{$orderNumber} (".count($orderLines).' items)',
+                        'amount_minor' => $total,
+                        'tax_minor' => $tax,
+                        'posted_by' => $user->id,
+                    ]);
+
+                    $folio->recalculateBalance();
+                }
+            }
+
+            // Room-charge orders post to AR; paid orders post to the tender account
+            if ($paymentStatus === 'posted_to_room') {
+                app(LedgerService::class)->post(
+                    (string) $tenantId,
+                    $property?->id,
+                    'pos_order',
+                    (string) $order->id,
+                    "POS order #{$orderNumber} charged to guest folio",
+                    [
+                        ['code' => '1050', 'direction' => 'debit', 'amount_minor' => $total],
+                        ['code' => '4002', 'direction' => 'credit', 'amount_minor' => $total],
+                    ],
+                );
+            } else {
+                app(LedgerService::class)->post(
+                    (string) $tenantId,
+                    $property?->id,
+                    'pos_order',
+                    (string) $order->id,
+                    "POS order #{$orderNumber} ({$validated['payment_method']})",
+                    [
+                        ['code' => LedgerService::tenderCode($validated['payment_method']), 'direction' => 'debit', 'amount_minor' => $total],
+                        ['code' => '4002', 'direction' => 'credit', 'amount_minor' => $total],
+                    ],
+                );
+            }
+
+            return $order;
+        });
 
         return redirect()->back()->with('success', "Order #{$orderNumber} created successfully.");
     }

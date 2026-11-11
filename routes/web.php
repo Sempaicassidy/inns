@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountingController;
+use App\Http\Controllers\ActiveRoleController;
 use App\Http\Controllers\Auth\RoleSelectionController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CalendarController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ManagerNotificationController;
 use App\Http\Controllers\NightAuditController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\OccurrenceBookController;
 use App\Http\Controllers\OwnerPortalController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\ProfileController;
@@ -32,6 +34,7 @@ use Inertia\Inertia;
 
 Route::get('/', function () {
     $cachedCms = cache('cms_landing_settings', []);
+
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
@@ -59,32 +62,37 @@ Route::get('/sw.js', function () {
 // Logo & Static Asset Fallbacks for Production / cPanel Deployment
 Route::get('/logo.png', function () {
     $path = public_path('logo.png');
-    if (!file_exists($path)) {
+    if (! file_exists($path)) {
         $path = base_path('logo.png');
     }
+
     return file_exists($path) ? response()->file($path, ['Content-Type' => 'image/png']) : abort(404);
 });
 
 Route::get('/images/logo.png', function () {
     $path = public_path('images/logo.png');
-    if (!file_exists($path)) {
+    if (! file_exists($path)) {
         $path = public_path('logo.png');
     }
+
     return file_exists($path) ? response()->file($path, ['Content-Type' => 'image/png']) : abort(404);
 });
 
 Route::get('/inns/logo.png', function () {
     $path = public_path('logo.png');
+
     return file_exists($path) ? response()->file($path, ['Content-Type' => 'image/png']) : abort(404);
 });
 
 Route::get('/inns/images/{file}', function ($file) {
-    $path = public_path('images/' . $file);
+    $path = public_path('images/'.$file);
+
     return file_exists($path) ? response()->file($path) : abort(404);
 })->where('file', '.*');
 
 Route::get('/inns/build/assets/{file}', function ($file) {
-    $path = public_path('build/assets/' . $file);
+    $path = public_path('build/assets/'.$file);
+
     return file_exists($path) ? response()->file($path) : abort(404);
 })->where('file', '.*');
 
@@ -109,14 +117,14 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     Route::post('/manager/directives/{directive}/acknowledge', [DashboardController::class, 'acknowledgeDirective'])->name('manager.directives.acknowledge');
 
     // 2. Room Availability Gantt Calendar
-    Route::middleware('tenant.feature:calendar')->group(function () {
+    Route::middleware(['tenant.feature:calendar', 'module.access:front_office'])->group(function () {
         Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
         Route::post('/calendar/block-room', [CalendarController::class, 'blockRoom'])->name('calendar.block-room');
         Route::post('/calendar/unblock-room', [CalendarController::class, 'unblockRoom'])->name('calendar.unblock-room');
     });
 
     // 3. Reservations & Front Desk
-    Route::middleware('tenant.feature:reservations')->group(function () {
+    Route::middleware(['tenant.feature:reservations', 'module.access:front_office'])->group(function () {
         Route::get('/reservations', [ReservationController::class, 'index'])->name('reservations.index');
         Route::get('/reservations/create', [ReservationController::class, 'index'])->name('reservations.create');
         Route::get('/reservations/check-in', [ReservationController::class, 'index'])->name('reservations.checkin');
@@ -141,7 +149,7 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     });
 
     // 3.1 Guest Portal & CRM
-    Route::middleware('tenant.feature:guests')->group(function () {
+    Route::middleware(['tenant.feature:guests', 'module.access:front_office'])->group(function () {
         Route::get('/guests', [GuestController::class, 'index'])->name('guests.index');
         Route::get('/guest-portal', [GuestController::class, 'index'])->name('guest-portal.index');
         Route::get('/guest-requests', [GuestController::class, 'index'])->name('guest.requests.index');
@@ -151,7 +159,7 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     });
 
     // 4. Folios & Billing
-    Route::middleware('tenant.feature:folios')->group(function () {
+    Route::middleware(['tenant.feature:folios', 'module.access:front_office'])->group(function () {
         Route::get('/folios', [FolioController::class, 'index'])->name('folios.index');
         Route::get('/folios/{folio}', [FolioController::class, 'show'])->name('folios.show');
         Route::post('/folios/{folio}/charges', [FolioController::class, 'addCharge'])->name('folios.charges.store');
@@ -159,7 +167,7 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     });
 
     // 5. Housekeeping & Rooms
-    Route::middleware('tenant.feature:housekeeping')->group(function () {
+    Route::middleware(['tenant.feature:housekeeping', 'module.access:housekeeping'])->group(function () {
         Route::get('/housekeeping', [HousekeepingController::class, 'index'])->name('housekeeping.index');
         Route::get('/housekeeping/status', [HousekeepingController::class, 'index'])->name('housekeeping.status');
         Route::post('/housekeeping/rooms', [HousekeepingController::class, 'storeRoom'])->name('housekeeping.rooms.store');
@@ -169,13 +177,18 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
         Route::post('/housekeeping/tasks/{task}/status', [HousekeepingController::class, 'updateTaskStatus'])->name('housekeeping.tasks.status');
     });
 
+    // 5c. Security Occurrence Book (O.B.)
+    Route::get('/security/occurrence-book', [OccurrenceBookController::class, 'index'])->name('security.ob.index');
+    Route::post('/security/occurrence-book', [OccurrenceBookController::class, 'store'])->name('security.ob.store');
+    Route::post('/security/occurrence-book/{entry}/amend', [OccurrenceBookController::class, 'amend'])->name('security.ob.amend');
+
     // 5b. Maintenance Tracking
-    Route::middleware('tenant.feature:maintenance')->group(function () {
+    Route::middleware(['tenant.feature:maintenance', 'module.access:maintenance'])->group(function () {
         Route::get('/maintenance', [HousekeepingController::class, 'index'])->name('maintenance.index');
     });
 
     // 6. POS Restaurant Manager Portal & Report (Dedicated Independent Module)
-    Route::middleware('tenant.feature:restaurant_pos')->group(function () {
+    Route::middleware(['tenant.feature:restaurant_pos', 'module.access:restaurant_pos'])->group(function () {
         Route::get('/restaurant', [RestaurantController::class, 'index'])->name('restaurant.index');
         Route::post('/restaurant/items', [RestaurantController::class, 'storeItem'])->name('restaurant.items.store');
         Route::match(['put', 'patch'], '/restaurant/items/{item}', [RestaurantController::class, 'updateItem'])->name('restaurant.items.update');
@@ -190,8 +203,9 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     });
 
     // 6c. POS Grocery & Retail Minimart Management (Manager Portal & Counter Sales)
-    Route::middleware('tenant.feature:grocery_pos')->group(function () {
+    Route::middleware(['tenant.feature:grocery_pos', 'module.access:grocery_pos'])->group(function () {
         Route::get('/grocery', [GroceryController::class, 'index'])->name('grocery.index');
+        Route::get('/grocery/pos', [GroceryController::class, 'pos'])->name('grocery.pos');
         Route::post('/grocery/items', [GroceryController::class, 'storeItem'])->name('grocery.items.store');
         Route::match(['put', 'patch'], '/grocery/items/{item}', [GroceryController::class, 'updateItem'])->name('grocery.items.update');
         Route::post('/grocery/items/{item}/restock', [GroceryController::class, 'restock'])->name('grocery.items.restock');
@@ -200,7 +214,7 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     });
 
     // 7. Hotel Accounting & Financial Engine
-    Route::middleware('tenant.feature:accounting')->group(function () {
+    Route::middleware(['tenant.feature:accounting', 'module.access:accounting'])->group(function () {
         Route::get('/accounting', [AccountingController::class, 'index'])->name('accounting.index');
         Route::post('/accounting/expenses', [AccountingController::class, 'storeExpense'])->name('accounting.expenses.store');
         Route::post('/accounting/expenses/{expense}/approve', [AccountingController::class, 'approveExpense'])->name('accounting.expenses.approve');
@@ -234,7 +248,7 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     });
 
     // 8. HR & Staff Management
-    Route::middleware(['tenant.feature:hr_payroll', 'can.hr'])->group(function () {
+    Route::middleware(['tenant.feature:hr_payroll', 'can.hr', 'module.access:hr_payroll'])->group(function () {
         Route::get('/hr', [HrController::class, 'index'])->name('hr.index');
         Route::post('/hr/employees', [HrController::class, 'storeEmployee'])->name('hr.employees.store');
         Route::put('/hr/employees/{id}', [HrController::class, 'updateEmployee'])->name('hr.employees.update');
@@ -252,7 +266,7 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     });
 
     // 9. Central Store & Warehouse Inventory Management (Manager Portal & Requisition)
-    Route::middleware('tenant.feature:inventory')->group(function () {
+    Route::middleware(['tenant.feature:inventory', 'module.access:inventory'])->group(function () {
         Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
         Route::post('/inventory/items', [InventoryController::class, 'storeItem'])->name('inventory.items.store');
         Route::post('/inventory/receive', [InventoryController::class, 'receiveStock'])->name('inventory.receive');
@@ -261,18 +275,18 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     });
 
     // 10. Manager Executive Reports & Analytics
-    Route::middleware('tenant.feature:hotel_reports')->group(function () {
+    Route::middleware(['tenant.feature:hotel_reports', 'module.access:executive_reports'])->group(function () {
         Route::get('/reports', [ReportsController::class, 'index'])->name('reports.index');
     });
 
     // 10-FO. Front Office Shift Progress Reports (Receptionist Operational Reporting)
-    Route::middleware('tenant.feature:front_office_reports')->group(function () {
+    Route::middleware(['tenant.feature:front_office_reports', 'module.access:front_office'])->group(function () {
         Route::get('/front-office/reports', [FrontOfficeReportController::class, 'index'])->name('front-office.reports.index');
         Route::post('/front-office/reports', [FrontOfficeReportController::class, 'store'])->name('front-office.reports.store');
     });
 
     // 10a. Manager Automated Notifications (SMS, WhatsApp, Email & Scheduled Morning Reports)
-    Route::middleware('tenant.feature:manager_alerts')->group(function () {
+    Route::middleware(['tenant.feature:manager_alerts', 'module.access:manager_alerts'])->group(function () {
         Route::get('/manager-notifications', [ManagerNotificationController::class, 'index'])->name('manager.notifications.index');
         Route::post('/manager-notifications/settings', [ManagerNotificationController::class, 'updateSettings'])->name('manager.notifications.settings.update');
         Route::post('/manager-notifications/send-test-report', [ManagerNotificationController::class, 'sendTestReport'])->name('manager.notifications.test-report');
@@ -280,7 +294,7 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     });
 
     // 10. WhatsApp Guest Messaging & API Settings
-    Route::middleware('tenant.feature:whatsapp_sms')->group(function () {
+    Route::middleware(['tenant.feature:whatsapp_sms', 'module.access:whatsapp_sms'])->group(function () {
         Route::get('/whatsapp', [WhatsAppController::class, 'index'])->name('whatsapp.index');
         Route::post('/whatsapp/settings', [WhatsAppController::class, 'updateSettings'])->name('whatsapp.settings.update');
         Route::post('/whatsapp/send', [WhatsAppController::class, 'sendManualMessage'])->name('whatsapp.send');
@@ -295,50 +309,52 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     Route::post('/notifications/clear-all', [NotificationController::class, 'clearAll'])->name('notifications.clear-all');
     Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 
-    // 11. SaaS Admin & Centralized Ecosystem
-    Route::get('/saas-admin', [SaasAdminController::class, 'index'])->name('saas-admin.index');
-    Route::post('/saas-admin/tenants', [SaasAdminController::class, 'storeTenant'])->name('saas-admin.tenants.store');
-    Route::put('/saas-admin/tenants/{tenant}', [SaasAdminController::class, 'updateTenantDetails'])->name('saas-admin.tenants.update');
-    Route::put('/saas-admin/tenants/{tenant}/features', [SaasAdminController::class, 'updateTenantFeatures'])->name('saas-admin.tenants.features.update');
-    Route::delete('/saas-admin/tenants/{tenant}', [SaasAdminController::class, 'destroyTenant'])->name('saas-admin.tenants.destroy');
-    Route::post('/saas-admin/tenants/{tenant}/toggle', [SaasAdminController::class, 'toggleTenantStatus'])->name('saas-admin.tenants.toggle');
-    Route::post('/saas-admin/tenants/{tenant}/impersonate', [SaasAdminController::class, 'impersonateTenant'])->name('saas-admin.tenants.impersonate');
-    Route::post('/saas-admin/impersonate/leave', [SaasAdminController::class, 'leaveImpersonation'])->name('saas-admin.impersonate.leave');
-    
-    // SaaS Billing, Quotations, Invoices, Payments, Receipts
-    Route::post('/saas-admin/quotations', [SaasAdminController::class, 'storeQuotation'])->name('saas-admin.quotations.store');
-    Route::post('/saas-admin/quotations/{quotation}/convert', [SaasAdminController::class, 'convertQuotationToInvoice'])->name('saas-admin.quotations.convert');
-    Route::post('/saas-admin/invoices', [SaasAdminController::class, 'storeInvoice'])->name('saas-admin.invoices.store');
-    Route::post('/saas-admin/payments', [SaasAdminController::class, 'recordPayment'])->name('saas-admin.payments.store');
-    Route::post('/saas-admin/payments/{payment}/verify', [SaasAdminController::class, 'verifyPayment'])->name('saas-admin.payments.verify');
+    // 11. SaaS Admin & Centralized Ecosystem (Platform Super Admin only)
+    Route::middleware('saas.admin')->group(function () {
+        Route::get('/saas-admin', [SaasAdminController::class, 'index'])->name('saas-admin.index');
+        Route::post('/saas-admin/tenants', [SaasAdminController::class, 'storeTenant'])->name('saas-admin.tenants.store');
+        Route::put('/saas-admin/tenants/{tenant}', [SaasAdminController::class, 'updateTenantDetails'])->name('saas-admin.tenants.update');
+        Route::put('/saas-admin/tenants/{tenant}/features', [SaasAdminController::class, 'updateTenantFeatures'])->name('saas-admin.tenants.features.update');
+        Route::delete('/saas-admin/tenants/{tenant}', [SaasAdminController::class, 'destroyTenant'])->name('saas-admin.tenants.destroy');
+        Route::post('/saas-admin/tenants/{tenant}/toggle', [SaasAdminController::class, 'toggleTenantStatus'])->name('saas-admin.tenants.toggle');
+        Route::post('/saas-admin/tenants/{tenant}/impersonate', [SaasAdminController::class, 'impersonateTenant'])->name('saas-admin.tenants.impersonate');
+        Route::post('/saas-admin/impersonate/leave', [SaasAdminController::class, 'leaveImpersonation'])->name('saas-admin.impersonate.leave');
 
-    // SaaS Contracts
-    Route::post('/saas-admin/contracts', [SaasAdminController::class, 'storeContract'])->name('saas-admin.contracts.store');
-    Route::post('/saas-admin/contracts/{contract}/sign', [SaasAdminController::class, 'signContract'])->name('saas-admin.contracts.sign');
+        // SaaS Billing, Quotations, Invoices, Payments, Receipts
+        Route::post('/saas-admin/quotations', [SaasAdminController::class, 'storeQuotation'])->name('saas-admin.quotations.store');
+        Route::post('/saas-admin/quotations/{quotation}/convert', [SaasAdminController::class, 'convertQuotationToInvoice'])->name('saas-admin.quotations.convert');
+        Route::post('/saas-admin/invoices', [SaasAdminController::class, 'storeInvoice'])->name('saas-admin.invoices.store');
+        Route::post('/saas-admin/payments', [SaasAdminController::class, 'recordPayment'])->name('saas-admin.payments.store');
+        Route::post('/saas-admin/payments/{payment}/verify', [SaasAdminController::class, 'verifyPayment'])->name('saas-admin.payments.verify');
 
-    // Financial SMS & Messaging
-    Route::post('/saas-admin/sms/issue', [SaasAdminController::class, 'issueSms'])->name('saas-admin.sms.issue');
-    Route::post('/saas-admin/sms/provider', [SaasAdminController::class, 'updateSmsProvider'])->name('saas-admin.sms.provider.update');
-    Route::post('/saas-admin/sms/test', [SaasAdminController::class, 'testSmsProvider'])->name('saas-admin.sms.test');
+        // SaaS Contracts
+        Route::post('/saas-admin/contracts', [SaasAdminController::class, 'storeContract'])->name('saas-admin.contracts.store');
+        Route::post('/saas-admin/contracts/{contract}/sign', [SaasAdminController::class, 'signContract'])->name('saas-admin.contracts.sign');
 
-    // WhatsApp
-    Route::post('/saas-admin/whatsapp/settings', [SaasAdminController::class, 'updateWhatsAppSettings'])->name('saas-admin.whatsapp.settings.update');
-    Route::post('/saas-admin/whatsapp/test', [SaasAdminController::class, 'testWhatsAppMessage'])->name('saas-admin.whatsapp.test');
+        // Financial SMS & Messaging
+        Route::post('/saas-admin/sms/issue', [SaasAdminController::class, 'issueSms'])->name('saas-admin.sms.issue');
+        Route::post('/saas-admin/sms/provider', [SaasAdminController::class, 'updateSmsProvider'])->name('saas-admin.sms.provider.update');
+        Route::post('/saas-admin/sms/test', [SaasAdminController::class, 'testSmsProvider'])->name('saas-admin.sms.test');
 
-    // Notices & System Health
-    Route::post('/saas-admin/notices/broadcast', [SaasAdminController::class, 'sendNotice'])->name('saas-admin.notices.broadcast');
-    Route::post('/saas-admin/system/clear-cache', [SaasAdminController::class, 'clearSystemCache'])->name('saas-admin.system.clear-cache');
+        // WhatsApp
+        Route::post('/saas-admin/whatsapp/settings', [SaasAdminController::class, 'updateWhatsAppSettings'])->name('saas-admin.whatsapp.settings.update');
+        Route::post('/saas-admin/whatsapp/test', [SaasAdminController::class, 'testWhatsAppMessage'])->name('saas-admin.whatsapp.test');
 
-    // Users & Roles Management
-    Route::post('/saas-admin/users', [SaasAdminController::class, 'storeGlobalUser'])->name('saas-admin.users.store');
-    Route::put('/saas-admin/users/{user}', [SaasAdminController::class, 'updateGlobalUser'])->name('saas-admin.users.update');
-    Route::delete('/saas-admin/users/{user}', [SaasAdminController::class, 'destroyGlobalUser'])->name('saas-admin.users.destroy');
-    Route::post('/saas-admin/users/{user}/toggle', [SaasAdminController::class, 'toggleUserStatus'])->name('saas-admin.users.toggle');
+        // Notices & System Health
+        Route::post('/saas-admin/notices/broadcast', [SaasAdminController::class, 'sendNotice'])->name('saas-admin.notices.broadcast');
+        Route::post('/saas-admin/system/clear-cache', [SaasAdminController::class, 'clearSystemCache'])->name('saas-admin.system.clear-cache');
 
-    // Website CMS & Marketing & Support
-    Route::post('/saas-admin/cms/update', [SaasAdminController::class, 'updateCmsSettings'])->name('saas-admin.cms.update');
-    Route::post('/saas-admin/marketing/promos', [SaasAdminController::class, 'storePromoCode'])->name('saas-admin.marketing.promos.store');
-    Route::post('/saas-admin/support/resolve', [SaasAdminController::class, 'resolveSupportTicket'])->name('saas-admin.support.resolve');
+        // Users & Roles Management
+        Route::post('/saas-admin/users', [SaasAdminController::class, 'storeGlobalUser'])->name('saas-admin.users.store');
+        Route::put('/saas-admin/users/{user}', [SaasAdminController::class, 'updateGlobalUser'])->name('saas-admin.users.update');
+        Route::delete('/saas-admin/users/{user}', [SaasAdminController::class, 'destroyGlobalUser'])->name('saas-admin.users.destroy');
+        Route::post('/saas-admin/users/{user}/toggle', [SaasAdminController::class, 'toggleUserStatus'])->name('saas-admin.users.toggle');
+
+        // Website CMS & Marketing & Support
+        Route::post('/saas-admin/cms/update', [SaasAdminController::class, 'updateCmsSettings'])->name('saas-admin.cms.update');
+        Route::post('/saas-admin/marketing/promos', [SaasAdminController::class, 'storePromoCode'])->name('saas-admin.marketing.promos.store');
+        Route::post('/saas-admin/support/resolve', [SaasAdminController::class, 'resolveSupportTicket'])->name('saas-admin.support.resolve');
+    });
 
     // 12. Night Audit
     Route::get('/night-audit', [NightAuditController::class, 'index'])->name('night-audit.index');
@@ -360,16 +376,21 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     });
 
     // 15. Universal Spreadsheet CSV Data Entry (Importer & Exporter)
-    Route::get('/data-entry', [SpreadsheetDataEntryController::class, 'index'])->name('data-entry.index');
-    Route::get('/data-entry/template/{type}', [SpreadsheetDataEntryController::class, 'downloadTemplate'])->name('data-entry.template');
-    Route::get('/data-entry/export/{type}', [SpreadsheetDataEntryController::class, 'exportCsv'])->name('data-entry.export');
-    Route::post('/data-entry/import/{type}', [SpreadsheetDataEntryController::class, 'importCsv'])->name('data-entry.import');
-    Route::post('/data-entry/batch-save/{type}', [SpreadsheetDataEntryController::class, 'batchSave'])->name('data-entry.batch-save');
+    Route::middleware('module.access:data_entry')->group(function () {
+        Route::get('/data-entry', [SpreadsheetDataEntryController::class, 'index'])->name('data-entry.index');
+        Route::get('/data-entry/template/{type}', [SpreadsheetDataEntryController::class, 'downloadTemplate'])->name('data-entry.template');
+        Route::get('/data-entry/export/{type}', [SpreadsheetDataEntryController::class, 'exportCsv'])->name('data-entry.export');
+        Route::post('/data-entry/import/{type}', [SpreadsheetDataEntryController::class, 'importCsv'])->name('data-entry.import');
+        Route::post('/data-entry/batch-save/{type}', [SpreadsheetDataEntryController::class, 'batchSave'])->name('data-entry.batch-save');
+    });
 
     // Profile Settings
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Active Workspace Role Switching (multi-role users)
+    Route::post('/active-role/switch', [ActiveRoleController::class, 'switch'])->name('active-role.switch');
 
     // Role Selection (for multi-role users)
     Route::get('/select-role', [RoleSelectionController::class, 'show'])->name('role.select');

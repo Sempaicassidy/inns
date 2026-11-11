@@ -34,6 +34,7 @@ import {
     X,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { toastError } from '@/Services/toast';
 
 interface Employee {
     id: string;
@@ -393,7 +394,7 @@ export default function HrIndex({
         );
 
         if (isCurrentUser) {
-            alert("You cannot delete your own active administrator account.");
+            toastError("You cannot delete your own active administrator account.");
             return;
         }
 
@@ -405,7 +406,7 @@ export default function HrIndex({
     const handleResendVerification = (emp: Employee) => {
         const email = emp.email || emp.user?.email;
         if (!email) {
-            alert("This employee does not have an email address.");
+            toastError("This employee does not have an email address.");
             return;
         }
 

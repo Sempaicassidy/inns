@@ -363,7 +363,7 @@ export default function PosIndex({
 
     return (
         <AuthenticatedLayout>
-            <Head title="Restaurant POS - THE INNS" />
+            <Head title="THE INNS" />
 
             <div className="space-y-6">
                 {/* Page Header */}

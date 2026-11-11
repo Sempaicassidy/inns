@@ -7,7 +7,6 @@ use App\Models\Guest;
 use App\Models\RatePlan;
 use App\Models\Room;
 use App\Models\RoomType;
-use App\Models\Tenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -118,7 +117,7 @@ class GuestController extends Controller
         ]);
 
         $user = $request->user();
-        $tenantId = $user->tenant_id ?? Tenant::first()?->id;
+        $tenantId = $user->tenant_id;
 
         Guest::create([
             'tenant_id' => $tenantId,

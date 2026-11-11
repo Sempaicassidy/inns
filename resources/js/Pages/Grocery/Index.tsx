@@ -1,6 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { PageProps } from '@/types';
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import ReceiptModal from '@/Components/ReceiptModal';
+import type { ReceiptData } from '@/Utils/receiptPrinter';
 import {
     AlertTriangle,
     ArrowDownRight,
@@ -25,7 +27,7 @@ import {
     Truck,
     X,
 } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 interface GroceryItem {
     id: string;
@@ -125,7 +127,8 @@ export default function GroceryIndex({
     recentMovements = [],
     activeStays = [],
 }: GroceryIndexProps) {
-    const [activeTab, setActiveTab] = useState<'overview' | 'inventory' | 'sales' | 'movements'>('overview');
+    const initialTab = (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('tab') as any) || 'overview';
+    const [activeTab, setActiveTab] = useState<'overview' | 'inventory' | 'sales' | 'movements'>(initialTab);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [statusFilter, setStatusFilter] = useState<'all' | 'optimal' | 'low_stock' | 'out_of_stock'>('all');
@@ -136,6 +139,10 @@ export default function GroceryIndex({
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isSaleModalOpen, setIsSaleModalOpen] = useState(false);
     const [selectedItemForAction, setSelectedItemForAction] = useState<GroceryItem | null>(null);
+    const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
+    const page = usePage();
+    const saleReceipt = (page.props as any).flash?.sale_receipt as ReceiptData | null | undefined;
+    const [handledReceipt, setHandledReceipt] = useState<ReceiptData | null>(null);
 
     // Retail Sale Form
     const saleForm = useForm({
@@ -277,6 +284,13 @@ export default function GroceryIndex({
         );
     };
 
+    useEffect(() => {
+        if (saleReceipt && saleReceipt !== handledReceipt) {
+            setHandledReceipt(saleReceipt);
+            setReceiptData(saleReceipt);
+        }
+    }, [saleReceipt, handledReceipt]);
+
     const handleSaleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         saleForm.post(route('grocery.orders.store'), {
@@ -302,10 +316,18 @@ export default function GroceryIndex({
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2.5">
+                        <Link
+                            href={route('grocery.pos')}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+                            title="Open full interactive POS terminal with product catalog, cart, and receipt printer"
+                        >
+                            <ShoppingCart className="w-4 h-4" />
+                            <span>Open POS Terminal</span>
+                        </Link>
                         <button
                             type="button"
                             onClick={() => setIsAddModalOpen(true)}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
                         >
                             <span>Add Product</span>
                         </button>
@@ -317,18 +339,6 @@ export default function GroceryIndex({
                             className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
                         >
                             <span>Restock Inbound</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                saleForm.reset();
-                                setIsSaleModalOpen(true);
-                            }}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 font-bold text-xs sm:text-sm rounded-xl transition active:scale-95 cursor-pointer"
-                            title="Ring up walk-in counter retail sale"
-                        >
-                            
-                            <span>New Retail Sale</span>
                         </button>
                         <Link
                             href={route('data-entry.index')}
@@ -407,7 +417,14 @@ export default function GroceryIndex({
                 </div>
 
                 {/* 3. Navigation Tabs */}
-                <div className="bg-white rounded-2xl p-1.5 border border-slate-200 flex items-center gap-1 overflow-x-auto shadow-2xs">
+                <div className="bg-white rounded-2xl p-1.5 border border-slate-200 flex items-center gap-1.5 overflow-x-auto shadow-2xs">
+                    <Link
+                        href={route('grocery.pos')}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition cursor-pointer shrink-0"
+                    >
+                        <ShoppingCart className="w-4 h-4" />
+                        <span>🛒 Open POS Terminal (Cashier Checkout)</span>
+                    </Link>
                     <button
                         type="button"
                         onClick={() => setActiveTab('overview')}
@@ -418,7 +435,7 @@ export default function GroceryIndex({
                         }`}
                     >
                         <TrendingUp className="w-4 h-4" />
-                        <span>Executive Overview Report</span>
+                        <span>Overview & Margin Report</span>
                     </button>
                     <button
                         type="button"
@@ -1421,6 +1438,14 @@ export default function GroceryIndex({
                     </div>
                 </div>
             )}
+
+            {/* Sale Receipt */}
+            <ReceiptModal
+                isOpen={!!receiptData}
+                onClose={() => setReceiptData(null)}
+                receiptData={receiptData!}
+                title="Grocery Sale Receipt"
+            />
         </AuthenticatedLayout>
     );
 }

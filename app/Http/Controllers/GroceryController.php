@@ -12,21 +12,19 @@ use App\Models\Property;
 use App\Models\Stay;
 use App\Models\StockMovement;
 use App\Models\Tenant;
+use App\Services\LedgerService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class GroceryController extends Controller
 {
-    public function index(Request $request): Response
+    protected function ensureDefaultGrocerySetup(string $tenantId, ?string $propertyId): void
     {
-        $user = $request->user();
-        $property = $user->property ?? Property::first();
-        $tenantId = $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
-
-        // Ensure default Grocery & Retail Categories exist
+        // 1. Categories
         $groceryCategories = PosCategory::where('tenant_id', $tenantId)
             ->where('department', 'grocery')
             ->orderBy('sort_order')
@@ -35,7 +33,7 @@ class GroceryController extends Controller
         if ($groceryCategories->isEmpty()) {
             $defaultCat = PosCategory::create([
                 'tenant_id' => $tenantId,
-                'property_id' => $property?->id,
+                'property_id' => $propertyId,
                 'department' => 'grocery',
                 'name' => 'Snacks & Confectionery',
                 'icon' => 'shopping-bag',
@@ -45,7 +43,7 @@ class GroceryController extends Controller
 
             $drinksCat = PosCategory::create([
                 'tenant_id' => $tenantId,
-                'property_id' => $property?->id,
+                'property_id' => $propertyId,
                 'department' => 'grocery',
                 'name' => 'Bottled Drinks & Sodas',
                 'icon' => 'glass',
@@ -55,7 +53,7 @@ class GroceryController extends Controller
 
             $careCat = PosCategory::create([
                 'tenant_id' => $tenantId,
-                'property_id' => $property?->id,
+                'property_id' => $propertyId,
                 'department' => 'grocery',
                 'name' => 'Personal Care & Sundries',
                 'icon' => 'package',
@@ -65,6 +63,20 @@ class GroceryController extends Controller
 
             $groceryCategories = collect([$defaultCat, $drinksCat, $careCat]);
         }
+    }
+
+    public function index(Request $request): Response
+    {
+        $user = $request->user();
+        $tenantId = $user->tenant_id;
+        $property = $user->property ?? ($tenantId ? Property::where('tenant_id', $tenantId)->first() : null);
+
+        $this->ensureDefaultGrocerySetup((string) $tenantId, $property?->id);
+
+        $groceryCategories = PosCategory::where('tenant_id', $tenantId)
+            ->where('department', 'grocery')
+            ->orderBy('sort_order')
+            ->get();
 
         $groceryCategoryIds = $groceryCategories->pluck('id')->toArray();
 
@@ -168,6 +180,7 @@ class GroceryController extends Controller
 
         // Active Stays for Room Folio Posting
         $activeStays = Stay::with(['room', 'guest', 'folio', 'reservationRoom.reservation.folios', 'reservationRoom.reservation.guest'])
+            ->where('tenant_id', $tenantId)
             ->whereNull('checked_out_at')
             ->get()
             ->map(function ($stay) {
@@ -236,6 +249,101 @@ class GroceryController extends Controller
         ]);
     }
 
+    /**
+     * Super / Mini Market POS terminal — item grid, cart and checkout.
+     */
+    public function pos(Request $request): Response
+    {
+        $user = $request->user();
+        $tenantId = $user->tenant_id;
+        $property = $user->property ?? ($tenantId ? Property::where('tenant_id', $tenantId)->first() : null);
+
+        $this->ensureDefaultGrocerySetup((string) $tenantId, $property?->id);
+
+        $categories = PosCategory::where('tenant_id', $tenantId)
+            ->where('department', 'grocery')
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get(['id', 'name', 'icon']);
+
+        $items = PosItem::with('category')
+            ->where('tenant_id', $tenantId)
+            ->where('department', 'grocery')
+            ->where('is_available', true)
+            ->orderBy('name')
+            ->get()
+            ->map(fn ($item) => [
+                'id' => $item->id,
+                'pos_category_id' => $item->pos_category_id,
+                'name' => $item->name,
+                'code' => $item->code ?? 'SKU-'.substr($item->id, 0, 6),
+                'price_minor' => (int) $item->price_minor,
+                'stock_quantity' => (int) ($item->stock_quantity ?? 0),
+                'unit' => $item->unit ?? 'pcs',
+                'category' => $item->category ? ['id' => $item->category->id, 'name' => $item->category->name] : null,
+            ]);
+
+        $activeStays = Stay::with(['room', 'guest', 'folio', 'reservationRoom.reservation.folios', 'reservationRoom.reservation.guest'])
+            ->where('tenant_id', $tenantId)
+            ->whereNull('checked_out_at')
+            ->get()
+            ->map(function ($stay) {
+                $res = $stay->reservationRoom?->reservation;
+                $folioId = $stay->folio?->id
+                    ?? $res?->folios?->where('status', 'open')->first()?->id
+                    ?? $res?->folios?->first()?->id;
+
+                return [
+                    'stay_id' => $stay->id,
+                    'room_id' => $stay->room_id,
+                    'room_number' => $stay->room?->room_number ?? '—',
+                    'guest_name' => $stay->guest?->full_name ?? $res?->guest?->full_name ?? 'Guest',
+                    'folio_id' => $folioId,
+                ];
+            });
+
+        $recentOrders = PosOrder::with(['items', 'room'])
+            ->where('tenant_id', $tenantId)
+            ->where('outlet_type', 'grocery')
+            ->latest()
+            ->take(20)
+            ->get()
+            ->map(fn ($order) => [
+                'id' => $order->id,
+                'order_number' => $order->order_number,
+                'guest_name' => $order->guest_name ?? 'Walk-In Customer',
+                'room_number' => $order->room?->room_number ?? null,
+                'total_minor' => $order->total_minor,
+                'payment_method' => $order->payment_method ?? 'cash',
+                'created_at' => $order->created_at->toIso8601String(),
+                'items' => $order->items->map(fn ($i) => [
+                    'item_name' => $i->item_name,
+                    'quantity' => $i->quantity,
+                    'total_minor' => $i->total_minor,
+                ])->all(),
+            ]);
+
+        $todayRevenueMinor = (int) PosOrder::where('tenant_id', $tenantId)
+            ->where('outlet_type', 'grocery')
+            ->whereDate('created_at', Carbon::today())
+            ->whereIn('payment_status', ['paid', 'posted_to_room'])
+            ->sum('total_minor');
+
+        return Inertia::render('Grocery/POS', [
+            'categories' => $categories,
+            'items' => $items,
+            'activeStays' => $activeStays,
+            'recentOrders' => $recentOrders,
+            'stats' => [
+                'today_total_minor' => $todayRevenueMinor,
+                'today_order_count' => PosOrder::where('tenant_id', $tenantId)
+                    ->where('outlet_type', 'grocery')
+                    ->whereDate('created_at', Carbon::today())
+                    ->count(),
+            ],
+        ]);
+    }
+
     public function storeItem(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -250,8 +358,8 @@ class GroceryController extends Controller
         ]);
 
         $user = $request->user();
-        $property = $user->property ?? Property::first();
-        $tenantId = $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
+        $tenantId = $user->tenant_id;
+        $property = $user->property ?? ($tenantId ? Property::where('tenant_id', $tenantId)->first() : null);
 
         $item = PosItem::create([
             'tenant_id' => $tenantId,
@@ -368,46 +476,77 @@ class GroceryController extends Controller
         ]);
 
         $user = $request->user();
-        $property = $user->property ?? Property::first();
-        $tenantId = $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
+        $property = $user->property;
+        $tenantId = $user->tenant_id;
+
+        if (! $tenantId) {
+            return back()->withErrors(['items' => 'No tenant context for this sale.']);
+        }
 
         $subtotal = 0;
         $orderLines = [];
+        $stockErrors = [];
 
+        // Validate every line against tenant-owned grocery catalog before mutating anything
         foreach ($validated['items'] as $itemData) {
-            $item = PosItem::find($itemData['item_id']);
-            if (! $item || $item->department !== 'grocery') {
-                continue;
+            $item = PosItem::where('tenant_id', $tenantId)
+                ->where('department', 'grocery')
+                ->find($itemData['item_id']);
+            if (! $item) {
+                return back()->withErrors(['items' => "Item {$itemData['item_id']} is not a grocery product in this tenant."]);
             }
-
-            $lineTotal = $item->price_minor * $itemData['quantity'];
-            $subtotal += $lineTotal;
-
-            // Deduct grocery stock
-            $item->decrement('stock_quantity', $itemData['quantity']);
-
-            // Record stock movement for retail sale
-            StockMovement::create([
-                'tenant_id' => $tenantId,
-                'property_id' => $property?->id,
-                'pos_item_id' => $item->id,
-                'movement_type' => 'issue_department',
-                'quantity' => $itemData['quantity'],
-                'unit_cost_minor' => $item->cost_price_minor,
-                'department' => 'retail_grocery',
-                'reference_no' => 'SALE-'.date('Ymd-His'),
-                'notes' => "Retail counter sale ({$itemData['quantity']}x)",
-                'performed_by' => $user->id,
-            ]);
-
-            $orderLines[] = [
-                'pos_item_id' => $item->id,
-                'item_name' => $item->name,
-                'unit_price_minor' => $item->price_minor,
-                'quantity' => $itemData['quantity'],
-                'total_minor' => $lineTotal,
-            ];
+            if ((int) $item->stock_quantity < (int) $itemData['quantity']) {
+                $stockErrors[] = "{$item->name}: only {$item->stock_quantity} in stock";
+            }
         }
+
+        if ($stockErrors !== []) {
+            return back()->withErrors(['items' => implode('; ', $stockErrors)]);
+        }
+
+        if ($validated['payment_method'] === 'room_folio' && ! empty($validated['folio_id'])) {
+            $folioCheck = Folio::where('tenant_id', $tenantId)->find($validated['folio_id']);
+            if (! $folioCheck || in_array($folioCheck->status, ['settled', 'closed', 'cancelled'], true)) {
+                return back()->withErrors(['folio_id' => 'Selected folio is not open for charges.']);
+            }
+        }
+
+        DB::transaction(function () use ($validated, $user, $property, $tenantId, &$subtotal, &$orderLines) {
+            foreach ($validated['items'] as $itemData) {
+                $item = PosItem::where('tenant_id', $tenantId)
+                    ->where('department', 'grocery')
+                    ->lockForUpdate()
+                    ->findOrFail($itemData['item_id']);
+
+                $lineTotal = $item->price_minor * $itemData['quantity'];
+                $subtotal += $lineTotal;
+
+                // Deduct grocery stock
+                $item->decrement('stock_quantity', $itemData['quantity']);
+
+                // Record stock movement for retail sale
+                StockMovement::create([
+                    'tenant_id' => $tenantId,
+                    'property_id' => $property?->id,
+                    'pos_item_id' => $item->id,
+                    'movement_type' => 'issue_department',
+                    'quantity' => $itemData['quantity'],
+                    'unit_cost_minor' => $item->cost_price_minor,
+                    'department' => 'retail_grocery',
+                    'reference_no' => 'SALE-'.date('Ymd-His'),
+                    'notes' => "Retail counter sale ({$itemData['quantity']}x)",
+                    'performed_by' => $user->id,
+                ]);
+
+                $orderLines[] = [
+                    'pos_item_id' => $item->id,
+                    'item_name' => $item->name,
+                    'unit_price_minor' => $item->price_minor,
+                    'quantity' => $itemData['quantity'],
+                    'total_minor' => $lineTotal,
+                ];
+            }
+        });
 
         $orderNumber = 'GRO-'.strtoupper(uniqid());
         $paymentStatus = $validated['payment_method'] === 'room_folio' ? 'posted_to_room' : 'paid';
@@ -436,10 +575,36 @@ class GroceryController extends Controller
             PosOrderItem::create($line);
         }
 
+        if ($paymentStatus === 'posted_to_room') {
+            app(LedgerService::class)->post(
+                (string) $tenantId,
+                $property?->id,
+                'pos_order',
+                (string) $order->id,
+                "Grocery sale #{$orderNumber} charged to guest folio",
+                [
+                    ['code' => '1050', 'direction' => 'debit', 'amount_minor' => $order->total_minor],
+                    ['code' => '4003', 'direction' => 'credit', 'amount_minor' => $order->total_minor],
+                ],
+            );
+        } else {
+            app(LedgerService::class)->post(
+                (string) $tenantId,
+                $property?->id,
+                'pos_order',
+                (string) $order->id,
+                "Grocery sale #{$orderNumber} ({$validated['payment_method']})",
+                [
+                    ['code' => LedgerService::tenderCode($validated['payment_method']), 'direction' => 'debit', 'amount_minor' => $order->total_minor],
+                    ['code' => '4003', 'direction' => 'credit', 'amount_minor' => $order->total_minor],
+                ],
+            );
+        }
+
         // Post to guest room folio if room_folio chosen
         if ($validated['payment_method'] === 'room_folio' && ! empty($validated['folio_id'])) {
-            $folio = Folio::find($validated['folio_id']);
-            if ($folio) {
+            $folio = Folio::where('tenant_id', $tenantId)->find($validated['folio_id']);
+            if ($folio && ! in_array($folio->status, ['settled', 'closed', 'cancelled'], true)) {
                 FolioLine::create([
                     'tenant_id' => $tenantId,
                     'folio_id' => $folio->id,
@@ -455,6 +620,31 @@ class GroceryController extends Controller
             }
         }
 
-        return back()->with('success', "Grocery sale #{$orderNumber} recorded successfully!");
+        $tenant = Tenant::find($tenantId);
+
+        return back()
+            ->with('success', "Grocery sale #{$orderNumber} recorded successfully!")
+            ->with('sale_receipt', [
+                'hotelName' => $tenant?->name ?? ($property?->name ?? 'THE INNS'),
+                'hotelAddress' => $property?->address ?? null,
+                'hotelPhone' => $property?->phone ?? null,
+                'receiptNumber' => $orderNumber,
+                'receiptType' => 'POS RECEIPT',
+                'dateTime' => now()->format('Y-m-d H:i:s'),
+                'cashierName' => $user->name,
+                'guestName' => $order->guest_name,
+                'roomNumber' => $order->room?->room_number ?? null,
+                'items' => collect($orderLines)->map(fn ($line) => [
+                    'description' => $line['item_name'],
+                    'quantity' => $line['quantity'],
+                    'unit_price' => $line['unit_price_minor'],
+                    'amount' => $line['total_minor'],
+                ])->all(),
+                'subtotal' => $subtotal,
+                'grandTotal' => $order->total_minor,
+                'paymentMethod' => $validated['payment_method'],
+                'amountsAreMinor' => true,
+                'footerText' => 'Thank you for shopping with us!',
+            ]);
     }
 }

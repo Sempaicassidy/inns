@@ -9,7 +9,6 @@ use App\Models\RatePlan;
 use App\Models\Room;
 use App\Models\RoomType;
 use App\Models\SystemNotification;
-use App\Models\Tenant;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -225,7 +224,7 @@ class HousekeepingController extends Controller
 
         $user = $request->user();
         $property = $this->resolveActiveProperty($request);
-        $tenantId = $property?->tenant_id ?? $user?->tenant_id ?? Tenant::first()?->id;
+        $tenantId = $property?->tenant_id ?? $user?->tenant_id;
 
         Room::create([
             'tenant_id' => $tenantId,
@@ -255,7 +254,7 @@ class HousekeepingController extends Controller
             || in_array($user->role, ['general_manager', 'manager', 'owner', 'admin'])
             || in_array($user->active_role, ['general_manager', 'manager', 'owner', 'admin']);
 
-        if (!$canDelete) {
+        if (! $canDelete) {
             return redirect()->back()->with('error', 'Only General Managers or Property Owners have permission to delete rooms.');
         }
 
@@ -273,7 +272,7 @@ class HousekeepingController extends Controller
         $hasActiveReservations = $room->reservationRooms()
             ->whereHas('reservation', function ($q) {
                 $q->whereIn('status', ['confirmed', 'checked_in'])
-                  ->where('check_out', '>=', now()->toDateString());
+                    ->where('check_out', '>=', now()->toDateString());
             })
             ->exists();
 
@@ -339,7 +338,7 @@ class HousekeepingController extends Controller
 
         $user = $request->user();
         $property = $this->resolveActiveProperty($request);
-        $tenantId = $property?->tenant_id ?? $user?->tenant_id ?? Tenant::first()?->id;
+        $tenantId = $property?->tenant_id ?? $user?->tenant_id;
 
         HousekeepingTask::create([
             'tenant_id' => $tenantId,

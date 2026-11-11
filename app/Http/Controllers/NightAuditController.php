@@ -11,6 +11,7 @@ use App\Models\Property;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\Stay;
+use App\Services\LedgerService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,21 +21,40 @@ use Inertia\Response;
 
 class NightAuditController extends Controller
 {
-    public function index(Request $request): Response
+    /**
+     * Roles permitted to view or execute the Night Audit.
+     *
+     * @var array<int, string>
+     */
+    private const ALLOWED_ROLES = [
+        'owner', 'super_admin', 'general_manager', 'manager', 'admin',
+        'night_auditor', 'accountant',
+    ];
+
+    public function index(Request $request): Response|RedirectResponse
     {
         $user = $request->user();
-        $property = $user->property ?? Property::first();
+
+        if (! $this->isAuthorized($user)) {
+            return redirect()->route('dashboard')->with('error', 'You do not have access to the Night Audit.');
+        }
+
+        $property = $this->resolveActiveProperty($request);
+        abort_unless($property, 403, 'No active property resolved for this account.');
+
         $bDateRecord = BusinessDate::where('property_id', $property->id)->first();
         $currentDate = $bDateRecord ? Carbon::parse($bDateRecord->current_business_date) : Carbon::today();
 
         // 1. Pending departures that haven't checked out yet
         $pendingDepartures = Reservation::with(['guest', 'reservationRooms.room'])
+            ->where('property_id', $property->id)
             ->whereDate('check_out', '<=', $currentDate->toDateString())
             ->where('status', 'checked_in')
             ->get();
 
-        // 2. In-house stays to be charged tonight
+        // 2. In-house stays to be charged tonight (scoped to this property via room)
         $inHouseStays = Stay::with(['guest', 'room.roomType', 'reservationRoom.reservation'])
+            ->whereHas('room', fn ($q) => $q->where('property_id', $property->id))
             ->whereNull('checked_out_at')
             ->get();
 
@@ -61,13 +81,22 @@ class NightAuditController extends Controller
     public function runAudit(Request $request): RedirectResponse
     {
         $user = $request->user();
-        $property = $user->property ?? Property::first();
+
+        abort_unless($this->isAuthorized($user), 403, 'You do not have permission to run the Night Audit.');
+
+        $property = $this->resolveActiveProperty($request);
+        abort_unless($property, 403, 'No active property resolved for this account.');
+
         $bDateRecord = BusinessDate::where('property_id', $property->id)->first();
         $currentDate = $bDateRecord ? Carbon::parse($bDateRecord->current_business_date) : Carbon::today();
+        $vatRate = $this->vatRate($property);
 
-        DB::transaction(function () use ($property, $currentDate, $user, $bDateRecord) {
-            // In-house stays
-            $inHouseStays = Stay::with(['reservationRoom.reservation', 'room'])->whereNull('checked_out_at')->get();
+        DB::transaction(function () use ($property, $currentDate, $user, $bDateRecord, $vatRate) {
+            // In-house stays for THIS property only
+            $inHouseStays = Stay::with(['reservationRoom.reservation', 'room'])
+                ->whereHas('room', fn ($q) => $q->where('property_id', $property->id))
+                ->whereNull('checked_out_at')
+                ->get();
 
             $totalRoomRevenue = 0;
 
@@ -78,7 +107,7 @@ class NightAuditController extends Controller
                 }
 
                 $rateMinor = $resRoom->rate_price_minor;
-                $taxMinor = (int) ($rateMinor * 0.18 / 1.18);
+                $taxMinor = (int) ($rateMinor * $vatRate / (1 + $vatRate));
                 $idempotencyKey = "audit_{$stay->id}_{$currentDate->toDateString()}_room";
 
                 // Ensure folio exists
@@ -92,7 +121,7 @@ class NightAuditController extends Controller
                         ->exists();
 
                     if (! $alreadyPosted) {
-                        FolioLine::create([
+                        $line = FolioLine::create([
                             'tenant_id' => $user->tenant_id,
                             'folio_id' => $folio->id,
                             'business_date' => $currentDate->toDateString(),
@@ -103,6 +132,19 @@ class NightAuditController extends Controller
                             'idempotency_key' => $idempotencyKey,
                             'posted_by' => $user->id,
                         ]);
+
+                        app(LedgerService::class)->post(
+                            (string) $user->tenant_id,
+                            $folio->property_id,
+                            'folio_charge',
+                            (string) $line->id,
+                            "Night audit room charge - Room {$stay->room->room_number}",
+                            [
+                                ['code' => '1050', 'direction' => 'debit', 'amount_minor' => $rateMinor],
+                                ['code' => '4001', 'direction' => 'credit', 'amount_minor' => $rateMinor],
+                            ],
+                            $currentDate->toDateString(),
+                        );
 
                         $folio->recalculateBalance();
                         $totalRoomRevenue += $rateMinor;
@@ -119,7 +161,10 @@ class NightAuditController extends Controller
                 ->sum('amount_minor');
 
             $occupiedCount = $inHouseStays->count();
-            $availableCount = Room::where('is_active', true)->whereNotIn('status_hk', ['out_of_order', 'out_of_service'])->count();
+            $availableCount = Room::where('property_id', $property->id)
+                ->where('is_active', true)
+                ->whereNotIn('status_hk', ['out_of_order', 'out_of_service'])
+                ->count();
 
             // Record Night Audit summary
             NightAudit::updateOrCreate(
@@ -153,5 +198,33 @@ class NightAuditController extends Controller
         });
 
         return redirect()->route('night-audit.index')->with('success', 'Night Audit completed successfully! Business date has advanced.');
+    }
+
+    private function isAuthorized($user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->isSuperAdmin()) {
+            return true;
+        }
+
+        return in_array($user->active_role, self::ALLOWED_ROLES, true);
+    }
+
+    /**
+     * VAT rate as a decimal (e.g. 0.18). Reads property tax_config override,
+     * falling back to the standard Tanzanian rate of 18%.
+     */
+    private function vatRate(Property $property): float
+    {
+        $percent = $property->tax_config['vat_rate_percent'] ?? null;
+
+        if (is_numeric($percent) && (float) $percent > 0) {
+            return (float) $percent / 100;
+        }
+
+        return 0.18;
     }
 }

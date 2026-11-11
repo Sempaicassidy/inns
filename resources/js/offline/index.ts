@@ -11,5 +11,6 @@ export * from './auth';
 export * from './queue';
 export * from './sync';
 export * from './conflict';
+export * from './offline-pin';
 export * from './offline-engine';
 

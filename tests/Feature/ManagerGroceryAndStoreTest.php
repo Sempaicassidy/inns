@@ -19,12 +19,19 @@ class ManagerGroceryAndStoreTest extends TestCase
     use RefreshDatabase;
 
     protected User $manager;
+
     protected Tenant $tenant;
+
     protected Property $property;
+
     protected PosCategory $groceryCategory;
+
     protected PosCategory $restaurantCategory;
+
     protected PosItem $groceryItem;
+
     protected PosItem $restaurantItem;
+
     protected InventoryItem $inventoryItem;
 
     protected function setUp(): void
@@ -34,7 +41,7 @@ class ManagerGroceryAndStoreTest extends TestCase
         $this->tenant = Tenant::create([
             'name' => 'The Inns Group',
             'slug' => 'the-inns',
-            'plan' => 'Professional',
+            'plan' => 'enterprise',
         ]);
 
         $this->property = Property::create([

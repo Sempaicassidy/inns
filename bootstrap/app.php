@@ -9,6 +9,8 @@ if (! function_exists('request_parse_body')) {
 }
 
 use App\Http\Middleware\EnsureCanAccessHr;
+use App\Http\Middleware\EnsureModuleAccess;
+use App\Http\Middleware\EnsureSaasAdmin;
 use App\Http\Middleware\EnsureTenantFeatureEnabled;
 use App\Http\Middleware\EnsureTenantIsolation;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -35,6 +37,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant.isolation' => EnsureTenantIsolation::class,
             'tenant.feature' => EnsureTenantFeatureEnabled::class,
             'can.hr' => EnsureCanAccessHr::class,
+            'module.access' => EnsureModuleAccess::class,
+            'saas.admin' => EnsureSaasAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

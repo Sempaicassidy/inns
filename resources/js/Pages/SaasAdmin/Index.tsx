@@ -76,6 +76,7 @@ import {
     Zap,
 } from 'lucide-react';
 import React, { useState } from 'react';
+import { toastError } from '@/Services/toast';
 
 interface TenantItem {
     id: string;
@@ -572,7 +573,7 @@ export default function SaasAdminDashboard({
 
     const handleRemoveSlide = (index: number) => {
         if (heroSlidesList.length <= 1) {
-            alert('Cannot remove this slide. The platform requires at least 1 slide for the hero showcase.');
+            toastError('Cannot remove this slide. The platform requires at least 1 slide for the hero showcase.');
             return;
         }
         if (window.confirm(`Are you sure you want to remove Slide #${index + 1}?`)) {

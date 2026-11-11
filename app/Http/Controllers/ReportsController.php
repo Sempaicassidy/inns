@@ -16,7 +16,6 @@ use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\RoomType;
 use App\Models\Stay;
-use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -36,7 +35,7 @@ class ReportsController extends Controller
         }
 
         $property = $user->property ?? Property::first();
-        $tenantId = $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
+        $tenantId = $user->tenant_id ?? $property?->tenant_id;
 
         $branches = Property::where('tenant_id', $tenantId)->get();
 

@@ -8,7 +8,6 @@ use App\Models\PosOrder;
 use App\Models\PosOrderItem;
 use App\Models\Property;
 use App\Models\Stay;
-use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,7 +20,7 @@ class RestaurantController extends Controller
     {
         $user = $request->user();
         $property = $user->property ?? Property::first();
-        $tenantId = $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
+        $tenantId = $user->tenant_id ?? $property?->tenant_id;
 
         // Ensure default restaurant categories exist
         $restaurantCategories = PosCategory::where('tenant_id', $tenantId)
@@ -153,10 +152,10 @@ class RestaurantController extends Controller
             ->take(8)
             ->get()
             ->map(fn ($r) => [
-            'name' => $r->item_name,
-            'quantity' => (int) $r->total_qty,
-            'revenue_minor' => (int) $r->total_rev,
-        ]);
+                'name' => $r->item_name,
+                'quantity' => (int) $r->total_qty,
+                'revenue_minor' => (int) $r->total_rev,
+            ]);
 
         // Active Stays for Room Service / Dining Charges
         $activeStays = Stay::with(['room', 'guest', 'folio', 'reservationRoom.reservation.folios', 'reservationRoom.reservation.guest'])
@@ -207,7 +206,7 @@ class RestaurantController extends Controller
 
         $user = $request->user();
         $property = $user->property ?? Property::first();
-        $tenantId = $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
+        $tenantId = $user->tenant_id ?? $property?->tenant_id;
 
         PosItem::create([
             'tenant_id' => $tenantId,
@@ -281,7 +280,7 @@ class RestaurantController extends Controller
 
         $user = $request->user();
         $property = $user->property ?? Property::first();
-        $tenantId = $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
+        $tenantId = $user->tenant_id ?? $property?->tenant_id;
 
         $maxOrder = PosCategory::where('tenant_id', $tenantId)->where('department', 'restaurant')->max('sort_order') ?? 0;
 

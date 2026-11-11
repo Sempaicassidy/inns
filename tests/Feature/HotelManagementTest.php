@@ -43,7 +43,7 @@ class HotelManagementTest extends TestCase
         $this->tenant = Tenant::create([
             'name' => 'Test Hospitality Group',
             'slug' => 'test-group',
-            'plan' => 'standard',
+            'plan' => 'enterprise',
         ]);
 
         $this->property = Property::create([
@@ -68,6 +68,7 @@ class HotelManagementTest extends TestCase
             'email' => 'gm@testlodge.com',
             'password' => bcrypt('password'),
             'role' => 'general_manager',
+            'email_verified_at' => now(),
         ]);
 
         $this->roomType = RoomType::create([
@@ -347,6 +348,7 @@ class HotelManagementTest extends TestCase
             'password' => bcrypt('password'),
             'role' => 'receptionist',
             'can_manage_branches' => false,
+            'email_verified_at' => now(),
         ]);
 
         $response = $this->actingAs($staff)->post('/branches', [
@@ -372,6 +374,7 @@ class HotelManagementTest extends TestCase
             'email' => 'reception@theinns.co.tz',
             'password' => bcrypt('password'),
             'role' => 'receptionist',
+            'email_verified_at' => now(),
         ]);
 
         // Dashboard
@@ -387,16 +390,9 @@ class HotelManagementTest extends TestCase
         $this->actingAs($receptionist)->get('/guest-requests')->assertStatus(200);
         $this->actingAs($receptionist)->get('/folios')->assertStatus(200);
 
-        // Room Management
-        $this->actingAs($receptionist)->get('/housekeeping')->assertStatus(200);
-        $this->actingAs($receptionist)->get('/housekeeping/status')->assertStatus(200);
-        $this->actingAs($receptionist)->get('/maintenance')->assertStatus(200);
-
         // Reports & Account
-        $this->actingAs($receptionist)->get('/reports')->assertStatus(200);
+        $this->actingAs($receptionist)->get('/front-office/reports')->assertStatus(200);
         $this->actingAs($receptionist)->get('/notifications')->assertStatus(200);
         $this->actingAs($receptionist)->get('/profile')->assertStatus(200);
     }
 }
-
-

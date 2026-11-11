@@ -28,6 +28,7 @@ import {
     Zap,
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
+import { toastError } from '@/Services/toast';
 
 interface ManagerNotificationProps extends PageProps {
     setting: {
@@ -647,10 +648,10 @@ export default function ManagerNotifications({
                                                 '/reservations'
                                             );
                                         } else {
-                                            alert('PWA Notification Manager is initializing or not active.');
+                                            toastError('PWA Notification Manager is initializing or not active.');
                                         }
                                     }}
-                                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B8960C] hover:from-[#c29f2e] hover:to-[#a18307] text-[#1E3A5F] font-black text-xs flex items-center justify-center gap-2 transition shadow-sm cursor-pointer"
+                                    className="w-full py-3 px-4 rounded-xl bg-[#D4AF37] hover:bg-[#c9a227] text-[#1E3A5F] font-black text-xs flex items-center justify-center gap-2 transition shadow-sm cursor-pointer"
                                 >
                                     
                                     <span>Test PWA Notification Popup & Chime</span>

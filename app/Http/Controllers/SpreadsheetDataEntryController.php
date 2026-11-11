@@ -12,7 +12,6 @@ use App\Models\Property;
 use App\Models\Room;
 use App\Models\RoomType;
 use App\Models\StockMovement;
-use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -31,7 +30,7 @@ class SpreadsheetDataEntryController extends Controller
     {
         $user = $request->user();
         $property = $user->property ?? Property::first();
-        $tenantId = $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
+        $tenantId = $user->tenant_id ?? $property?->tenant_id;
 
         $stats = [
             'grocery_items' => PosItem::where('tenant_id', $tenantId)->where('department', 'grocery')->count(),
@@ -120,7 +119,7 @@ class SpreadsheetDataEntryController extends Controller
     {
         $user = $request->user();
         $property = $user->property ?? Property::first();
-        $tenantId = $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
+        $tenantId = $user->tenant_id ?? $property?->tenant_id;
 
         $filename = "{$type}_export_".now()->format('Y-m-d_His').'.csv';
 
@@ -279,7 +278,7 @@ class SpreadsheetDataEntryController extends Controller
 
         $user = $request->user();
         $property = $user->property ?? Property::first();
-        $tenantId = $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
+        $tenantId = $user->tenant_id ?? $property?->tenant_id;
 
         $rows = $request->input('rows');
         $created = 0;
@@ -293,7 +292,7 @@ class SpreadsheetDataEntryController extends Controller
                 $rowNum = $index + 1;
                 $normalized = [];
                 foreach ($row as $k => $v) {
-                    $normKey = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string)$k));
+                    $normKey = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string) $k));
                     $normalized[$normKey] = is_string($v) ? trim($v) : $v;
                 }
 
@@ -357,7 +356,7 @@ class SpreadsheetDataEntryController extends Controller
 
         $user = $request->user();
         $property = $user->property ?? Property::first();
-        $tenantId = $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
+        $tenantId = $user->tenant_id ?? $property?->tenant_id;
 
         $path = $file->getRealPath();
         $handle = fopen($path, 'r');
@@ -957,4 +956,3 @@ class SpreadsheetDataEntryController extends Controller
         ];
     }
 }
-

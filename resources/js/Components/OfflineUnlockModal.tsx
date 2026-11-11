@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useOffline } from '@/Hooks/useOffline';
-import { KeyRound, Lock, Unlock, X, ShieldAlert, Check } from 'lucide-react';
+import { Lock, Unlock, X, ShieldAlert, User as UserIcon } from 'lucide-react';
 
 interface OfflineUnlockModalProps {
     isOpen: boolean;
@@ -9,17 +9,30 @@ interface OfflineUnlockModalProps {
 }
 
 export default function OfflineUnlockModal({ isOpen, onClose, onUnlocked }: OfflineUnlockModalProps) {
-    const { unlock, offlineSession } = useOffline();
+    const { unlock, offlineSession, provisionedSessions } = useOffline();
+    const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
     const [pin, setPin] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setSelectedUserId(null);
+            setPin('');
+            setError(null);
+        }
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (pin.length < 4) {
-            setError('Please enter at least 4 digits.');
+        if (!selectedUserId) {
+            setError('Please select your account first.');
+            return;
+        }
+        if (!/^\d{4,6}$/.test(pin)) {
+            setError('PIN must be 4 to 6 digits.');
             return;
         }
 
@@ -27,7 +40,7 @@ export default function OfflineUnlockModal({ isOpen, onClose, onUnlocked }: Offl
         setError(null);
 
         try {
-            const res = await unlock(pin);
+            const res = await unlock(selectedUserId, pin);
             if (res.success) {
                 onUnlocked?.();
                 onClose();
@@ -62,24 +75,49 @@ export default function OfflineUnlockModal({ isOpen, onClose, onUnlocked }: Offl
                 </div>
 
                 <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-                    {offlineSession ? (
-                        <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-xs">
-                            <span className="text-slate-500 block text-[10px] uppercase font-bold">Account</span>
-                            <span className="font-extrabold text-slate-900 block">{offlineSession.userName}</span>
-                            <span className="text-slate-500 text-[11px] font-mono">{offlineSession.userEmail}</span>
+                    {provisionedSessions.length === 0 ? (
+                        <div className="p-3 bg-amber-50 text-amber-900 rounded-2xl border border-amber-200 text-xs">
+                            No accounts are provisioned for offline use on this device yet. Log in online once and set your offline PIN.
                         </div>
                     ) : (
-                        <div className="p-3 bg-blue-50 text-blue-900 rounded-2xl border border-blue-200 text-xs">
-                            Enter the offline security PIN configured during your initial online session. (Default: <b>1234</b>)
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">
+                                Select Your Account
+                            </label>
+                            <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                                {provisionedSessions.map((session) => {
+                                    const isSelected = selectedUserId === session.userId;
+                                    return (
+                                        <button
+                                            key={session.sessionId}
+                                            type="button"
+                                            onClick={() => setSelectedUserId(session.userId)}
+                                            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl border text-left transition ${
+                                                isSelected
+                                                    ? 'border-amber-500 bg-amber-50'
+                                                    : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                                            }`}
+                                        >
+                                            <UserIcon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-amber-600' : 'text-slate-400'}`} />
+                                            <span className="flex-1 min-w-0">
+                                                <span className="block text-xs font-extrabold text-slate-900 truncate">{session.userName}</span>
+                                                <span className="block text-[10px] text-slate-500 font-mono truncate">{session.userEmail}</span>
+                                            </span>
+                                            <span className="text-[10px] font-bold text-slate-400">{session.userRole}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
                     )}
 
                     <div>
                         <label className="block text-xs font-bold text-slate-700 mb-1">
-                            Enter 4-Digit Offline PIN
+                            Enter Offline PIN (4-6 digits)
                         </label>
                         <input
                             type="password"
+                            inputMode="numeric"
                             maxLength={6}
                             value={pin}
                             onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
@@ -106,7 +144,7 @@ export default function OfflineUnlockModal({ isOpen, onClose, onUnlocked }: Offl
                         </button>
                         <button
                             type="submit"
-                            disabled={loading || pin.length < 4}
+                            disabled={loading || !selectedUserId || !/^\d{4,6}$/.test(pin)}
                             className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-extrabold text-xs rounded-xl transition flex items-center justify-center gap-1.5 shadow-md"
                         >
                             <Unlock className="w-4 h-4" />
@@ -118,4 +156,3 @@ export default function OfflineUnlockModal({ isOpen, onClose, onUnlocked }: Offl
         </div>
     );
 }
-

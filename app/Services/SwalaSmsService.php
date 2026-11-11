@@ -4,12 +4,29 @@ namespace App\Services;
 
 use App\Models\SmsProviderAccount;
 use App\Models\SmsProviderLog;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class SwalaSmsService
 {
+    /**
+     * Build an HTTP client that verifies TLS certificates unless explicitly
+     * disabled for local development via SWALASMS_VERIFY_TLS=false.
+     */
+    protected function httpClient(int $timeout = 20): PendingRequest
+    {
+        $request = Http::timeout($timeout);
+
+        $verifyTls = filter_var(
+            config('swalasms.verify_tls', config('swahilies.verify_tls', true)),
+            FILTER_VALIDATE_BOOLEAN
+        );
+
+        return $verifyTls ? $request : $request->withoutVerifying();
+    }
+
     /**
      * Normalize Tanzanian and international phone numbers to E.164 (+255XXXXXXXXX) format
      */
@@ -19,15 +36,15 @@ class SwalaSmsService
 
         // e.g. 0712345678 -> 255712345678
         if (str_starts_with($clean, '0') && strlen($clean) === 10) {
-            $clean = '255' . substr($clean, 1);
+            $clean = '255'.substr($clean, 1);
         }
 
         // e.g. 712345678 -> 255712345678
         if (strlen($clean) === 9 && in_array($clean[0], ['6', '7'])) {
-            $clean = '255' . $clean;
+            $clean = '255'.$clean;
         }
 
-        return str_starts_with($clean, '+') ? $clean : ('+' . $clean);
+        return str_starts_with($clean, '+') ? $clean : ('+'.$clean);
     }
 
     /**
@@ -110,7 +127,7 @@ class SwalaSmsService
         $creds = $this->getCredentials();
 
         $finalSenderId = $senderId ?: ($creds['sender_id'] ?: 'SWALATECH');
-        $endpoint = $creds['base_url'] . '/v1/sms/messages';
+        $endpoint = $creds['base_url'].'/v1/sms/messages';
         $idempotencyKey = (string) Str::uuid();
 
         $payload = [
@@ -121,8 +138,7 @@ class SwalaSmsService
         ];
 
         try {
-            $response = Http::withoutVerifying()
-                ->timeout(20)
+            $response = $this->httpClient(20)
                 ->withToken($creds['api_key'])
                 ->withHeaders([
                     'Accept' => 'application/json',
@@ -147,7 +163,7 @@ class SwalaSmsService
 
             // SwalaSMS returns 202 Accepted on success
             if (($response->successful() || $response->status() === 202) && ($responseData['success'] ?? false)) {
-                $msgUid = $responseData['data']['uid'] ?? $responseData['request_uid'] ?? ('SWL-' . time());
+                $msgUid = $responseData['data']['uid'] ?? $responseData['request_uid'] ?? ('SWL-'.time());
                 $units = $responseData['data']['units'] ?? 1;
 
                 // Sync local provider balance if available
@@ -169,7 +185,7 @@ class SwalaSmsService
             $errCode = $responseData['error_code'] ?? null;
             $rawMsg = $responseData['message']
                 ?? ($responseData['errors']['sender_id'][0]
-                ?? ($responseData['errors']['recipient'][0] ?? 'Hitilafu ya SwalaSMS (' . $response->status() . ')'));
+                ?? ($responseData['errors']['recipient'][0] ?? 'Hitilafu ya SwalaSMS ('.$response->status().')'));
 
             if ($errCode === 'INVALID_SENDER') {
                 $rawMsg = "Sender ID '{$finalSenderId}' haijaidhinishwa bado kwenye akaunti yako ya SwalaSMS. Unaweza kutumia 'SWALATECH' kwa majaribio, au sanidi Sender ID iliyoidhinishwa kwenye Gateway Settings.";
@@ -189,7 +205,7 @@ class SwalaSmsService
             ];
         } catch (\Throwable $e) {
             $durationMs = (int) round((microtime(true) - $startTime) * 1000);
-            Log::error('SwalaSMS dispatch exception: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error('SwalaSMS dispatch exception: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
 
             SmsProviderLog::create([
                 'endpoint' => $endpoint,
@@ -205,7 +221,7 @@ class SwalaSmsService
                 'success' => false,
                 'message_id' => null,
                 'status' => 'failed',
-                'error' => 'Kushindwa kuwasiliana na SwalaSMS API: ' . $e->getMessage(),
+                'error' => 'Kushindwa kuwasiliana na SwalaSMS API: '.$e->getMessage(),
             ];
         }
     }
@@ -216,11 +232,10 @@ class SwalaSmsService
     public function getBalance(): array
     {
         $creds = $this->getCredentials();
-        $endpoint = $creds['base_url'] . '/v1/balance';
+        $endpoint = $creds['base_url'].'/v1/balance';
 
         try {
-            $response = Http::withoutVerifying()
-                ->timeout(10)
+            $response = $this->httpClient(10)
                 ->withToken($creds['api_key'])
                 ->get($endpoint);
 
@@ -261,7 +276,7 @@ class SwalaSmsService
     public function sendBulk(array $recipients, string $message, ?string $senderId = null, ?string $campaignName = null): array
     {
         $creds = $this->getCredentials();
-        $endpoint = $creds['base_url'] . '/v2/sms/send-bulk';
+        $endpoint = $creds['base_url'].'/v2/sms/send-bulk';
         $finalSenderId = $senderId ?: ($creds['sender_id'] ?: 'SWALATECH');
 
         $formattedRecipients = array_map(function ($r) {
@@ -271,6 +286,7 @@ class SwalaSmsService
             if (is_array($r) && isset($r['to'])) {
                 $r['to'] = $this->normalizePhoneNumber($r['to']);
             }
+
             return $r;
         }, $recipients);
 
@@ -278,12 +294,11 @@ class SwalaSmsService
             'recipients' => $formattedRecipients,
             'message' => $message,
             'sender_id' => $finalSenderId,
-            'campaign_name' => $campaignName ?: ('Campaign-' . date('Ymd-His')),
+            'campaign_name' => $campaignName ?: ('Campaign-'.date('Ymd-His')),
         ];
 
         try {
-            $response = Http::withoutVerifying()
-                ->timeout(30)
+            $response = $this->httpClient(30)
                 ->withToken($creds['api_key'])
                 ->withHeaders([
                     'Accept' => 'application/json',
@@ -307,4 +322,3 @@ class SwalaSmsService
         }
     }
 }
-

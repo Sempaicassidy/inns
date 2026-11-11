@@ -7,6 +7,9 @@ use App\Models\Folio;
 use App\Models\FolioLine;
 use App\Models\Payment;
 use App\Models\Property;
+use App\Models\Tenant;
+use App\Services\LedgerService;
+use App\Services\TraVfdService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -67,15 +70,15 @@ class FolioController extends Controller
         ]);
 
         $user = $request->user();
-        $property = $user->property ?? Property::first();
-        $bDateRecord = BusinessDate::where('property_id', $property->id)->first();
+        $bDateRecord = BusinessDate::where('property_id', $folio->property_id)->first();
         $businessDate = $bDateRecord ? Carbon::parse($bDateRecord->current_business_date) : Carbon::today();
 
         $amountMinor = (int) ($validated['amount'] * 100);
-        $taxMinor = (int) ($amountMinor * 0.18 / 1.18); // 18% inclusive
+        $vatRate = $this->vatRate($folio->property);
+        $taxMinor = (int) ($amountMinor * $vatRate / (1 + $vatRate)); // VAT inclusive
 
         DB::transaction(function () use ($folio, $validated, $amountMinor, $taxMinor, $businessDate, $user) {
-            FolioLine::create([
+            $line = FolioLine::create([
                 'tenant_id' => $user->tenant_id,
                 'folio_id' => $folio->id,
                 'business_date' => $businessDate->toDateString(),
@@ -85,6 +88,19 @@ class FolioController extends Controller
                 'tax_minor' => $taxMinor,
                 'posted_by' => $user->id,
             ]);
+
+            app(LedgerService::class)->post(
+                (string) $user->tenant_id,
+                $folio->property_id,
+                'folio_charge',
+                (string) $line->id,
+                "Folio charge: {$validated['description']}",
+                [
+                    ['code' => '1050', 'direction' => 'debit', 'amount_minor' => $amountMinor],
+                    ['code' => LedgerService::revenueCode($validated['line_type']), 'direction' => 'credit', 'amount_minor' => $amountMinor],
+                ],
+                $businessDate->toDateString(),
+            );
 
             $folio->recalculateBalance();
         });
@@ -103,14 +119,18 @@ class FolioController extends Controller
         ]);
 
         $user = $request->user();
-        $property = $user->property ?? Property::first();
-        $bDateRecord = BusinessDate::where('property_id', $property->id)->first();
+        $bDateRecord = BusinessDate::where('property_id', $folio->property_id)->first();
         $businessDate = $bDateRecord ? Carbon::parse($bDateRecord->current_business_date) : Carbon::today();
 
         $amountMinor = (int) ($validated['amount'] * 100);
 
+        // Settled/closed folios must not accept new payments
+        if (in_array($folio->status, ['settled', 'closed', 'cancelled'], true)) {
+            return back()->with('error', 'This folio is already settled and cannot accept new payments.');
+        }
+
         DB::transaction(function () use ($folio, $validated, $amountMinor, $businessDate, $user) {
-            Payment::create([
+            $payment = Payment::create([
                 'tenant_id' => $user->tenant_id,
                 'folio_id' => $folio->id,
                 'business_date' => $businessDate->toDateString(),
@@ -124,9 +144,60 @@ class FolioController extends Controller
                 'notes' => $validated['notes'] ?? null,
             ]);
 
+            app(LedgerService::class)->post(
+                (string) $user->tenant_id,
+                $folio->property_id,
+                'folio_payment',
+                (string) $payment->id,
+                "Guest payment ({$validated['payment_method']})",
+                [
+                    ['code' => LedgerService::tenderCode($validated['payment_method']), 'direction' => 'debit', 'amount_minor' => $amountMinor],
+                    ['code' => '1050', 'direction' => 'credit', 'amount_minor' => $amountMinor],
+                ],
+                $businessDate->toDateString(),
+            );
+
+            // Record fiscal document for TRA/VFD (submits only when configured)
+            $tenant = Tenant::find($user->tenant_id);
+            if ($tenant) {
+                app(TraVfdService::class)->recordInvoice(
+                    $tenant,
+                    'folio_payment',
+                    (string) $payment->id,
+                    [
+                        'tin' => $tenant->settings['tin'] ?? null,
+                        'vrn' => $tenant->settings['vrn'] ?? null,
+                        'seller_name' => $tenant->name,
+                        'lines' => [[
+                            'description' => 'Guest folio payment',
+                            'quantity' => 1,
+                            'unit_price_minor' => $amountMinor,
+                            'total_minor' => $amountMinor,
+                        ]],
+                        'totals' => ['total_minor' => $amountMinor, 'currency' => $folio->currency],
+                    ],
+                    $folio->property_id,
+                );
+            }
+
             $folio->recalculateBalance();
         });
 
         return back()->with('success', 'Payment recorded successfully!');
+    }
+
+    /**
+     * VAT rate as a decimal (e.g. 0.18). Reads property tax_config override,
+     * falling back to the standard Tanzanian rate of 18%.
+     */
+    private function vatRate(?Property $property): float
+    {
+        $percent = $property?->tax_config['vat_rate_percent'] ?? null;
+
+        if (is_numeric($percent) && (float) $percent > 0) {
+            return (float) $percent / 100;
+        }
+
+        return 0.18;
     }
 }

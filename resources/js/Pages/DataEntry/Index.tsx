@@ -26,6 +26,7 @@ import {
     X,
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
+import { toastError, toastSuccess } from '@/Services/toast';
 
 interface SchemaInfo {
     id: string;
@@ -504,7 +505,7 @@ export default function SpreadsheetDataEntryIndex({ stats, defaultProperty }: Da
 
             const lines = text.split(/\r\n|\n/).filter((l) => l.trim() !== '');
             if (lines.length < 2) {
-                alert('Uploaded CSV must contain at least a header and 1 row of data.');
+                toastError('Uploaded CSV must contain at least a header and 1 row of data.');
                 return;
             }
 
@@ -580,13 +581,13 @@ export default function SpreadsheetDataEntryIndex({ stats, defaultProperty }: Da
 
                 const json = await res.json();
                 if (json.success) {
-                    alert(json.message);
+                    toastSuccess(json.message);
                     setIsMappingModalOpen(false);
                 } else {
-                    alert('Error: ' + json.message);
+                    toastError('Error: ' + json.message);
                 }
             } catch (err: any) {
-                alert('Import error: ' + err.message);
+                toastError('Import error: ' + err.message);
             } finally {
                 setImportingMapped(false);
             }

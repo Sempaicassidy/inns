@@ -34,8 +34,7 @@ class WhatsAppService
 
         $tenantId = $tenantId
             ?? auth()->user()?->tenant_id
-            ?? ($propertyId ? Property::find($propertyId)?->tenant_id : null)
-            ?? Tenant::first()?->id;
+            ?? ($propertyId ? Property::find($propertyId)?->tenant_id : null);
 
         $setting = WhatsAppSetting::where('tenant_id', $tenantId)
             ->when($propertyId, fn ($q) => $q->where('property_id', $propertyId))
@@ -110,7 +109,7 @@ class WhatsAppService
             ."*Booking Ref:* #{$reservation->code}\n"
             ."*Check-in:* {$checkIn} (14:00)\n"
             ."*Check-out:* {$checkOut} (11:00)\n\n"
-            ."We look forward to welcoming you. Reply here if you need airport transfer or assistance!";
+            .'We look forward to welcoming you. Reply here if you need airport transfer or assistance!';
 
         return $this->sendMessage(
             $guest->phone ?? '+255712000000',

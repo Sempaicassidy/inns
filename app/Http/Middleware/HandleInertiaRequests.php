@@ -10,6 +10,7 @@ use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\SystemNotification;
 use App\Models\Tenant;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -180,7 +181,7 @@ class HandleInertiaRequests extends Middleware
                 }
 
                 // Pending Expenses for Accountant / GM
-                if (in_array($user->role, ['general_manager', 'owner', 'accountant', 'senior_accountant', 'finance_officer'])) {
+                if (in_array($user->active_role, ['general_manager', 'manager', 'owner', 'accountant', 'senior_accountant', 'finance_officer'], true)) {
                     $pendingExpCount = Expense::where('tenant_id', $user->tenant_id)
                         ->where('status', 'pending')
                         ->count();
@@ -199,7 +200,7 @@ class HandleInertiaRequests extends Middleware
                 }
 
                 // Low stock alerts for Manager / Store
-                if (in_array($user->role, ['general_manager', 'owner', 'storekeeper'])) {
+                if (in_array($user->active_role, ['general_manager', 'manager', 'owner', 'storekeeper'], true)) {
                     try {
                         $lowStockCount = InventoryItem::where('tenant_id', $user->tenant_id)
                             ->whereColumn('current_stock', '<=', 'min_stock_alert')
@@ -258,6 +259,10 @@ class HandleInertiaRequests extends Middleware
                     'features' => $tenant->getFeaturesMap(),
                 ] : null,
                 'active_role' => $user?->active_role,
+                'available_roles' => $user ? collect($user->roles_list)
+                    ->map(fn (string $role) => User::getRoleMetadata($role) + ['assigned' => true])
+                    ->values()
+                    ->all() : [],
                 'property' => $property,
                 'branches' => $branches,
                 'can_manage_branches' => $canManageBranches,
@@ -281,6 +286,7 @@ class HandleInertiaRequests extends Middleware
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
                 'highlight_term' => $request->session()->get('highlight_term'),
+                'sale_receipt' => $request->session()->get('sale_receipt'),
             ],
         ];
     }

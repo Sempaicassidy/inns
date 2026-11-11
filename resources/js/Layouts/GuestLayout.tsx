@@ -1,4 +1,5 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
+import ToastHost from '@/Components/ToastHost';
 import { PropsWithChildren, ReactNode } from 'react';
 
 interface GuestLayoutProps {
@@ -52,6 +53,7 @@ export default function Guest({
 
                 {children}
             </div>
+            <ToastHost />
         </div>
     );
 }

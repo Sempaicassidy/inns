@@ -15,17 +15,28 @@ return [
     |
     */
 
-    'api_key' => env('X-API-Key', env('X-API-Key', 'darsms_2b52ba9d1e4b3b41e8b40cd31b4d0b35a1a3b6b48a05722a')),
+    'api_key' => env('SWALASMS_API_KEY', env('X-API-Key')),
 
-    'base_url' => env('X-Base-Url', ' https://dev.darsms.co.tz/api/v1'),
+    'base_url' => env('SWALASMS_BASE_URL', env('X-Base-Url', 'https://api.swalasms.com')),
 
-    'sender_id' => env('X-Sender-Id', 'DARSMSH'),
+    'sender_id' => env('SWALASMS_SENDER_ID', env('X-Sender-Id', 'SWALATECH')),
 
-    'environment' => env('DARSMS', 'live'),
+    'environment' => env('SWALASMS_ENV', env('DARSMS', 'live')),
 
-    'currency' => env('DARSMS_CURRENCY', 'TZS'),
+    'currency' => env('SWALASMS_CURRENCY', 'TZS'),
 
-    'webhook_secret' => env('DARSMS_WEBHOOK_SECRET', null),
+    'webhook_secret' => env('SWALASMS_WEBHOOK_SECRET', env('DARSMS_WEBHOOK_SECRET')),
+
+    /*
+    |--------------------------------------------------------------------------
+    | TLS Certificate Verification
+    |--------------------------------------------------------------------------
+    |
+    | Keep TLS verification enabled in all environments. Only disable for
+    | local development against endpoints with self-signed certificates.
+    |
+    */
+
+    'verify_tls' => env('SWALASMS_VERIFY_TLS', true),
 
 ];
-

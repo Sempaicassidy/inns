@@ -1,5 +1,6 @@
 import Dexie, { Table } from 'dexie';
 import { OFFLINE_CONFIG } from './config';
+import type { OfflinePinCredential } from './offline-pin';
 
 export interface LocalTenant {
     tenantId: string;
@@ -28,7 +29,11 @@ export interface LocalSession {
     userName: string;
     userEmail: string;
     userRole: string;
+    /** PBKDF2-SHA256 credential — the only supported PIN storage going forward. */
+    pinCredential?: OfflinePinCredential;
+    /** @deprecated Legacy SHA-256 hash kept only for migration of pre-existing sessions. */
     pinHash?: string;
+    /** @deprecated Legacy salt for pinHash. */
     salt?: string;
     unlockedAt?: string;
     expiresAt?: string;

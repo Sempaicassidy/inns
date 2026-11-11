@@ -490,7 +490,7 @@ export default function GuestsIndex({
                                         <div className="p-4 sm:p-5 border-b border-slate-100 space-y-3">
                                             <div className="flex items-start justify-between gap-3">
                                                 <div className="flex items-start gap-3">
-                                                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-700 to-indigo-600 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-xs">
+                                                    <div className="w-11 h-11 rounded-2xl bg-blue-700 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-xs">
                                                         {guest.first_name?.charAt(0)}
                                                         {guest.last_name?.charAt(0)}
                                                     </div>

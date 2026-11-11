@@ -19,6 +19,7 @@ import {
 import { router, usePage } from '@inertiajs/react';
 import { offlineEngine } from '@/offline';
 import OfflineUnlockModal from '@/Components/OfflineUnlockModal';
+import { toastError } from '@/Services/toast';
 
 export default function OfflineSyncManager() {
     const { auth } = usePage<any>().props;
@@ -128,7 +129,7 @@ export default function OfflineSyncManager() {
 
     const handleManualSync = async () => {
         if (!navigator.onLine) {
-            alert('Cannot synchronize: No internet connection detected yet.');
+            toastError('Cannot synchronize: No internet connection detected yet.');
             return;
         }
         setIsSyncing(true);

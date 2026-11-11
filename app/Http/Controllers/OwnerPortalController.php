@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\BusinessDate;
 use App\Models\Expense;
 use App\Models\Folio;
 use App\Models\FolioLine;
-use App\Models\NightAudit;
 use App\Models\OwnerDirective;
 use App\Models\OwnerDrawing;
 use App\Models\OwnerRequisition;
 use App\Models\Payment;
+use App\Models\PosItem;
+use App\Models\PosOrder;
 use App\Models\Property;
 use App\Models\Reservation;
 use App\Models\Room;
@@ -20,8 +20,6 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -97,8 +95,8 @@ class OwnerPortalController extends Controller
             $manager = User::where('property_id', $property->id)
                 ->where(function ($q) {
                     $q->where('role', 'general_manager')
-                      ->orWhere('role', 'manager')
-                      ->orWhereJsonContains('roles', 'general_manager');
+                        ->orWhere('role', 'manager')
+                        ->orWhereJsonContains('roles', 'general_manager');
                 })
                 ->select('id', 'name', 'email', 'phone', 'username')
                 ->first();
@@ -176,9 +174,9 @@ class OwnerPortalController extends Controller
         })
             ->where(function ($q) {
                 $q->where('line_type', 'discount')
-                  ->orWhere('amount_minor', '<', 0)
-                  ->orWhere('description', 'like', '%discount%')
-                  ->orWhere('description', 'like', '%punguzo%');
+                    ->orWhere('amount_minor', '<', 0)
+                    ->orWhere('description', 'like', '%discount%')
+                    ->orWhere('description', 'like', '%punguzo%');
             })
             ->with(['folio.reservation.guest', 'folio.property'])
             ->orderBy('created_at', 'desc')
@@ -227,16 +225,20 @@ class OwnerPortalController extends Controller
         $managersList = User::where('tenant_id', $tenantId)
             ->where(function ($q) {
                 $q->where('role', 'general_manager')
-                  ->orWhere('role', 'manager')
-                  ->orWhereJsonContains('roles', 'general_manager');
+                    ->orWhere('role', 'manager')
+                    ->orWhereJsonContains('roles', 'general_manager');
             })
             ->with('property:id,name,city')
             ->select('id', 'name', 'email', 'phone', 'username', 'property_id', 'status')
             ->get();
 
+        // 7. Analytics: period comparison, revenue trend, occupancy, departments, alerts
+        $analytics = $this->buildOwnerAnalytics($request, $tenantId);
+
         return Inertia::render('Owner/Index', [
             'tenant' => $tenant,
             'tab' => $request->query('tab', 'overview'),
+            'period' => $analytics['period'],
             'metrics' => [
                 'group_month_revenue_minor' => $groupMonthRevenueMinor,
                 'group_today_revenue_minor' => $groupTodayRevenueMinor,
@@ -261,6 +263,7 @@ class OwnerPortalController extends Controller
             'drawings' => $drawings,
             'managersList' => $managersList,
             'inspectingPropertyId' => session('owner_inspecting_property_id'),
+            'analytics' => $analytics,
         ]);
     }
 
@@ -299,8 +302,8 @@ class OwnerPortalController extends Controller
         $mgrQuery = User::where('tenant_id', $user->tenant_id)
             ->where(function ($q) {
                 $q->where('role', 'general_manager')
-                  ->orWhere('role', 'manager')
-                  ->orWhereJsonContains('roles', 'general_manager');
+                    ->orWhere('role', 'manager')
+                    ->orWhereJsonContains('roles', 'general_manager');
             });
 
         if (! empty($validated['property_id'])) {
@@ -313,7 +316,7 @@ class OwnerPortalController extends Controller
                 'tenant_id' => $user->tenant_id,
                 'user_id' => $mgr->id,
                 'target_role' => 'general_manager',
-                'title' => 'Official Executive Directive from Owner: ' . $validated['title'],
+                'title' => 'Official Executive Directive from Owner: '.$validated['title'],
                 'message' => Str::limit($validated['directive_text'], 140),
                 'category' => 'governance',
                 'severity' => $validated['priority'] === 'urgent' ? 'high' : 'info',
@@ -387,7 +390,7 @@ class OwnerPortalController extends Controller
                 'tenant_id' => $requisition->tenant_id,
                 'property_id' => $requisition->property_id,
                 'created_by' => $requisition->requested_by,
-                'expense_number' => 'EXP-' . strtoupper(Str::random(6)),
+                'expense_number' => 'EXP-'.strtoupper(Str::random(6)),
                 'title' => $requisition->title,
                 'category' => $requisition->category,
                 'vendor_name' => $requisition->vendor_name,
@@ -395,7 +398,7 @@ class OwnerPortalController extends Controller
                 'payment_method' => 'cash',
                 'expense_date' => now()->toDateString(),
                 'status' => 'approved',
-                'notes' => 'Generated from approved Owner Requisition ' . $requisition->requisition_no . '. Owner notes: ' . ($requisition->owner_notes ?? ''),
+                'notes' => 'Generated from approved Owner Requisition '.$requisition->requisition_no.'. Owner notes: '.($requisition->owner_notes ?? ''),
             ]);
         }
 
@@ -404,8 +407,8 @@ class OwnerPortalController extends Controller
             'tenant_id' => $requisition->tenant_id,
             'user_id' => $requisition->requested_by,
             'target_role' => 'general_manager',
-            'title' => 'Requisition Approved by Owner (' . $requisition->requisition_no . ')',
-            'message' => 'Your requisition "' . $requisition->title . '" for TZS ' . number_format($requisition->amount_minor / 100, 0) . ' has been approved.',
+            'title' => 'Requisition Approved by Owner ('.$requisition->requisition_no.')',
+            'message' => 'Your requisition "'.$requisition->title.'" for TZS '.number_format($requisition->amount_minor / 100, 0).' has been approved.',
             'category' => 'finance',
             'severity' => 'success',
             'action_url' => route('dashboard'),
@@ -440,8 +443,8 @@ class OwnerPortalController extends Controller
             'tenant_id' => $requisition->tenant_id,
             'user_id' => $requisition->requested_by,
             'target_role' => 'general_manager',
-            'title' => 'Requisition Rejected by Owner (' . $requisition->requisition_no . ')',
-            'message' => 'Reason: ' . $validated['owner_notes'],
+            'title' => 'Requisition Rejected by Owner ('.$requisition->requisition_no.')',
+            'message' => 'Reason: '.$validated['owner_notes'],
             'category' => 'finance',
             'severity' => 'warning',
             'action_url' => route('dashboard'),
@@ -469,7 +472,7 @@ class OwnerPortalController extends Controller
             'monthly_target_revenue_minor' => $targetMinor,
         ]);
 
-        return redirect()->back()->with('success', "Monthly revenue target for {$property->name} updated: TZS " . number_format($validated['monthly_target_revenue'], 0));
+        return redirect()->back()->with('success', "Monthly revenue target for {$property->name} updated: TZS ".number_format($validated['monthly_target_revenue'], 0));
     }
 
     /**
@@ -500,7 +503,7 @@ class OwnerPortalController extends Controller
             'drawing_type' => $validated['drawing_type'],
             'amount_minor' => $amountMinor,
             'payment_method' => $validated['payment_method'],
-            'reference_no' => 'OWN-' . strtoupper(Str::random(6)),
+            'reference_no' => 'OWN-'.strtoupper(Str::random(6)),
             'drawing_date' => $validated['drawing_date'],
             'notes' => $validated['notes'] ?? null,
         ]);
@@ -511,7 +514,7 @@ class OwnerPortalController extends Controller
             default => 'Owner Drawing',
         };
 
-        return redirect()->back()->with('success', "{$typeLabel} transaction of TZS " . number_format($validated['amount'], 0) . " recorded successfully.");
+        return redirect()->back()->with('success', "{$typeLabel} transaction of TZS ".number_format($validated['amount'], 0).' recorded successfully.');
     }
 
     /**
@@ -541,5 +544,279 @@ class OwnerPortalController extends Controller
         session()->forget(['owner_inspecting_property_id', 'owner_inspecting_property_name']);
 
         return redirect()->route('owner.index')->with('success', 'Returned to Executive Owner Portal.');
+    }
+
+    /**
+     * Build server-side analytics for the Owner Dashboard.
+     * All queries are tenant-isolated; financial totals use confirmed
+     * payments only and non-cancelled expenses.
+     *
+     * @return array<string, mixed>
+     */
+    private function buildOwnerAnalytics(Request $request, ?string $tenantId): array
+    {
+        $empty = [
+            'period' => 'month',
+            'range' => ['start' => null, 'end' => null, 'previous_start' => null, 'previous_end' => null],
+            'comparison' => [],
+            'revenue_trend' => [],
+            'occupancy' => [],
+            'departments' => [],
+            'staff' => [],
+            'alerts' => [],
+        ];
+
+        if (! $tenantId) {
+            return $empty;
+        }
+
+        $period = (string) $request->query('period', 'month');
+        $now = Carbon::now();
+        $end = $now->copy()->endOfDay();
+
+        switch ($period) {
+            case 'today':
+                $start = $now->copy()->startOfDay();
+                $prevStart = $start->copy()->subDay();
+                $prevEnd = $end->copy()->subDay();
+                $granularity = 'hour';
+                break;
+            case '7d':
+                $start = $now->copy()->subDays(6)->startOfDay();
+                $prevStart = $start->copy()->subDays(7);
+                $prevEnd = $start->copy()->subDay()->endOfDay();
+                $granularity = 'day';
+                break;
+            case '30d':
+                $start = $now->copy()->subDays(29)->startOfDay();
+                $prevStart = $start->copy()->subDays(30);
+                $prevEnd = $start->copy()->subDay()->endOfDay();
+                $granularity = 'day';
+                break;
+            case 'year':
+                $start = $now->copy()->startOfYear();
+                $prevStart = $start->copy()->subYear();
+                $prevEnd = $end->copy()->subYear();
+                $granularity = 'month';
+                break;
+            case 'month':
+            default:
+                $period = 'month';
+                $start = $now->copy()->startOfMonth();
+                $prevStart = $start->copy()->subMonth();
+                $prevEnd = $end->copy()->subMonth();
+                $granularity = 'day';
+                break;
+        }
+
+        // Optional single-property filter — validated against tenant-owned properties only
+        $propertyFilter = $request->query('property_id');
+        $propertyIdsQuery = Property::where('tenant_id', $tenantId);
+        if ($propertyFilter) {
+            $propertyIdsQuery->where('id', $propertyFilter);
+        }
+        $propertyIds = $propertyIdsQuery->pluck('id');
+        $selectedPropertyId = $propertyFilter && $propertyIds->isNotEmpty() ? (string) $propertyFilter : null;
+
+        $revenueQuery = fn ($from, $to) => (int) Payment::whereHas('folio', function ($q) use ($tenantId, $selectedPropertyId) {
+            $q->where('tenant_id', $tenantId);
+            if ($selectedPropertyId) {
+                $q->where('property_id', $selectedPropertyId);
+            }
+        })
+            ->where('status', 'confirmed')
+            ->whereBetween('created_at', [$from, $to])
+            ->sum('amount_minor');
+
+        $expenseQuery = fn ($from, $to) => (int) Expense::whereIn('property_id', $propertyIds)
+            ->where('status', '!=', 'cancelled')
+            ->whereBetween('expense_date', [$from->toDateString(), $to->toDateString()])
+            ->sum('amount_minor');
+
+        $posOrderScope = function ($q) use ($tenantId, $propertyIds, $selectedPropertyId) {
+            $q->where('tenant_id', $tenantId);
+            if ($selectedPropertyId) {
+                $q->where('property_id', $selectedPropertyId);
+            } else {
+                $q->whereIn('property_id', $propertyIds);
+            }
+            $q->where('status', '!=', 'cancelled');
+        };
+
+        $posRevenueQuery = fn ($from, $to) => (int) PosOrder::where($posOrderScope)
+            ->whereBetween('created_at', [$from, $to])
+            ->sum('total_minor');
+
+        $curRev = $revenueQuery($start, $end);
+        $prevRev = $revenueQuery($prevStart, $prevEnd);
+        $curExp = $expenseQuery($start, $end);
+        $prevExp = $expenseQuery($prevStart, $prevEnd);
+        $curPos = $posRevenueQuery($start, $end);
+        $prevPos = $posRevenueQuery($prevStart, $prevEnd);
+
+        $pctChange = function (int|float $current, int|float $previous): ?float {
+            if ($previous == 0) {
+                return $current == 0 ? 0.0 : null;
+            }
+
+            return round((($current - $previous) / $previous) * 100, 1);
+        };
+
+        // Revenue trend series
+        $trend = [];
+        $cursor = $start->copy();
+        $step = $granularity === 'month' ? 'month' : ($granularity === 'hour' ? 'hour' : 'day');
+        $maxPoints = $granularity === 'month' ? 12 : ($granularity === 'hour' ? 24 : 31);
+        $points = 0;
+
+        while ($cursor->lte($end) && $points < $maxPoints) {
+            $bucketStart = $cursor->copy();
+            $bucketEnd = match ($step) {
+                'month' => $cursor->copy()->endOfMonth(),
+                'hour' => $cursor->copy()->endOfHour(),
+                default => $cursor->copy()->endOfDay(),
+            };
+            if ($bucketEnd->gt($end)) {
+                $bucketEnd = $end->copy();
+            }
+
+            $accomRev = (int) Payment::whereHas('folio', function ($q) use ($tenantId, $selectedPropertyId) {
+                $q->where('tenant_id', $tenantId);
+                if ($selectedPropertyId) {
+                    $q->where('property_id', $selectedPropertyId);
+                }
+            })
+                ->where('status', 'confirmed')
+                ->whereBetween('created_at', [$bucketStart, $bucketEnd])
+                ->sum('amount_minor');
+            $posRev = (int) PosOrder::where($posOrderScope)
+                ->whereBetween('created_at', [$bucketStart, $bucketEnd])
+                ->sum('total_minor');
+
+            $trend[] = [
+                'label' => $step === 'month' ? $cursor->format('M') : ($step === 'hour' ? $cursor->format('H:00') : $cursor->format('d M')),
+                'accommodation_minor' => $accomRev,
+                'pos_minor' => $posRev,
+                'total_minor' => $accomRev + $posRev,
+            ];
+
+            $cursor = match ($step) {
+                'month' => $cursor->copy()->addMonth()->startOfMonth(),
+                'hour' => $cursor->copy()->addHour(),
+                default => $cursor->copy()->addDay()->startOfDay(),
+            };
+            $points++;
+        }
+
+        // Occupancy snapshot
+        $roomsQuery = Room::whereIn('property_id', $propertyIds);
+        $totalRooms = (clone $roomsQuery)->count();
+        $occupiedRooms = (clone $roomsQuery)->where('status_occupancy', 'occupied')->count();
+        $reservedRooms = Reservation::where('tenant_id', $tenantId)
+            ->whereIn('property_id', $propertyIds)
+            ->where('status', 'confirmed')
+            ->whereDate('check_in', '<=', $end->toDateString())
+            ->whereDate('check_out', '>', $now->toDateString())
+            ->count();
+        $oooRooms = (clone $roomsQuery)->whereIn('status_hk', ['out_of_order', 'out_of_service'])->count();
+
+        // Department revenue (POS outlets)
+        $departments = PosOrder::where($posOrderScope)
+            ->whereBetween('created_at', [$start, $end])
+            ->selectRaw('outlet_type, COUNT(*) as orders_count, SUM(total_minor) as revenue_minor')
+            ->groupBy('outlet_type')
+            ->get()
+            ->map(fn ($row) => [
+                'name' => ucfirst((string) ($row->outlet_type ?? 'other')),
+                'orders' => (int) $row->orders_count,
+                'revenue_minor' => (int) $row->revenue_minor,
+            ])
+            ->values()
+            ->all();
+
+        // Staff overview (tenant-wide; property filter applies only when a property is selected)
+        $staffQuery = User::where('tenant_id', $tenantId)->where('status', 'active');
+        if ($selectedPropertyId) {
+            $staffQuery->where('property_id', $selectedPropertyId);
+        }
+        $staffByRole = $staffQuery
+            ->selectRaw('role, COUNT(*) as total')
+            ->groupBy('role')
+            ->pluck('total', 'role')
+            ->all();
+
+        // Alerts — real data only
+        $alerts = [];
+        $pendingReqQuery = OwnerRequisition::where('tenant_id', $tenantId)->where('status', 'pending_owner');
+        if ($selectedPropertyId) {
+            $pendingReqQuery->where('property_id', $selectedPropertyId);
+        }
+        $pendingReq = $pendingReqQuery->count();
+        if ($pendingReq > 0) {
+            $alerts[] = ['type' => 'approval', 'severity' => 'warning', 'message' => "{$pendingReq} expenditure requisition(s) awaiting your approval.", 'route' => 'owner.index?tab=approvals'];
+        }
+        if ($oooRooms > 0) {
+            $alerts[] = ['type' => 'rooms', 'severity' => 'warning', 'message' => "{$oooRooms} room(s) are out of order or out of service.", 'route' => 'housekeeping.index'];
+        }
+        $lowStockQuery = PosItem::where('tenant_id', $tenantId)
+            ->whereColumn('stock_quantity', '<=', 'reorder_level');
+        if ($selectedPropertyId) {
+            $lowStockQuery->where('property_id', $selectedPropertyId);
+        }
+        $lowStock = $lowStockQuery->count();
+        if ($lowStock > 0) {
+            $alerts[] = ['type' => 'inventory', 'severity' => 'info', 'message' => "{$lowStock} inventory item(s) at or below low-stock threshold.", 'route' => 'inventory.index'];
+        }
+        $cancelledCount = Reservation::where('tenant_id', $tenantId)
+            ->whereIn('property_id', $propertyIds)
+            ->where('status', 'cancelled')
+            ->whereBetween('updated_at', [$start, $end])
+            ->count();
+        $totalRes = Reservation::where('tenant_id', $tenantId)
+            ->whereIn('property_id', $propertyIds)
+            ->whereBetween('created_at', [$start, $end])
+            ->count();
+        if ($totalRes > 0 && ($cancelledCount / $totalRes) > 0.2) {
+            $alerts[] = ['type' => 'cancellations', 'severity' => 'warning', 'message' => 'Cancellation rate exceeded 20% for the selected period.', 'route' => 'reports.index'];
+        }
+
+        return [
+            'period' => $period,
+            'selected_property_id' => $selectedPropertyId,
+            'range' => [
+                'start' => $start->toDateString(),
+                'end' => $end->toDateString(),
+                'previous_start' => $prevStart->toDateString(),
+                'previous_end' => $prevEnd->toDateString(),
+            ],
+            'comparison' => [
+                'revenue_minor' => $curRev,
+                'previous_revenue_minor' => $prevRev,
+                'revenue_change_percent' => $pctChange($curRev, $prevRev),
+                'expenses_minor' => $curExp,
+                'previous_expenses_minor' => $prevExp,
+                'expenses_change_percent' => $pctChange($curExp, $prevExp),
+                'gop_minor' => $curRev - $curExp,
+                'previous_gop_minor' => $prevRev - $prevExp,
+                'gop_change_percent' => $pctChange($curRev - $curExp, $prevRev - $prevExp),
+                'pos_revenue_minor' => $curPos,
+                'previous_pos_revenue_minor' => $prevPos,
+            ],
+            'revenue_trend' => $trend,
+            'occupancy' => [
+                'total_rooms' => $totalRooms,
+                'occupied_rooms' => $occupiedRooms,
+                'available_rooms' => max(0, $totalRooms - $occupiedRooms - $oooRooms),
+                'reserved_rooms' => $reservedRooms,
+                'out_of_order_rooms' => $oooRooms,
+                'occupancy_rate' => $totalRooms > 0 ? round(($occupiedRooms / $totalRooms) * 100, 1) : 0,
+            ],
+            'departments' => $departments,
+            'staff' => [
+                'total_active' => array_sum($staffByRole),
+                'by_role' => $staffByRole,
+            ],
+            'alerts' => $alerts,
+        ];
     }
 }

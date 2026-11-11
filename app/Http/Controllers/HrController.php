@@ -35,9 +35,9 @@ class HrController extends Controller
 
         if ($tenantId) {
             $property = $user?->property ?? Property::where('tenant_id', $tenantId)->first();
-            if (!$property) {
+            if (! $property) {
                 $tenant = Tenant::find($tenantId);
-                $propertyName = $tenant ? $tenant->name . ' Main Lodge' : 'Main Lodge';
+                $propertyName = $tenant ? $tenant->name.' Main Lodge' : 'Main Lodge';
                 $property = Property::create([
                     'tenant_id' => $tenantId,
                     'name' => $propertyName,
@@ -52,7 +52,7 @@ class HrController extends Controller
             }
         } else {
             $property = Property::first();
-            $tenantId = $property?->tenant_id ?? Tenant::first()?->id;
+            $tenantId = $property?->tenant_id;
         }
 
         return [$tenantId, $property];
@@ -74,12 +74,12 @@ class HrController extends Controller
                 })
                 ->exists();
 
-            if (!$hasEmp) {
+            if (! $hasEmp) {
                 Employee::create([
                     'tenant_id' => $tenantId,
                     'property_id' => $property?->id,
                     'user_id' => $u->id,
-                    'employee_code' => 'EMP-' . strtoupper(substr(uniqid(), -4)),
+                    'employee_code' => 'EMP-'.strtoupper(substr(uniqid(), -4)),
                     'full_name' => $u->name,
                     'email' => $u->email,
                     'phone' => $u->phone,
@@ -244,7 +244,7 @@ class HrController extends Controller
         $code = 'EMP-'.strtoupper(substr(uniqid(), -4));
 
         $userId = null;
-        if (!empty($validated['password']) || $request->boolean('create_user_account')) {
+        if (! empty($validated['password']) || $request->boolean('create_user_account')) {
             if (empty($validated['email'])) {
                 return redirect()->back()->withErrors(['email' => 'An email address is required to create a system login account.']);
             }
@@ -277,7 +277,7 @@ class HrController extends Controller
                 $candidate = $baseUsername;
                 $counter = 1;
                 while (User::where('username', $candidate)->exists()) {
-                    $candidate = $baseUsername . '_' . $counter;
+                    $candidate = $baseUsername.'_'.$counter;
                     $counter++;
                 }
                 $cleanUsername = $candidate;
@@ -315,7 +315,7 @@ class HrController extends Controller
                 try {
                     $user->sendEmailVerificationNotification();
                 } catch (\Throwable $e) {
-                    \Log::warning("Email verification send failed for {$user->email}: " . $e->getMessage());
+                    \Log::warning("Email verification send failed for {$user->email}: ".$e->getMessage());
                 }
             }
             $userId = $user->id;
@@ -384,7 +384,7 @@ class HrController extends Controller
             'address' => 'nullable|string|max:200',
             'bank_name' => 'nullable|string|max:80',
             'bank_account' => 'nullable|string|max:50',
-            'username' => 'nullable|string|max:60|regex:/^[a-zA-Z0-9_\.\-]+$/|unique:users,username,' . ($employee->user_id ?? 'NULL'),
+            'username' => 'nullable|string|max:60|regex:/^[a-zA-Z0-9_\.\-]+$/|unique:users,username,'.($employee->user_id ?? 'NULL'),
             'password' => 'nullable|string|min:6',
             'system_role' => 'nullable|string|max:50',
             'pin_code' => 'nullable|string|max:10',
@@ -414,17 +414,17 @@ class HrController extends Controller
             if ($request->filled('username')) {
                 $userUpdateData['username'] = $validated['username'];
             }
-            if (!empty($systemRole)) {
+            if (! empty($systemRole)) {
                 $userUpdateData['role'] = $systemRole;
             }
             if ($pinCode !== null) {
                 $userUpdateData['pin_code'] = $pinCode;
             }
-            if (!empty($password)) {
+            if (! empty($password)) {
                 $userUpdateData['password'] = Hash::make($password);
             }
             $employee->user->update($userUpdateData);
-        } elseif (!empty($password) && !empty($validated['email'])) {
+        } elseif (! empty($password) && ! empty($validated['email'])) {
             // Create user account if password is provided
             $cleanUsername = trim($validated['username'] ?? '');
             if (empty($cleanUsername)) {
@@ -432,7 +432,7 @@ class HrController extends Controller
                 $candidate = $baseUsername ?: 'staff';
                 $c = 1;
                 while (User::where('username', $candidate)->exists()) {
-                    $candidate = ($baseUsername ?: 'staff') . '_' . $c;
+                    $candidate = ($baseUsername ?: 'staff').'_'.$c;
                     $c++;
                 }
                 $cleanUsername = $candidate;
@@ -484,7 +484,7 @@ class HrController extends Controller
         // 1. Strictly prevent self-deletion by user ID or email
         if (
             ($employee->user_id && $employee->user_id === $currentUser->id)
-            || (!empty($employee->email) && strtolower($employee->email) === strtolower($currentUser->email))
+            || (! empty($employee->email) && strtolower($employee->email) === strtolower($currentUser->email))
         ) {
             return redirect()->back()->with('error', 'You cannot delete your own currently logged-in account.');
         }
@@ -515,7 +515,7 @@ class HrController extends Controller
         [$tenantId] = $this->resolveTenantAndProperty($request);
         $employee = Employee::where('tenant_id', $tenantId)->findOrFail($id);
 
-        if (!$employee->user) {
+        if (! $employee->user) {
             return redirect()->back()->with('error', "Employee {$employee->full_name} does not have a system login account.");
         }
 
@@ -525,9 +525,10 @@ class HrController extends Controller
 
         try {
             $employee->user->sendEmailVerificationNotification();
+
             return redirect()->back()->with('success', "A fresh email verification link has been sent to {$employee->user->email}.");
         } catch (\Throwable $e) {
-            return redirect()->back()->with('error', "Failed to send verification email: " . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to send verification email: '.$e->getMessage());
         }
     }
 
@@ -675,7 +676,7 @@ class HrController extends Controller
             }
         }
 
-        return redirect()->back()->with('success', 'Leave status updated to: ' . strtoupper($validated['status']));
+        return redirect()->back()->with('success', 'Leave status updated to: '.strtoupper($validated['status']));
     }
 
     /**
@@ -713,7 +714,7 @@ class HrController extends Controller
                 'paye_deduction_minor' => $paye,
                 'other_deductions_minor' => 0,
                 'net_salary_minor' => $netSalary,
-                'payment_method' => !empty($emp->bank_account) ? 'bank' : 'mpesa',
+                'payment_method' => ! empty($emp->bank_account) ? 'bank' : 'mpesa',
                 'payment_reference' => null,
                 'status' => 'draft',
             ]);
@@ -752,7 +753,7 @@ class HrController extends Controller
 
         $payroll->update($updateData);
 
-        return redirect()->back()->with('success', 'Payroll payment status updated to: ' . strtoupper($validated['status']));
+        return redirect()->back()->with('success', 'Payroll payment status updated to: '.strtoupper($validated['status']));
     }
 
     /**

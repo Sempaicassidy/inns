@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\InventoryItem;
 use App\Models\Property;
 use App\Models\StockMovement;
-use App\Models\Tenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -14,11 +13,31 @@ use Inertia\Response;
 
 class InventoryController extends Controller
 {
+    /**
+     * Roles allowed to mutate stock (receive / issue / adjust / create items).
+     * Read-only finance roles (accountant, auditor) may view but not mutate.
+     */
+    private const STOCK_MUTATION_ROLES = [
+        'owner', 'super_admin', 'general_manager', 'manager', 'admin',
+        'storekeeper', 'procurement_manager',
+    ];
+
+    private function denyUnlessCanMutateStock(Request $request): ?RedirectResponse
+    {
+        $user = $request->user();
+
+        if ($user->isSuperAdmin() || in_array($user->active_role, self::STOCK_MUTATION_ROLES, true)) {
+            return null;
+        }
+
+        return redirect()->back()->with('error', 'Your current role does not have permission to modify inventory stock.');
+    }
+
     public function index(Request $request): Response
     {
         $user = $request->user();
         $property = $user->property ?? Property::first();
-        $tenantId = $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
+        $tenantId = $user->tenant_id ?? $property?->tenant_id;
 
         $items = InventoryItem::where('tenant_id', $tenantId)
             ->where('is_active', true)
@@ -114,6 +133,11 @@ class InventoryController extends Controller
 
     public function storeItem(Request $request): RedirectResponse
     {
+        $denied = $this->denyUnlessCanMutateStock($request);
+        if ($denied) {
+            return $denied;
+        }
+
         if (! $request->filled('sku')) {
             $request->merge(['sku' => 'SKU-'.strtoupper(Str::random(6))]);
         }
@@ -143,7 +167,7 @@ class InventoryController extends Controller
 
         $user = $request->user();
         $property = $user->property ?? Property::first();
-        $tenantId = $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
+        $tenantId = $user->tenant_id ?? $property?->tenant_id;
 
         $costMinor = (int) ($validated['unit_cost'] * 100);
 
@@ -181,6 +205,11 @@ class InventoryController extends Controller
 
     public function receiveStock(Request $request): RedirectResponse
     {
+        $denied = $this->denyUnlessCanMutateStock($request);
+        if ($denied) {
+            return $denied;
+        }
+
         $validated = $request->validate([
             'item_id' => 'required|exists:inventory_items,id',
             'quantity' => 'required|integer|min:1',
@@ -219,6 +248,11 @@ class InventoryController extends Controller
 
     public function issueStock(Request $request): RedirectResponse
     {
+        $denied = $this->denyUnlessCanMutateStock($request);
+        if ($denied) {
+            return $denied;
+        }
+
         if ($request->has('inventory_item_id') && ! $request->filled('item_id')) {
             $request->merge(['item_id' => $request->input('inventory_item_id')]);
         }
@@ -271,6 +305,11 @@ class InventoryController extends Controller
 
     public function adjustStock(Request $request): RedirectResponse
     {
+        $denied = $this->denyUnlessCanMutateStock($request);
+        if ($denied) {
+            return $denied;
+        }
+
         $validated = $request->validate([
             'item_id' => 'required|exists:inventory_items,id',
             'adjustment_type' => 'required|in:damage,shrinkage,audit_correction',

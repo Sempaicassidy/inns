@@ -1,8 +1,20 @@
-const CACHE_NAME = 'the-inns-pwa-v16';
-const APP_SHELL_KEY = '__the_inns_app_shell__';
+/*
+ * THE INNS — Service Worker (Offline PWA)
+ *
+ * Security model:
+ *  - Caches STATIC public assets only (hashed Vite bundles, icons, fonts, images).
+ *  - NEVER caches authenticated HTML, Inertia page responses, login/logout,
+ *    or any private API / tenant business data in Cache Storage.
+ *  - Business data lives exclusively in tenant-scoped IndexedDB (Dexie).
+ *  - Only deletes caches belonging to this app (the-inns-* prefix).
+ */
 
-// Helper: Safely resolve relative paths against the service worker scope
-// Works seamlessly in WAMP subfolder (http://localhost/inns/) and custom domain (https://hotel.com/)
+const CACHE_PREFIX = 'the-inns-static-';
+const CACHE_VERSION = 'v17';
+const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
+const OFFLINE_PAGE = 'offline.html';
+
+// Resolve a path against the service worker scope (supports /inns/ subfolder deploys)
 const toScopeUrl = (path) => {
     if (!path) return self.registration.scope;
     if (typeof path === 'string' && (path.startsWith('http://') || path.startsWith('https://'))) {
@@ -12,19 +24,14 @@ const toScopeUrl = (path) => {
     return new URL(clean, self.registration.scope).href;
 };
 
-const RELATIVE_PRECACHE = [
-    '',
-    'login',
-    'dashboard',
-    'pos',
-    'housekeeping',
-    'reservations',
-    'calendar',
+// Static public assets safe to precache (no user-specific content)
+const STATIC_PRECACHE = [
     'manifest.webmanifest',
     'favicon.png',
     'favicon.ico',
     'apple-touch-icon.png',
     'logo.png',
+    OFFLINE_PAGE,
     'pwa-icons/icon-72x72.png',
     'pwa-icons/icon-96x96.png',
     'pwa-icons/icon-128x128.png',
@@ -34,290 +41,178 @@ const RELATIVE_PRECACHE = [
     'pwa-icons/icon-384x384.png',
     'pwa-icons/icon-512x512.png',
     'pwa-icons/maskable-icon-192x192.png',
-    'pwa-icons/maskable-icon-512x512.png'
+    'pwa-icons/maskable-icon-512x512.png',
 ];
 
-// Install event: download system assets, app shell, and Vite production bundles
+// Paths that must NEVER be cached (private / authenticated)
+const NEVER_CACHE_PATTERNS = [
+    '/api/',
+    '/sanctum/',
+    '/login',
+    '/logout',
+    '/register',
+    '/password',
+    '/verify-email',
+    '/select-role',
+    '/active-role',
+];
+
+const isPrivatePath = (pathname) =>
+    NEVER_CACHE_PATTERNS.some((p) => pathname.includes(p));
+
+// Only GET requests for static resources are eligible for caching
+const isStaticAssetRequest = (req, url) => {
+    if (req.method !== 'GET') return false;
+    const p = url.pathname;
+    return (
+        p.includes('/build/') ||
+        p.includes('/pwa-icons/') ||
+        p.includes('/images/') ||
+        p.endsWith('.js') ||
+        p.endsWith('.css') ||
+        p.endsWith('.png') ||
+        p.endsWith('.jpg') ||
+        p.endsWith('.jpeg') ||
+        p.endsWith('.svg') ||
+        p.endsWith('.ico') ||
+        p.endsWith('.webp') ||
+        p.endsWith('.woff2') ||
+        p.endsWith('.woff') ||
+        p.endsWith('.ttf') ||
+        p.endsWith('.webmanifest') ||
+        url.hostname.includes('fonts.googleapis.com') ||
+        url.hostname.includes('fonts.gstatic.com') ||
+        url.hostname.includes('cdn.jsdelivr.net')
+    );
+};
+
+// Install: precache static shell assets + Vite bundles only
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then(async (cache) => {
-            // 1. Precache static assets resolved against registration scope
             await Promise.all(
-                RELATIVE_PRECACHE.map((relPath) => {
-                    const fullUrl = toScopeUrl(relPath);
-                    return cache.add(fullUrl).catch((err) => {
-                        console.warn('[SW v14] Precache item skip:', fullUrl, err);
-                    });
-                })
+                STATIC_PRECACHE.map((rel) =>
+                    cache.add(toScopeUrl(rel)).catch(() => {})
+                )
             );
 
-            // 2. Precache active authenticated App Shell HTML from dashboard
+            // Precache compiled Vite production bundles from build/manifest.json
             try {
-                const dashUrl = toScopeUrl('dashboard');
-                const shellRes = await fetch(dashUrl);
-                if (shellRes && shellRes.status === 200) {
-                    await cache.put(APP_SHELL_KEY, shellRes.clone());
-                    await cache.put(dashUrl, shellRes);
-                }
-            } catch (e) {
-                // Offline or unauthenticated
-            }
-
-            // 3. Precache all compiled Vite production JS/CSS bundles from build/manifest.json
-            try {
-                const manifestUrl = toScopeUrl('build/manifest.json');
-                const manifestRes = await fetch(manifestUrl);
+                const manifestRes = await fetch(toScopeUrl('build/manifest.json'), { cache: 'no-store' });
                 if (manifestRes && manifestRes.status === 200) {
-                    await cache.put(manifestUrl, manifestRes.clone());
                     const manifest = await manifestRes.json();
                     const bundleUrls = [];
                     for (const entry of Object.values(manifest)) {
-                        if (entry.file) {
-                            bundleUrls.push(toScopeUrl('build/' + entry.file));
-                        }
+                        if (entry.file) bundleUrls.push(toScopeUrl('build/' + entry.file));
                         if (Array.isArray(entry.css)) {
-                            entry.css.forEach((cssFile) => {
-                                bundleUrls.push(toScopeUrl('build/' + cssFile));
-                            });
+                            entry.css.forEach((f) => bundleUrls.push(toScopeUrl('build/' + f)));
                         }
                     }
-
-                    await Promise.all(
-                        bundleUrls.map((url) => cache.add(url).catch(() => {}))
-                    );
-                    console.log('[SW v14] Precached', bundleUrls.length, 'Vite bundles for offline operation');
+                    await Promise.all(bundleUrls.map((u) => cache.add(u).catch(() => {})));
+                    console.log('[SW] Precached', bundleUrls.length, 'Vite bundles');
                 }
             } catch (err) {
-                console.warn('[SW v14] Manifest precache note:', err);
+                console.warn('[SW] Manifest precache skipped:', err);
             }
         })
     );
     self.skipWaiting();
 });
 
-// Activate event: purge outdated caches and take control of all open clients immediately
+// Activate: delete ONLY this app's outdated caches, then claim clients
 self.addEventListener('activate', (event) => {
     event.waitUntil(
-        caches.keys().then((keys) => {
-            return Promise.all(
-                keys.map((key) => {
-                    if (key !== CACHE_NAME) {
-                        return caches.delete(key);
-                    }
-                })
-            );
-        }).then(() => self.clients.claim())
+        caches.keys()
+            .then((keys) =>
+                Promise.all(
+                    keys.map((key) => {
+                        if (key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME) {
+                            return caches.delete(key);
+                        }
+                    })
+                )
+            )
+            .then(() => self.clients.claim())
     );
 });
 
-// Fetch event: full offline application routing engine
 self.addEventListener('fetch', (event) => {
     const req = event.request;
     const url = new URL(req.url);
 
-    // Only intercept HTTP/HTTPS requests
     if (!url.protocol.startsWith('http')) return;
 
-    // 1. Navigation requests (Full page loads, direct URL entry, browser refreshes)
-    // ALWAYS serve the actual application shell - never show an empty offline error page!
+    // 1. Never intercept non-GET or private/authenticated paths
+    if (req.method !== 'GET' || isPrivatePath(url.pathname)) {
+        return;
+    }
+
+    // 2. Navigation requests: network-first, offline fallback page.
+    //    We deliberately do NOT cache HTML pages — they contain
+    //    user/tenant data and must never be served stale offline.
     if (req.mode === 'navigate') {
         event.respondWith(
-            fetch(req)
-                .then((networkRes) => {
-                    if (networkRes && networkRes.status === 200) {
-                        const copy = networkRes.clone();
-                        caches.open(CACHE_NAME).then((cache) => {
-                            cache.put(req, copy.clone());
-                            // Store authenticated HTML pages as App Shell fallback
-                            if (!url.pathname.includes('/login') && !url.pathname.includes('/register')) {
-                                cache.put(APP_SHELL_KEY, copy);
-                            }
-                        });
-                    }
-                    return networkRes;
-                })
-                .catch(async () => {
-                    const cache = await caches.open(CACHE_NAME);
-
-                    // 1. Try exact requested page from cache
-                    const cachedPage = await cache.match(req);
-                    if (cachedPage) return cachedPage;
-
-                    // 2. Try App Shell key (boots full React Inertia app offline)
-                    const appShell = await cache.match(APP_SHELL_KEY);
-                    if (appShell) return appShell;
-
-                    // 3. Try dashboard under current scope
-                    const dashboardPage = await cache.match(toScopeUrl('dashboard'));
-                    if (dashboardPage) return dashboardPage;
-
-                    // 4. Try ANY cached HTML page from the system to boot the app
-                    const keys = await cache.keys();
-                    for (const key of keys) {
-                        const res = await cache.match(key);
-                        const contentType = res?.headers?.get('content-type') || '';
-                        if (contentType.includes('text/html')) {
-                            return res;
-                        }
-                    }
-
-                    // 5. Final fallback to cached root
-                    const rootFallback = await cache.match(toScopeUrl(''));
-                    if (rootFallback) return rootFallback;
-
-                    return new Response(
-                        `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="1;url=${toScopeUrl('dashboard')}"></head><body style="background:#0F172A;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;"><p>Opening THE INNS in Offline Mode...</p></body></html>`,
-                        { headers: { 'Content-Type': 'text/html' } }
-                    );
-                })
+            fetch(req, { cache: 'no-store' }).catch(async () => {
+                const cache = await caches.open(CACHE_NAME);
+                const offlinePage = await cache.match(toScopeUrl(OFFLINE_PAGE));
+                if (offlinePage) return offlinePage;
+                return new Response(
+                    '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline — THE INNS</title></head><body style="background:#0F172A;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0"><div style="text-align:center;max-width:420px;padding:24px"><h1 style="color:#D4AF37">THE INNS</h1><p>You are offline. Cached operational data remains available inside the app; changes will synchronize when connection returns.</p><p style="color:#94a3b8;font-size:13px">Re-open the app to continue working offline.</p></div></body></html>',
+                    { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+                );
+            })
         );
         return;
     }
 
-    // 2. Inertia.js AJAX Page Navigation (X-Inertia requests)
+    // 3. Inertia AJAX navigations: pass through — never cached, never fabricated
     if (req.headers.get('x-inertia') === 'true') {
-        event.respondWith(
-            fetch(req)
-                .then((networkRes) => {
-                    if (networkRes && networkRes.status === 200) {
-                        const copy = networkRes.clone();
-                        caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
-                    }
-                    return networkRes;
-                })
-                .catch(async () => {
-                    const cache = await caches.open(CACHE_NAME);
-
-                    // Match previous Inertia visit from cache
-                    const cachedInertia = await cache.match(req);
-                    if (cachedInertia) return cachedInertia;
-
-                    // Try matching dashboard Inertia state
-                    const dashboardInertia = await cache.match(toScopeUrl('dashboard'));
-                    if (dashboardInertia) return dashboardInertia;
-
-                    // Return synthetic Inertia response so the React SPA never crashes
-                    return new Response(JSON.stringify({
-                        component: 'Dashboard',
-                        props: {
-                            is_offline: true,
-                            offline_notice: 'Working in Offline Mode. Operations and records will synchronize automatically upon reconnect.'
-                        },
-                        url: url.pathname,
-                        version: ''
-                    }), {
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Inertia': 'true'
-                        }
-                    });
-                })
-        );
         return;
     }
 
-    // Only handle GET requests for remaining asset caches
-    if (req.method !== 'GET') {
-        return;
-    }
-
-    // 3. Vite Build Assets (CSS, JS, Fonts, Workers in /build/)
-    // Strategy: Cache-First with background revalidation
-    if (url.pathname.includes('/build/')) {
+    // 4. Static assets: cache-first with background revalidation
+    if (isStaticAssetRequest(req, url)) {
         event.respondWith(
             caches.open(CACHE_NAME).then(async (cache) => {
-                const cachedRes = await cache.match(req);
-                if (cachedRes) {
-                    fetch(req).then((netRes) => {
-                        if (netRes && netRes.status === 200) {
-                            cache.put(req, netRes);
+                const cached = await cache.match(req);
+                const networkFetch = fetch(req)
+                    .then((res) => {
+                        if (res && res.status === 200 && res.type === 'basic') {
+                            cache.put(req, res.clone()).catch(() => {});
                         }
-                    }).catch(() => {});
-                    return cachedRes;
-                }
-
-                return fetch(req).then((networkRes) => {
-                    if (networkRes && networkRes.status === 200) {
-                        cache.put(req, networkRes.clone());
-                    }
-                    return networkRes;
-                }).catch(() => cache.match(req));
-            })
-        );
-        return;
-    }
-
-    // 4. Static Assets & External CDNs (Fonts, Icons, Logos, Bootstrap)
-    if (
-        url.pathname.includes('/pwa-icons/') ||
-        url.pathname.includes('/images/') ||
-        url.pathname.endsWith('.png') ||
-        url.pathname.endsWith('.jpg') ||
-        url.pathname.endsWith('.jpeg') ||
-        url.pathname.endsWith('.svg') ||
-        url.pathname.endsWith('.ico') ||
-        url.pathname.endsWith('.woff2') ||
-        url.pathname.endsWith('.woff') ||
-        url.hostname.includes('fonts.googleapis.com') ||
-        url.hostname.includes('fonts.gstatic.com') ||
-        url.hostname.includes('cdn.jsdelivr.net')
-    ) {
-        event.respondWith(
-            caches.match(req).then((cached) => {
-                if (cached) return cached;
-
-                return fetch(req)
-                    .then((networkRes) => {
-                        if (networkRes && networkRes.status === 200) {
-                            const copy = networkRes.clone();
-                            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
-                        }
-                        return networkRes;
+                        return res;
                     })
-                    .catch(() => cached);
+                    .catch(() => null);
+
+                if (cached) {
+                    // Serve cache immediately, refresh in background
+                    networkFetch;
+                    return cached;
+                }
+
+                const res = await networkFetch;
+                if (res) return res;
+                return cached || Response.error();
             })
         );
         return;
     }
 
-    // Never cache authenticated API endpoints, tenant data or auth routes in shared SW cache
-    if (
-        url.pathname.includes('/api/') ||
-        url.pathname.includes('/sanctum/') ||
-        url.pathname.includes('/login') ||
-        url.pathname.includes('/logout')
-    ) {
-        return;
-    }
-
-    // 5. Default GET requests: Network first with Cache fallback
-    event.respondWith(
-        fetch(req)
-            .then((networkRes) => {
-                if (networkRes && networkRes.status === 200) {
-                    const copy = networkRes.clone();
-                    caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
-                }
-                return networkRes;
-            })
-            .catch(() => caches.match(req))
-    );
+    // 5. Everything else: plain network, no caching
 });
 
-// Background Sync Event (Triggered when internet connectivity is re-established)
+// Background Sync: ask open clients to run the Dexie outbox sync
 self.addEventListener('sync', (event) => {
     if (event.tag === 'the-inns-sync-queue' || event.tag === 'the-inns-offline-sync') {
         event.waitUntil(
             self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-                clients.forEach((client) => {
-                    client.postMessage({ type: 'TRIGGER_OFFLINE_SYNC' });
-                });
+                clients.forEach((client) => client.postMessage({ type: 'TRIGGER_OFFLINE_SYNC' }));
             })
         );
     }
 });
 
-// PWA Notification & Message Handlers
+// PWA Notification & Message Handlers (unchanged behavior)
 self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
         const title = event.data.title || 'THE INNS Notification';
@@ -327,22 +222,16 @@ self.addEventListener('message', (event) => {
             badge: toScopeUrl('pwa-icons/icon-192x192.png'),
             tag: event.data.tag || 'the-inns-alert-' + Date.now(),
             vibrate: [200, 100, 200],
-            data: {
-                url: event.data.url || toScopeUrl('dashboard')
-            },
+            data: { url: event.data.url || toScopeUrl('dashboard') },
             actions: [
                 { action: 'open', title: 'View Details' },
                 { action: 'close', title: 'Dismiss' }
             ]
         };
-
-        event.waitUntil(
-            self.registration.showNotification(title, options)
-        );
+        event.waitUntil(self.registration.showNotification(title, options));
     }
 });
 
-// Web Push event
 self.addEventListener('push', (event) => {
     let payload = {
         title: 'THE INNS Notification',
@@ -351,7 +240,6 @@ self.addEventListener('push', (event) => {
         badge: toScopeUrl('pwa-icons/icon-192x192.png'),
         url: toScopeUrl('dashboard')
     };
-
     if (event.data) {
         try {
             payload = Object.assign(payload, event.data.json());
@@ -359,32 +247,25 @@ self.addEventListener('push', (event) => {
             payload.body = event.data.text();
         }
     }
-
-    const options = {
-        body: payload.body,
-        icon: payload.icon || toScopeUrl('pwa-icons/icon-192x192.png'),
-        badge: payload.badge || toScopeUrl('pwa-icons/icon-192x192.png'),
-        tag: payload.tag || 'the-inns-push-' + Date.now(),
-        vibrate: [200, 100, 200],
-        data: {
-            url: payload.url || toScopeUrl('dashboard')
-        },
-        actions: [
-            { action: 'open', title: 'Open in PWA' },
-            { action: 'close', title: 'Dismiss' }
-        ]
-    };
-
     event.waitUntil(
-        self.registration.showNotification(payload.title, options)
+        self.registration.showNotification(payload.title, {
+            body: payload.body,
+            icon: payload.icon || toScopeUrl('pwa-icons/icon-192x192.png'),
+            badge: payload.badge || toScopeUrl('pwa-icons/icon-192x192.png'),
+            tag: payload.tag || 'the-inns-push-' + Date.now(),
+            vibrate: [200, 100, 200],
+            data: { url: payload.url || toScopeUrl('dashboard') },
+            actions: [
+                { action: 'open', title: 'Open in PWA' },
+                { action: 'close', title: 'Dismiss' }
+            ]
+        })
     );
 });
 
-// Notification click
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
     if (event.action === 'close') return;
-
     const targetUrl = event.notification.data?.url || toScopeUrl('dashboard');
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
@@ -394,9 +275,7 @@ self.addEventListener('notificationclick', (event) => {
                     return client.focus();
                 }
             }
-            if (clients.openWindow) {
-                return clients.openWindow(targetUrl);
-            }
+            if (clients.openWindow) return clients.openWindow(targetUrl);
         })
     );
 });

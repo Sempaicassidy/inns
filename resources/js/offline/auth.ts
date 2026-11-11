@@ -1,9 +1,18 @@
 /**
  * Secure Device-Based Offline Authentication & PIN Unlock Engine
  * Conforms to Part 9 of Multi-Tenant Offline-First Specification.
+ *
+ * PIN credentials are stored per-user as PBKDF2-SHA256 verifiers
+ * (salt + hash) — never plaintext, never a shared default PIN.
  */
 
 import { db, LocalSession } from './database';
+import { getDeviceId } from './device';
+import {
+    createOfflinePinCredential,
+    verifyOfflinePinCredential,
+    OfflinePinCredential,
+} from './offline-pin';
 
 const FAILED_ATTEMPTS_PREFIX = 'offline_auth_failed_';
 const LOCKOUT_PREFIX = 'offline_auth_lockout_';
@@ -11,7 +20,8 @@ const MAX_ATTEMPTS = 5;
 const LOCKOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
- * SHA-256 helper with salt using native Web Crypto
+ * @deprecated Legacy SHA-256 verifier kept only to migrate sessions
+ * created before the PBKDF2 credential system. Do not use for new PINs.
  */
 async function hashPinWithSalt(pin: string, salt: string): Promise<string> {
     const encoder = new TextEncoder();
@@ -27,8 +37,18 @@ function generateSalt(): string {
     return Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+function sessionIdFor(tenantId: string, userId: number): string {
+    return `sess_${tenantId}_${userId}`;
+}
+
+function isSessionExpired(session: LocalSession): boolean {
+    return Boolean(session.expiresAt && new Date(session.expiresAt).getTime() < Date.now());
+}
+
 /**
- * Cache current online authenticated session into Dexie
+ * Cache current online authenticated session into Dexie.
+ * No PIN is provisioned automatically — the user must set their own
+ * offline PIN via setOfflinePin() while online.
  */
 export async function cacheOnlineSession(params: {
     tenantId: string;
@@ -37,20 +57,19 @@ export async function cacheOnlineSession(params: {
     userEmail: string;
     userRole: string;
     profile?: Record<string, any>;
-    defaultPin?: string;
+    pin?: string;
+    pinConfirmation?: string;
 }): Promise<LocalSession> {
-    const sessionId = `sess_${params.tenantId}_${params.userId}`;
+    const sessionId = sessionIdFor(params.tenantId, params.userId);
     const existing = await db.sessions.get(sessionId);
 
-    let salt = existing?.salt || generateSalt();
-    let pinHash = existing?.pinHash;
+    let pinCredential = existing?.pinCredential;
 
-    // If default pin provided or none set, use provided pin or default '1234'
-    if (params.defaultPin) {
-        pinHash = await hashPinWithSalt(params.defaultPin, salt);
-    } else if (!pinHash) {
-        // Set a default initial 4-digit PIN (1234) for quick first-time offline setup
-        pinHash = await hashPinWithSalt('1234', salt);
+    if (params.pin) {
+        pinCredential = await createOfflinePinCredential(
+            params.pin,
+            params.pinConfirmation ?? params.pin
+        );
     }
 
     const session: LocalSession = {
@@ -60,8 +79,7 @@ export async function cacheOnlineSession(params: {
         userName: params.userName,
         userEmail: params.userEmail,
         userRole: params.userRole,
-        pinHash,
-        salt,
+        pinCredential,
         unlockedAt: new Date().toISOString(),
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days local validity
         cachedProfile: params.profile,
@@ -72,24 +90,27 @@ export async function cacheOnlineSession(params: {
 }
 
 /**
- * Update or establish a custom 4-6 digit offline unlock PIN
+ * Establish or rotate the offline unlock PIN for a specific user.
+ * PIN is 4-6 digits and stored only as a PBKDF2-SHA256 credential.
  */
-export async function setOfflinePin(tenantId: string, userId: number, pin: string): Promise<boolean> {
-    if (!pin || pin.length < 4) {
-        throw new Error('Offline PIN must be at least 4 digits.');
-    }
-
-    const sessionId = `sess_${tenantId}_${userId}`;
+export async function setOfflinePin(
+    tenantId: string,
+    userId: number,
+    pin: string,
+    confirmation?: string
+): Promise<boolean> {
+    const sessionId = sessionIdFor(tenantId, userId);
     const session = await db.sessions.get(sessionId);
     if (!session) {
         throw new Error('No local session found. Please log in online first.');
     }
 
-    const salt = generateSalt();
-    const pinHash = await hashPinWithSalt(pin, salt);
+    const credential = await createOfflinePinCredential(pin, confirmation ?? pin);
 
-    session.salt = salt;
-    session.pinHash = pinHash;
+    session.pinCredential = credential;
+    // Clear legacy verifier so stale credentials cannot be used.
+    session.pinHash = undefined;
+    session.salt = undefined;
     session.unlockedAt = new Date().toISOString();
     await db.sessions.put(session);
 
@@ -97,14 +118,27 @@ export async function setOfflinePin(tenantId: string, userId: number, pin: strin
 }
 
 /**
- * Verify local PIN and unlock offline session
+ * List local sessions that have a PIN provisioned (for the offline
+ * account picker). Expired sessions are excluded.
+ */
+export async function listProvisionedSessions(tenantId: string): Promise<LocalSession[]> {
+    const sessions = await db.sessions.where('tenantId').equals(tenantId).toArray();
+    return sessions.filter((s) => (s.pinCredential || s.pinHash) && !isSessionExpired(s));
+}
+
+/**
+ * Verify the offline PIN for ONE specific user session.
+ * The PIN is never compared against every user in a tenant.
+ * Lockout is tracked per tenant + user + device.
  */
 export async function verifyOfflinePin(
     tenantId: string,
+    userId: number,
     pin: string
 ): Promise<{ success: boolean; session?: LocalSession; error?: string }> {
-    const lockoutKey = `${LOCKOUT_PREFIX}${tenantId}`;
-    const failedKey = `${FAILED_ATTEMPTS_PREFIX}${tenantId}`;
+    const deviceId = getDeviceId();
+    const lockoutKey = `${LOCKOUT_PREFIX}${tenantId}_${userId}_${deviceId}`;
+    const failedKey = `${FAILED_ATTEMPTS_PREFIX}${tenantId}_${userId}_${deviceId}`;
 
     // 1. Check Lockout
     const lockoutRecord = await db.settings.get(lockoutKey);
@@ -118,40 +152,53 @@ export async function verifyOfflinePin(
                 error: `Device is temporarily locked out due to multiple failed attempts. Try again in ${minutesLeft} minute(s).`,
             };
         } else {
-            // Expired lockout
             await db.settings.delete(lockoutKey);
             await db.settings.delete(failedKey);
         }
     }
 
-    // 2. Fetch Session for this Tenant
-    const sessions = await db.sessions.where('tenantId').equals(tenantId).toArray();
-    if (!sessions.length) {
+    // 2. Fetch the session for THIS user only
+    const session = await db.sessions.get(sessionIdFor(tenantId, userId));
+    if (!session || (!session.pinCredential && !session.pinHash)) {
         return {
             success: false,
-            error: 'No cached authorized accounts found for this property. Log in online once before working offline.',
+            error: 'No offline PIN has been set up for this account on this device. Log in online once and set your PIN.',
         };
     }
 
-    // Check PIN across matching sessions
-    for (const session of sessions) {
-        if (!session.pinHash || !session.salt) continue;
-
-        const candidateHash = await hashPinWithSalt(pin, session.salt);
-        if (candidateHash === session.pinHash) {
-            // Success! Reset failed attempts
-            await db.settings.delete(failedKey);
-            session.unlockedAt = new Date().toISOString();
-            await db.sessions.put(session);
-
-            return {
-                success: true,
-                session,
-            };
-        }
+    if (isSessionExpired(session)) {
+        return {
+            success: false,
+            error: 'Your offline session has expired. Please log in online to renew it.',
+        };
     }
 
-    // 3. Failed attempt handling & rate limiting
+    // 3. Verify PIN against this user's credential only
+    let pinValid = false;
+    try {
+        if (session.pinCredential) {
+            pinValid = await verifyOfflinePinCredential(pin, session.pinCredential);
+        } else if (session.pinHash && session.salt) {
+            // Legacy migration path for sessions created before PBKDF2 credentials.
+            const candidateHash = await hashPinWithSalt(pin, session.salt);
+            pinValid = candidateHash === session.pinHash;
+        }
+    } catch {
+        return {
+            success: false,
+            error: 'Offline PIN credential is invalid. Please set your PIN again while online.',
+        };
+    }
+
+    if (pinValid) {
+        await db.settings.delete(failedKey);
+        session.unlockedAt = new Date().toISOString();
+        await db.sessions.put(session);
+
+        return { success: true, session };
+    }
+
+    // 4. Failed attempt handling & rate limiting
     const failedRecord = await db.settings.get(failedKey);
     const count = (failedRecord?.value || 0) + 1;
 
@@ -183,29 +230,33 @@ export async function verifyOfflinePin(
 }
 
 /**
- * Get active unlocked local session
+ * Get the active unlocked local session for a user (or the most
+ * recently unlocked one when userId is omitted).
  */
-export async function getActiveOfflineSession(tenantId: string): Promise<LocalSession | null> {
+export async function getActiveOfflineSession(
+    tenantId: string,
+    userId?: number
+): Promise<LocalSession | null> {
     const sessions = await db.sessions.where('tenantId').equals(tenantId).toArray();
-    if (!sessions.length) return null;
+    const candidates = sessions.filter((s) => !isSessionExpired(s));
+    if (!candidates.length) return null;
 
-    // Check expiry
-    const session = sessions[0];
-    if (session.expiresAt && new Date(session.expiresAt).getTime() < Date.now()) {
-        return null;
+    if (userId !== undefined) {
+        return candidates.find((s) => s.userId === userId) ?? null;
     }
 
-    return session;
+    return candidates.find((s) => s.unlockedAt) ?? candidates[0];
 }
 
 /**
- * Lock local offline session
+ * Lock a specific user's local offline session (or all tenant
+ * sessions when userId is omitted).
  */
-export async function lockOfflineSession(tenantId: string): Promise<void> {
+export async function lockOfflineSession(tenantId: string, userId?: number): Promise<void> {
     const sessions = await db.sessions.where('tenantId').equals(tenantId).toArray();
-    for (const sess of sessions) {
+    const targets = userId === undefined ? sessions : sessions.filter((s) => s.userId === userId);
+    for (const sess of targets) {
         sess.unlockedAt = undefined;
         await db.sessions.put(sess);
     }
 }
-

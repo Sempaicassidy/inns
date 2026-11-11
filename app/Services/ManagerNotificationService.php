@@ -2,14 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\FolioLine;
 use App\Models\ManagerNotificationSetting;
 use App\Models\Payment;
 use App\Models\PosOrder;
 use App\Models\Property;
 use App\Models\Reservation;
 use App\Models\Room;
-use App\Models\Stay;
 use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -20,7 +18,8 @@ class ManagerNotificationService
 {
     public function __construct(
         protected SwalaSmsService $smsService,
-        protected WhatsAppService $whatsAppService
+        protected WhatsAppService $whatsAppService,
+        protected SmsWalletService $walletService
     ) {}
 
     /**
@@ -104,11 +103,11 @@ class ManagerNotificationService
                 ."📍 *Property:* {$propertyName}\n"
                 ."👤 *Guest:* {$guestName} ({$guestPhone})\n"
                 ."🚪 *Room:* Room #{$roomNumber} ({$roomTypeName})\n"
-                ."📅 *Schedule:* {$checkIn} ➔ {$checkOut} ({$nights} Night" . ($nights > 1 ? 's' : '') . ")\n"
-                ."👥 *Occupancy:* {$reservation->adults} Adult" . ($reservation->adults > 1 ? 's' : '') . ($reservation->children > 0 ? ", {$reservation->children} Child" . ($reservation->children > 1 ? 'ren' : '') : "") . "\n"
+                ."📅 *Schedule:* {$checkIn} ➔ {$checkOut} ({$nights} Night".($nights > 1 ? 's' : '').")\n"
+                ."👥 *Occupancy:* {$reservation->adults} Adult".($reservation->adults > 1 ? 's' : '').($reservation->children > 0 ? ", {$reservation->children} Child".($reservation->children > 1 ? 'ren' : '') : '')."\n"
                 ."💰 *Total Rate:* TZS {$totalAmount}\n"
                 ."💵 *Advance Deposit:* TZS {$depositAmount}\n"
-                ."💳 *Payment Method:* " . strtoupper($reservation->payment_method ?? 'Cash') . "\n"
+                .'💳 *Payment Method:* '.strtoupper($reservation->payment_method ?? 'Cash')."\n"
                 ."🔖 *Reference No:* {$reservation->ref_no}\n"
                 ."👨‍💼 *Front Desk Agent:* {$receptionist}\n"
                 ."━━━━━━━━━━━━━━━━━━━━\n"
@@ -163,8 +162,8 @@ class ManagerNotificationService
                         );
                         $results['whatsapp'] = true;
                     } catch (Throwable $e) {
-                        $results['errors'][] = "WhatsApp ($phone): " . $e->getMessage();
-                        Log::error("Failed to send manager WhatsApp reservation alert to {$phone}: " . $e->getMessage());
+                        $results['errors'][] = "WhatsApp ($phone): ".$e->getMessage();
+                        Log::error("Failed to send manager WhatsApp reservation alert to {$phone}: ".$e->getMessage());
                     }
                 }
             }
@@ -172,14 +171,16 @@ class ManagerNotificationService
             // Dispatch via SMS to all configured phones
             if ($setting->send_via_sms && ! empty($allPhones)) {
                 foreach ($allPhones as $phone) {
-                    try {
-                        $smsRes = $this->smsService->sendSms($phone, $smsMessage);
-                        if ($smsRes['success'] ?? true) {
-                            $results['sms'] = true;
-                        }
-                    } catch (Throwable $e) {
-                        $results['errors'][] = "SMS ($phone): " . $e->getMessage();
-                        Log::error("Failed to send manager SMS reservation alert to {$phone}: " . $e->getMessage());
+                    $sent = $this->sendBilledSms(
+                        $reservation->tenant_id,
+                        $setting->property_id,
+                        $phone,
+                        $smsMessage,
+                        'booking_notification',
+                        (string) $reservation->id
+                    );
+                    if ($sent) {
+                        $results['sms'] = true;
                     }
                 }
             }
@@ -187,19 +188,19 @@ class ManagerNotificationService
             // Dispatch via Email to all configured emails
             if ($setting->send_via_email && ! empty($allEmails)) {
                 try {
-                    Mail::html($emailHtml, function ($message) use ($allEmails, $setting, $emailSubject) {
+                    Mail::html($emailHtml, function ($message) use ($allEmails, $emailSubject) {
                         $message->to($allEmails)
                             ->subject($emailSubject);
                     });
                     $results['email'] = true;
                 } catch (Throwable $e) {
-                    $results['errors'][] = 'Email: ' . $e->getMessage();
-                    Log::error('Failed to send manager email reservation alert: ' . $e->getMessage());
+                    $results['errors'][] = 'Email: '.$e->getMessage();
+                    Log::error('Failed to send manager email reservation alert: '.$e->getMessage());
                 }
             }
         } catch (Throwable $e) {
-            $results['errors'][] = 'General: ' . $e->getMessage();
-            Log::error('Error in notifyReservationCreated: ' . $e->getMessage());
+            $results['errors'][] = 'General: '.$e->getMessage();
+            Log::error('Error in notifyReservationCreated: '.$e->getMessage());
         }
 
         return $results;
@@ -347,7 +348,7 @@ class ManagerNotificationService
             $brandName = $tenant?->settings['sender_id'] ?? $tenant?->settings['system_name'] ?? $tenant?->name ?? $propName;
             $systemName = $tenant?->settings['system_name'] ?? $tenant?->name ?? 'THE INNS';
 
-            $testPrefix = $isTest ? "🧪 [TEST REPORT DISPATCH]\n" : "";
+            $testPrefix = $isTest ? "🧪 [TEST REPORT DISPATCH]\n" : '';
 
             // --- 1. WHATSAPP FORMATTED MESSAGE (English) ---
             $waMessage = "{$testPrefix}🌅 *{$brandName} - DAILY EXECUTIVE FLASH REPORT*\n"
@@ -386,7 +387,7 @@ class ManagerNotificationService
                 ."Time: {$genTime}";
 
             // --- 3. HTML EMAIL FORMAT (English) ---
-            $emailSubject = ($isTest ? "[TEST] " : "") . "🌅 [{$brandName}] Daily Executive Report: {$propName} - {$repDate} (Total: TZS {$data['revenue']['totalGrossFormatted']})";
+            $emailSubject = ($isTest ? '[TEST] ' : '')."🌅 [{$brandName}] Daily Executive Report: {$propName} - {$repDate} (Total: TZS {$data['revenue']['totalGrossFormatted']})";
             $emailHtml = $this->buildDailyReportEmailHtml($data, $setting, $isTest, $brandName, $systemName);
 
             // Resolve all configured phone numbers and email addresses
@@ -407,8 +408,8 @@ class ManagerNotificationService
                         );
                         $results['whatsapp'] = true;
                     } catch (Throwable $e) {
-                        $results['errors'][] = "WhatsApp ($phone): " . $e->getMessage();
-                        Log::error("Daily report WhatsApp failed for {$phone}: " . $e->getMessage());
+                        $results['errors'][] = "WhatsApp ($phone): ".$e->getMessage();
+                        Log::error("Daily report WhatsApp failed for {$phone}: ".$e->getMessage());
                     }
                 }
             }
@@ -416,14 +417,16 @@ class ManagerNotificationService
             // Send via SMS to all phones
             if ($setting->send_via_sms && ! empty($allPhones)) {
                 foreach ($allPhones as $phone) {
-                    try {
-                        $smsRes = $this->smsService->sendSms($phone, $smsMessage);
-                        if ($smsRes['success'] ?? true) {
-                            $results['sms'] = true;
-                        }
-                    } catch (Throwable $e) {
-                        $results['errors'][] = "SMS ($phone): " . $e->getMessage();
-                        Log::error("Daily report SMS failed for {$phone}: " . $e->getMessage());
+                    $sent = $this->sendBilledSms(
+                        $setting->tenant_id,
+                        $setting->property_id,
+                        $phone,
+                        $smsMessage,
+                        'daily_report',
+                        null
+                    );
+                    if ($sent) {
+                        $results['sms'] = true;
                     }
                 }
             }
@@ -431,14 +434,14 @@ class ManagerNotificationService
             // Send via Email to all emails
             if ($setting->send_via_email && ! empty($allEmails)) {
                 try {
-                    Mail::html($emailHtml, function ($message) use ($allEmails, $setting, $emailSubject) {
+                    Mail::html($emailHtml, function ($message) use ($allEmails, $emailSubject) {
                         $message->to($allEmails)
                             ->subject($emailSubject);
                     });
                     $results['email'] = true;
                 } catch (Throwable $e) {
-                    $results['errors'][] = 'Email: ' . $e->getMessage();
-                    Log::error('Daily report Email failed: ' . $e->getMessage());
+                    $results['errors'][] = 'Email: '.$e->getMessage();
+                    Log::error('Daily report Email failed: '.$e->getMessage());
                 }
             }
 
@@ -450,8 +453,8 @@ class ManagerNotificationService
                 ]);
             }
         } catch (Throwable $e) {
-            $results['errors'][] = 'General: ' . $e->getMessage();
-            Log::error('Error in sendDailySummaryReport: ' . $e->getMessage());
+            $results['errors'][] = 'General: '.$e->getMessage();
+            Log::error('Error in sendDailySummaryReport: '.$e->getMessage());
         }
 
         return $results;
@@ -603,5 +606,83 @@ HTML;
 </body>
 </html>
 HTML;
+    }
+
+    /**
+     * Send an SMS billed against the tenant's SMS wallet.
+     * Debits credits before provider submission and finalizes/refunds
+     * based on the actual provider outcome.
+     */
+    protected function sendBilledSms(
+        string $tenantId,
+        ?string $propertyId,
+        string $phone,
+        string $message,
+        string $contextType,
+        ?string $contextId
+    ): bool {
+        try {
+            $segments = (int) ($this->smsService->calculateSegments($message)['segments'] ?? 1);
+            $normalized = $this->smsService->normalizePhoneNumber($phone);
+
+            $debit = $this->walletService->debitForMessage(
+                tenantId: $tenantId,
+                recipientPhone: $normalized,
+                messageText: $message,
+                segments: $segments,
+                propertyId: $propertyId,
+                contextType: $contextType,
+                contextId: $contextId,
+                provider: 'swalasms'
+            );
+
+            if (! ($debit['success'] ?? false)) {
+                $this->logSmsFailure($phone, $debit['error'] ?? 'SMS wallet debit failed');
+
+                return false;
+            }
+
+            $smsMessage = $debit['message'];
+
+            try {
+                $smsRes = $this->smsService->sendSms($normalized, $message);
+            } catch (Throwable $e) {
+                $this->walletService->finalizeMessage($smsMessage, 'failed', null, null, $e->getMessage());
+                $this->logSmsFailure($phone, $e->getMessage());
+
+                return false;
+            }
+
+            if ($smsRes['success'] ?? false) {
+                $this->walletService->finalizeMessage(
+                    $smsMessage,
+                    'sent',
+                    $smsRes['message_id'] ?? null,
+                    $smsRes['description'] ?? null
+                );
+
+                return true;
+            }
+
+            $this->walletService->finalizeMessage(
+                $smsMessage,
+                'failed',
+                null,
+                null,
+                $smsRes['description'] ?? $smsRes['raw']['message'] ?? 'Provider rejected the message'
+            );
+            $this->logSmsFailure($phone, $smsRes['description'] ?? 'Provider rejected the message');
+
+            return false;
+        } catch (Throwable $e) {
+            $this->logSmsFailure($phone, $e->getMessage());
+
+            return false;
+        }
+    }
+
+    protected function logSmsFailure(string $phone, string $error): void
+    {
+        Log::error("Billed SMS failed for {$phone}: {$error}");
     }
 }

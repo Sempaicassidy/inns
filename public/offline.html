@@ -2,55 +2,22 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>THE INNS - Offline Workspace</title>
-    <script>
-        (function() {
-            var isSubfolder = window.location.pathname.indexOf('/inns') !== -1;
-            var prefix = isSubfolder ? '/inns' : '';
-            var target = prefix + '/dashboard';
-            // If user was on a specific app page, try returning back
-            if (window.history.length > 1) {
-                // Keep history fallback
-            }
-            // Auto redirect to cached dashboard shell
-            setTimeout(function() {
-                window.location.replace(target);
-            }, 300);
-        })();
-    </script>
-</head>
-<body style="background: #0B192C; color: #ffffff; min-height: 100vh; display: flex; align-items: center; justify-content: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; margin: 0; padding: 20px;">
-    <div style="max-width: 400px; width: 100%;">
-        <div style="width: 48px; height: 48px; border: 3px solid rgba(212, 175, 55, 0.3); border-top-color: #D4AF37; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px auto;"></div>
-        <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.5px;">Launching Offline Workspace...</h2>
-        <p style="font-size: 13px; color: #94A3B8; margin-bottom: 24px; line-height: 1.5;">
-            Local database is active. You can continue taking POS orders, managing rooms, and processing transactions offline.
-        </p>
-
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-            <a id="btn-dash" href="./dashboard" style="display: block; padding: 12px 20px; background: #D4AF37; color: #1E3A5F; font-weight: 800; font-size: 13px; border-radius: 12px; text-decoration: none;">
-                Open Dashboard
-            </a>
-            <a id="btn-pos" href="./pos" style="display: block; padding: 12px 20px; background: rgba(255, 255, 255, 0.1); color: #ffffff; font-weight: 700; font-size: 13px; border-radius: 12px; text-decoration: none; border: 1px solid rgba(255, 255, 255, 0.2);">
-                Open POS Terminal (Offline)
-            </a>
-            <a id="btn-hk" href="./housekeeping" style="display: block; padding: 12px 20px; background: rgba(255, 255, 255, 0.1); color: #ffffff; font-weight: 700; font-size: 13px; border-radius: 12px; text-decoration: none; border: 1px solid rgba(255, 255, 255, 0.2);">
-                Open Housekeeping
-            </a>
-        </div>
-    </div>
-    <script>
-        var isSub = window.location.pathname.indexOf('/inns') !== -1;
-        var pfx = isSub ? '/inns' : '';
-        document.getElementById('btn-dash').href = pfx + '/dashboard';
-        document.getElementById('btn-pos').href = pfx + '/pos';
-        document.getElementById('btn-hk').href = pfx + '/housekeeping';
-    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#1E3A5F">
+    <title>Offline — THE INNS</title>
     <style>
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        body { margin:0; background:#0F172A; color:#fff; font-family:system-ui,-apple-system,sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; }
+        .card { text-align:center; max-width:420px; padding:24px; }
+        h1 { color:#D4AF37; letter-spacing:2px; margin:0 0 12px; }
+        p { color:#CBD5E1; line-height:1.6; }
+        .hint { color:#64748B; font-size:13px; margin-top:24px; }
     </style>
+</head>
+<body>
+    <div class="card">
+        <h1>THE INNS</h1>
+        <p><strong>You are offline.</strong> Cached operational data remains available inside the app — POS orders, housekeeping updates and record changes will synchronize automatically when your connection returns.</p>
+        <p class="hint">Re-open the application to continue working offline, or wait for the connection to restore.</p>
+    </div>
 </body>
 </html>

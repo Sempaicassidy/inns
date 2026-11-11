@@ -8,7 +8,6 @@ use App\Models\Property;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\Stay;
-use App\Models\Tenant;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,7 +20,7 @@ class FrontOfficeReportController extends Controller
     {
         $user = $request->user();
         $property = $user->property ?? Property::first();
-        $tenantId = $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
+        $tenantId = $user->tenant_id ?? $property?->tenant_id;
 
         $bDateRecord = $property ? BusinessDate::where('property_id', $property->id)->first() : null;
         $currentDate = $bDateRecord ? Carbon::parse($bDateRecord->current_business_date) : Carbon::today();
@@ -72,7 +71,7 @@ class FrontOfficeReportController extends Controller
     {
         $user = $request->user();
         $property = $user->property ?? Property::first();
-        $tenantId = $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
+        $tenantId = $user->tenant_id ?? $property?->tenant_id;
 
         $validated = $request->validate([
             'report_date' => 'nullable|date',

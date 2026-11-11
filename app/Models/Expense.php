@@ -17,6 +17,8 @@ class Expense extends Model
         'property_id',
         'account_id',
         'created_by',
+        'approved_by',
+        'approved_at',
         'expense_number',
         'title',
         'category',
@@ -34,6 +36,7 @@ class Expense extends Model
         return [
             'amount_minor' => 'integer',
             'expense_date' => 'date',
+            'approved_at' => 'datetime',
         ];
     }
 

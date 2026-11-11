@@ -15,11 +15,13 @@ use App\Models\Room;
 use App\Models\RoomType;
 use App\Models\Stay;
 use App\Models\SystemNotification;
+use App\Services\LedgerService;
 use App\Services\ManagerNotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -156,7 +158,7 @@ class ReservationController extends Controller
 
         $user = $request->user();
         $property = $user->property ?? Property::first();
-        $tenantId = $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
+        $tenantId = $user->tenant_id ?? $property?->tenant_id;
 
         // Strictly enforce 1 room per reservation
         $selectedRoomIds = ! empty($validated['room_ids']) ? array_slice($validated['room_ids'], 0, 1) : array_filter([$validated['room_id'] ?? null]);
@@ -208,14 +210,14 @@ class ReservationController extends Controller
                 ->whereIn('status', ['confirmed', 'checked_in'])
                 ->where(function ($q) use ($checkInDate, $checkOutDate) {
                     $q->where('check_in', '<', $checkOutDate->toDateString())
-                      ->where('check_out', '>', $checkInDate->toDateString());
+                        ->where('check_out', '>', $checkInDate->toDateString());
                 })
                 ->with(['reservationRooms.room', 'guest'])
                 ->first();
 
             if ($guestConflict) {
                 $existingRoom = $guestConflict->reservationRooms->first()?->room?->room_number ?? 'another room';
-                $guestName = $guestConflict->guest ? ($guestConflict->guest->first_name . ' ' . $guestConflict->guest->last_name) : 'Guest';
+                $guestName = $guestConflict->guest ? ($guestConflict->guest->first_name.' '.$guestConflict->guest->last_name) : 'Guest';
                 $statusStr = $guestConflict->status === 'checked_in' ? 'checked-in (active stay)' : 'confirmed';
                 $inFmt = Carbon::parse($guestConflict->check_in)->format('d M Y');
                 $outFmt = Carbon::parse($guestConflict->check_out)->format('d M Y');
@@ -233,14 +235,14 @@ class ReservationController extends Controller
                 ->whereHas('reservation', fn ($q) => $q->where('tenant_id', $tenantId)->whereIn('status', ['confirmed', 'checked_in']))
                 ->where(function ($q) use ($checkInDate, $checkOutDate) {
                     $q->where('check_in', '<', $checkOutDate->toDateString())
-                      ->where('check_out', '>', $checkInDate->toDateString());
+                        ->where('check_out', '>', $checkInDate->toDateString());
                 })
                 ->with(['reservation.guest', 'room'])
                 ->first();
 
             if ($roomConflict) {
                 $roomNum = $roomConflict->room?->room_number ?? $primaryRoom?->room_number ?? 'this room';
-                $bookedBy = $roomConflict->reservation?->guest ? ($roomConflict->reservation->guest->first_name . ' ' . $roomConflict->reservation->guest->last_name) : 'another guest';
+                $bookedBy = $roomConflict->reservation?->guest ? ($roomConflict->reservation->guest->first_name.' '.$roomConflict->reservation->guest->last_name) : 'another guest';
                 $inFmt = Carbon::parse($roomConflict->check_in)->format('d M Y');
                 $outFmt = Carbon::parse($roomConflict->check_out)->format('d M Y');
 
@@ -382,7 +384,7 @@ class ReservationController extends Controller
             ]);
 
             if ($depositMinor > 0) {
-                Payment::create([
+                $depositPayment = Payment::create([
                     'tenant_id' => $tenantId,
                     'folio_id' => $folio->id,
                     'business_date' => $checkIn->toDateString(),
@@ -392,8 +394,21 @@ class ReservationController extends Controller
                     'currency' => $property->currency ?? 'TZS',
                     'status' => 'confirmed',
                     'received_by' => $user->id,
-                    'notes' => 'Booking advance deposit' . ($receiptNo ? ' (Receipt: ' . $receiptNo . ')' : ''),
+                    'notes' => 'Booking advance deposit'.($receiptNo ? ' (Receipt: '.$receiptNo.')' : ''),
                 ]);
+
+                app(LedgerService::class)->post(
+                    (string) $tenantId,
+                    $folio->property_id,
+                    'folio_payment',
+                    (string) $depositPayment->id,
+                    'Booking advance deposit'.($receiptNo ? ' (Receipt: '.$receiptNo.')' : ''),
+                    [
+                        ['code' => LedgerService::tenderCode($validated['payment_method'] ?? 'cash'), 'direction' => 'debit', 'amount_minor' => $depositMinor],
+                        ['code' => '2020', 'direction' => 'credit', 'amount_minor' => $depositMinor],
+                    ],
+                    $checkIn->toDateString(),
+                );
             }
 
             // If check in now
@@ -413,7 +428,7 @@ class ReservationController extends Controller
                             $folio->update(['stay_id' => $stay->id]);
 
                             // Post first night charge
-                            FolioLine::create([
+                            $firstNightLine = FolioLine::create([
                                 'tenant_id' => $tenantId,
                                 'folio_id' => $folio->id,
                                 'business_date' => $checkIn->toDateString(),
@@ -423,6 +438,19 @@ class ReservationController extends Controller
                                 'tax_minor' => (int) ($ratePriceMinor * 0.18 / 1.18),
                                 'posted_by' => $user->id,
                             ]);
+
+                            app(LedgerService::class)->post(
+                                (string) $tenantId,
+                                $folio->property_id,
+                                'folio_charge',
+                                (string) $firstNightLine->id,
+                                "First night accommodation - Room {$rm->room_number}",
+                                [
+                                    ['code' => '1050', 'direction' => 'debit', 'amount_minor' => $ratePriceMinor],
+                                    ['code' => '4001', 'direction' => 'credit', 'amount_minor' => $ratePriceMinor],
+                                ],
+                                $checkIn->toDateString(),
+                            );
                         }
                     }
                 }
@@ -436,7 +464,7 @@ class ReservationController extends Controller
             try {
                 app(ManagerNotificationService::class)->notifyReservationCreated($createdReservation);
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('Failed sending manager reservation notification: ' . $e->getMessage());
+                Log::warning('Failed sending manager reservation notification: '.$e->getMessage());
             }
         }
 
@@ -475,7 +503,7 @@ class ReservationController extends Controller
         $user = $request->user();
         $property = $user->property ?? Property::first();
         $room = Room::findOrFail($validated['room_id']);
-        $tenantId = $reservation->tenant_id ?? $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
+        $tenantId = $reservation->tenant_id ?? $user->tenant_id ?? $property?->tenant_id;
 
         // 1a. Conflict Check: Verify guest has no OTHER active/confirmed reservation for overlapping dates
         $existingConfirmed = Reservation::where('tenant_id', $tenantId)
@@ -491,6 +519,7 @@ class ReservationController extends Controller
             $otherRoom = $existingConfirmed->reservationRooms->first()?->room?->room_number ?? 'another room';
             $inFmt = Carbon::parse($existingConfirmed->check_in)->format('d M Y');
             $outFmt = Carbon::parse($existingConfirmed->check_out)->format('d M Y');
+
             return back()->withErrors([
                 'room_id' => "Conflict: Guest already has a reservation (#{$existingConfirmed->ref_no}) in Room {$otherRoom} from {$inFmt} to {$outFmt}. Cancel or check out that reservation first.",
             ]);
@@ -505,6 +534,7 @@ class ReservationController extends Controller
 
         if ($activeStay) {
             $otherRoom = $activeStay->room?->room_number ?? 'another room';
+
             return back()->withErrors([
                 'room_id' => "Conflict: Guest is already checked in to Room {$otherRoom}. A guest cannot occupy multiple rooms simultaneously. Please check out the guest from Room {$otherRoom} first.",
             ]);
@@ -569,7 +599,7 @@ class ReservationController extends Controller
 
             // Post room charge if not posted yet
             $rateAmount = $resRoom?->rate_price_minor ?? ($reservation->total_minor / max(1, $reservation->check_in->diffInDays($reservation->check_out)));
-            FolioLine::create([
+            $checkInLine = FolioLine::create([
                 'tenant_id' => $tenantId,
                 'folio_id' => $folio->id,
                 'business_date' => now()->toDateString(),
@@ -580,6 +610,19 @@ class ReservationController extends Controller
                 'posted_by' => $user->id,
             ]);
 
+            app(LedgerService::class)->post(
+                (string) $tenantId,
+                $folio->property_id,
+                'folio_charge',
+                (string) $checkInLine->id,
+                "Room charge - {$room->room_number} ({$reservation->ref_no})",
+                [
+                    ['code' => '1050', 'direction' => 'debit', 'amount_minor' => $rateAmount],
+                    ['code' => '4001', 'direction' => 'credit', 'amount_minor' => $rateAmount],
+                ],
+                now()->toDateString(),
+            );
+
             $folio->recalculateBalance();
         });
 
@@ -589,7 +632,7 @@ class ReservationController extends Controller
     public function checkOut(Request $request, Reservation $reservation): RedirectResponse
     {
         $user = $request->user();
-        $tenantId = $reservation->tenant_id ?? $user->tenant_id ?? Tenant::first()?->id;
+        $tenantId = $reservation->tenant_id ?? $user->tenant_id;
 
         DB::transaction(function () use ($reservation, $tenantId) {
             $resRoom = $reservation->reservationRooms()->first();
@@ -668,13 +711,14 @@ class ReservationController extends Controller
             ->whereIn('status', ['confirmed', 'checked_in'])
             ->where(function ($q) use ($checkIn, $checkOut) {
                 $q->where('check_in', '<', $checkOut->toDateString())
-                  ->where('check_out', '>', $checkIn->toDateString());
+                    ->where('check_out', '>', $checkIn->toDateString());
             })
             ->with(['reservationRooms.room'])
             ->first();
 
         if ($guestConflict) {
             $existingRoom = $guestConflict->reservationRooms->first()?->room?->room_number ?? 'another room';
+
             return back()->withErrors([
                 'check_in' => "Conflict: Guest already has an active booking in Room {$existingRoom} for overlapping dates. A guest cannot be reserved in two rooms simultaneously.",
             ]);
@@ -687,13 +731,13 @@ class ReservationController extends Controller
                 ->whereHas('reservation', fn ($q) => $q->whereIn('status', ['confirmed', 'checked_in']))
                 ->where(function ($q) use ($checkIn, $checkOut) {
                     $q->where('check_in', '<', $checkOut->toDateString())
-                      ->where('check_out', '>', $checkIn->toDateString());
+                        ->where('check_out', '>', $checkIn->toDateString());
                 })
                 ->first();
 
             if ($roomConflict) {
                 return back()->withErrors([
-                    'room_id' => "Conflict: The selected room is already booked by another reservation for overlapping dates.",
+                    'room_id' => 'Conflict: The selected room is already booked by another reservation for overlapping dates.',
                 ]);
             }
         }

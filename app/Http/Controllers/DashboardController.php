@@ -8,13 +8,13 @@ use App\Models\Folio;
 use App\Models\FolioLine;
 use App\Models\OwnerDirective;
 use App\Models\OwnerRequisition;
-use App\Models\SystemNotification;
 use App\Models\Payment;
 use App\Models\PosOrder;
 use App\Models\Property;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\Stay;
+use App\Models\SystemNotification;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -30,16 +30,16 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
-        if ($user && $user->isSuperAdmin() && !session()->has('impersonating_original_superadmin_id')) {
+        if ($user && $user->isSuperAdmin() && ! session()->has('impersonating_original_superadmin_id')) {
             return redirect()->route('saas-admin.index');
         }
 
         // If user active role is Owner and not inspecting a specific lodge, redirect to Owner Portal
-        if ($user && ($user->active_role === 'owner' || ($user->role === 'owner' && !session()->has('active_role'))) && !session()->has('owner_inspecting_property_id')) {
+        if ($user && ($user->active_role === 'owner' || ($user->role === 'owner' && ! session()->has('active_role'))) && ! session()->has('owner_inspecting_property_id')) {
             return redirect()->route('owner.index');
         }
 
-        if ($user && in_array($user->role, ['accountant', 'senior_accountant', 'finance_officer'])) {
+        if ($user && in_array($user->active_role, ['accountant', 'senior_accountant', 'finance_officer'], true)) {
             return app(AccountingController::class)->index($request);
         }
 
@@ -238,6 +238,7 @@ class DashboardController extends Controller
                 $stay = $r->stays->first();
                 $res = $stay?->reservationRoom?->reservation;
                 $folio = $stay?->folio ?? $res?->folios?->first();
+
                 return [
                     'id' => $r->id,
                     'room_number' => $r->room_number,
@@ -300,7 +301,7 @@ class DashboardController extends Controller
         ]);
 
         $amountMinor = (int) round($validated['amount'] * 100);
-        $reqNo = 'REQ-' . date('Ym') . '-' . strtoupper(Str::random(4));
+        $reqNo = 'REQ-'.date('Ym').'-'.strtoupper(Str::random(4));
 
         $requisition = OwnerRequisition::create([
             'tenant_id' => $user->tenant_id,
@@ -320,7 +321,7 @@ class DashboardController extends Controller
         $owners = User::where('tenant_id', $user->tenant_id)
             ->where(function ($q) {
                 $q->where('role', 'owner')
-                  ->orWhereJsonContains('roles', 'owner');
+                    ->orWhereJsonContains('roles', 'owner');
             })
             ->get();
 
@@ -330,7 +331,7 @@ class DashboardController extends Controller
                 'user_id' => $owner->id,
                 'target_role' => 'owner',
                 'title' => "New Expenditure Approval Request ({$reqNo}) from {$user->name}",
-                'message' => "Property: {$property->name} — Amount: TZS " . number_format($validated['amount'], 0) . " — {$validated['title']}",
+                'message' => "Property: {$property->name} — Amount: TZS ".number_format($validated['amount'], 0)." — {$validated['title']}",
                 'category' => 'governance',
                 'severity' => $validated['urgency'] === 'emergency' ? 'high' : 'info',
                 'action_url' => route('owner.index', ['tab' => 'approvals']),

@@ -285,6 +285,17 @@ export type PageProps<
             is_main?: boolean;
         }>;
         can_manage_branches?: boolean;
+        active_role?: string | null;
+        available_roles?: Array<{
+            role: string;
+            title: string;
+            title_sw?: string;
+            description?: string;
+            badge?: string;
+            color?: string;
+            route?: string;
+            icon?: string;
+        }>;
         businessDate?: string;
         sms_balance?: number;
         sms_wallet?: {

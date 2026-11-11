@@ -12,7 +12,7 @@ class EnsureCanAccessHr
      * Handle an incoming request.
      * Enforce strict role-based access for Staff & HR management hub.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {

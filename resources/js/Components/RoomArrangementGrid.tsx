@@ -28,6 +28,7 @@ import {
     X,
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
+import { toastError } from '@/Services/toast';
 
 export interface GridRoomItem {
     id: string;
@@ -119,7 +120,7 @@ export default function RoomArrangementGrid({
 
     const handleDeleteRoom = (room: GridRoomItem) => {
         if (room.status_occupancy === 'occupied') {
-            alert(`Cannot delete Room "${room.room_number}" because it is currently OCCUPIED. Please check out the guest or reassign them to another room first.`);
+            toastError(`Cannot delete Room "${room.room_number}" because it is currently OCCUPIED. Please check out the guest or reassign them to another room first.`);
             return;
         }
 

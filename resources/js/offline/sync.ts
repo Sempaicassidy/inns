@@ -353,6 +353,45 @@ export async function downloadTenantBootstrap(tenantId: string): Promise<{ succe
                 }
             }
 
+            // Save Properties
+            if (Array.isArray(data.properties)) {
+                for (const prop of data.properties) {
+                    await db.records.put({
+                        tenantId,
+                        type: 'property',
+                        localId: String(prop.id),
+                        data: prop,
+                        syncStatus: 'synced',
+                        updatedAt: new Date().toISOString(),
+                    });
+                    totalCount++;
+                }
+            }
+
+            // Save Rate Plans
+            if (Array.isArray(data.rate_plans)) {
+                for (const rp of data.rate_plans) {
+                    await db.records.put({
+                        tenantId,
+                        type: 'rate_plan',
+                        localId: String(rp.id),
+                        data: rp,
+                        syncStatus: 'synced',
+                        updatedAt: new Date().toISOString(),
+                    });
+                    totalCount++;
+                }
+            }
+
+            // Save offline user profile snapshot for the signed-in staff member
+            if (data.user) {
+                await db.settings.put({
+                    key: `offline_user_${tenantId}_${data.user.id}`,
+                    value: data.user,
+                    updatedAt: new Date().toISOString(),
+                });
+            }
+
             await db.syncHistory.add({
                 tenantId,
                 syncedCount: totalCount,

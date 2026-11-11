@@ -15,12 +15,12 @@ use App\Models\PosOrderItem;
 use App\Models\Property;
 use App\Models\Room;
 use App\Models\Stay;
-use App\Models\StockMovement;
 use App\Models\SystemNotification;
-use App\Models\Tenant;
+use App\Services\LedgerService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -273,11 +273,11 @@ class AccountingController extends Controller
 
         $user = $request->user();
         $property = $user->property ?? Property::first();
-        $tenantId = $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
+        $tenantId = $user->tenant_id ?? $property?->tenant_id;
 
         $expenseNumber = 'EXP-'.date('Ymd').'-'.strtoupper(substr(uniqid(), -4));
 
-        Expense::create([
+        $expense = Expense::create([
             'tenant_id' => $tenantId,
             'property_id' => $property?->id,
             'account_id' => $validated['account_id'] ?? null,
@@ -293,6 +293,28 @@ class AccountingController extends Controller
             'receipt_reference' => $validated['receipt_reference'] ?? null,
             'notes' => $validated['notes'] ?? null,
         ]);
+
+        $expenseAccountCode = match ($validated['category']) {
+            'supplies' => '5001',
+            'utilities' => '5002',
+            'maintenance' => '5003',
+            'payroll' => '5004',
+            'repairs' => '5005',
+            default => '5006',
+        };
+
+        app(LedgerService::class)->post(
+            (string) $tenantId,
+            $property?->id,
+            'expense',
+            (string) $expense->id,
+            "Expense {$expenseNumber}: {$validated['title']}",
+            [
+                ['code' => $expenseAccountCode, 'direction' => 'debit', 'amount_minor' => $validated['amount_minor']],
+                ['code' => LedgerService::tenderCode($validated['payment_method']), 'direction' => 'credit', 'amount_minor' => $validated['amount_minor']],
+            ],
+            $validated['expense_date'],
+        );
 
         SystemNotification::send(
             tenantId: $tenantId,
@@ -313,7 +335,22 @@ class AccountingController extends Controller
      */
     public function approveExpense(Request $request, Expense $expense): RedirectResponse
     {
-        $expense->update(['status' => 'approved']);
+        $user = $request->user();
+
+        // Separation of duties: nobody may approve their own expense
+        if ($expense->created_by && $expense->created_by === $user->id) {
+            return redirect()->back()->with('error', 'You cannot approve an expense you created yourself.');
+        }
+
+        if ($expense->status === 'approved') {
+            return redirect()->back()->with('error', 'This expense is already approved.');
+        }
+
+        $expense->update([
+            'status' => 'approved',
+            'approved_by' => $user->id,
+            'approved_at' => now(),
+        ]);
 
         return redirect()->back()->with('success', "Expense {$expense->expense_number} approved successfully.");
     }
@@ -330,7 +367,7 @@ class AccountingController extends Controller
     ): Response {
         $user = $request->user();
         $property = $user->property ?? Property::first();
-        $tenantId = $user->tenant_id ?? $property?->tenant_id ?? Tenant::first()?->id;
+        $tenantId = $user->tenant_id ?? $property?->tenant_id;
 
         $bDateRecord = $property ? BusinessDate::where('property_id', $property->id)->first() : null;
         $currentDate = $bDateRecord ? Carbon::parse($bDateRecord->current_business_date) : Carbon::today();
@@ -502,12 +539,8 @@ class AccountingController extends Controller
                     ->whereYear('created_at', $currentDate->year)
                     ->whereIn('payment_status', ['paid', 'posted_to_room']);
             })->join('pos_items', 'pos_order_items.pos_item_id', '=', 'pos_items.id')
-              ->selectRaw('sum(pos_order_items.quantity * coalesce(pos_items.cost_price_minor, 0)) as cogs')
-              ->value('cogs');
-
-            if ($groceryCogsMonth === 0) {
-                $groceryCogsMonth = (int) round($groceryRevenueMonth * 0.65);
-            }
+                ->selectRaw('sum(pos_order_items.quantity * coalesce(pos_items.cost_price_minor, 0)) as cogs')
+                ->value('cogs');
         } else {
             $groceryCogsMonth = 0;
         }
@@ -570,50 +603,85 @@ class AccountingController extends Controller
             ->where('status', 'open')
             ->sum('opening_float_minor');
 
+        // Real tender balances: confirmed guest payments + completed POS sales
+        // minus approved expenses, grouped by payment method. No synthetic
+        // balances are ever injected — untracked tenders stay at zero.
+        $tenderIn = Payment::where('tenant_id', $tenantId)
+            ->where('status', 'confirmed')
+            ->selectRaw('payment_method, COALESCE(SUM(amount_minor), 0) AS total')
+            ->groupBy('payment_method')
+            ->pluck('total', 'payment_method');
+
+        $posTenderIn = PosOrder::where('tenant_id', $tenantId)
+            ->where('payment_status', 'paid')
+            ->selectRaw('payment_method, COALESCE(SUM(total_minor), 0) AS total')
+            ->groupBy('payment_method')
+            ->pluck('total', 'payment_method');
+
+        $tenderOut = Expense::where('tenant_id', $tenantId)
+            ->where('status', '!=', 'rejected')
+            ->selectRaw('payment_method, COALESCE(SUM(amount_minor), 0) AS total')
+            ->groupBy('payment_method')
+            ->pluck('total', 'payment_method');
+
+        $sumMethods = function (Collection $source, array $methods): int {
+            return (int) collect($methods)->sum(fn (string $m) => (int) ($source[$m] ?? 0));
+        };
+
+        $cashTenderBalance = $cashOnHand
+            + $sumMethods($tenderIn, ['cash']) + $sumMethods($posTenderIn, ['cash'])
+            - $sumMethods($tenderOut, ['cash']);
+        $bankTenderBalance = $sumMethods($tenderIn, ['bank_transfer', 'card'])
+            + $sumMethods($posTenderIn, ['card', 'bank_transfer'])
+            - $sumMethods($tenderOut, ['bank_transfer']);
+        $mobileTenderBalance = $sumMethods($tenderIn, ['mpesa', 'tigopesa', 'airtelmoney', 'halopesa'])
+            + $sumMethods($posTenderIn, ['mpesa', 'tigopesa'])
+            - $sumMethods($tenderOut, ['mpesa']);
+
         $bankAccountsList = [
             [
                 'id' => 'bank-crdb-01',
                 'name' => 'CRDB Bank Corporate Account',
                 'code' => '1020',
-                'account_number' => '0150244892100',
+                'account_number' => null,
                 'currency' => 'TZS',
-                'book_balance_minor' => 1845000000,
-                'bank_balance_minor' => 1845000000,
-                'reconciled' => true,
-                'last_reconciled' => $currentDate->subDay()->format('d M Y'),
+                'book_balance_minor' => max(0, $bankTenderBalance),
+                'bank_balance_minor' => null,
+                'reconciled' => false,
+                'last_reconciled' => null,
             ],
             [
                 'id' => 'bank-nmb-02',
                 'name' => 'NMB Bank Operations Account',
                 'code' => '1030',
-                'account_number' => '2010895541002',
+                'account_number' => null,
                 'currency' => 'TZS',
-                'book_balance_minor' => 642000000,
-                'bank_balance_minor' => 642000000,
-                'reconciled' => true,
-                'last_reconciled' => $currentDate->subDay()->format('d M Y'),
+                'book_balance_minor' => 0,
+                'bank_balance_minor' => null,
+                'reconciled' => false,
+                'last_reconciled' => null,
             ],
             [
                 'id' => 'bank-mpesa-03',
-                'name' => 'Vodacom M-Pesa Business Till',
+                'name' => 'Mobile Money Till (M-Pesa / Tigo / Airtel)',
                 'code' => '1040',
-                'account_number' => 'Till: 5882194',
+                'account_number' => null,
                 'currency' => 'TZS',
-                'book_balance_minor' => 315000000,
-                'bank_balance_minor' => 315000000,
-                'reconciled' => true,
-                'last_reconciled' => $currentDate->format('d M Y'),
+                'book_balance_minor' => max(0, $mobileTenderBalance),
+                'bank_balance_minor' => null,
+                'reconciled' => false,
+                'last_reconciled' => null,
             ],
             [
                 'id' => 'bank-cash-04',
                 'name' => 'Main Reception Cash Vault',
                 'code' => '1010',
-                'account_number' => 'Vault PIH-01',
+                'account_number' => null,
                 'currency' => 'TZS',
-                'book_balance_minor' => max(15000000, $cashOnHand),
-                'bank_balance_minor' => max(15000000, $cashOnHand),
-                'reconciled' => true,
-                'last_reconciled' => $currentDate->format('d M Y'),
+                'book_balance_minor' => max(0, $cashTenderBalance),
+                'bank_balance_minor' => null,
+                'reconciled' => false,
+                'last_reconciled' => null,
             ],
         ];
 
@@ -664,13 +732,6 @@ class AccountingController extends Controller
                 ->where('status', '!=', 'rejected')
                 ->sum('amount_minor');
 
-            // Fallback realistic proportional values for empty historical demo seed
-            if ($monthRev === 0 && $i > 0) {
-                $baseRev = max(150000000, $totalRevenueMonth ?: 320000000);
-                $monthRev = (int) ($baseRev * (0.85 + (0.05 * (5 - $i))));
-                $monthExp = (int) ($monthRev * 0.58);
-            }
-
             $revenueExpenseTrend[] = [
                 'month' => $monthDate->format('M Y'),
                 'short_month' => $monthDate->format('M'),
@@ -686,29 +747,29 @@ class AccountingController extends Controller
         $departmentRevenueContribution = [
             [
                 'name' => 'Room Accommodation',
-                'amount_minor' => $roomRevenueMonth ?: (int) ($deptTotal * 0.62),
-                'percent' => $roomRevenueMonth > 0 ? round(($roomRevenueMonth / $deptTotal) * 100, 1) : 62.0,
+                'amount_minor' => $roomRevenueMonth,
+                'percent' => $roomRevenueMonth > 0 ? round(($roomRevenueMonth / $deptTotal) * 100, 1) : 0.0,
                 'color' => 'bg-blue-600',
                 'textColor' => 'text-blue-600',
             ],
             [
                 'name' => 'Restaurant & Bar (F&B)',
-                'amount_minor' => $restaurantRevenueMonth ?: (int) ($deptTotal * 0.24),
-                'percent' => $restaurantRevenueMonth > 0 ? round(($restaurantRevenueMonth / $deptTotal) * 100, 1) : 24.0,
+                'amount_minor' => $restaurantRevenueMonth,
+                'percent' => $restaurantRevenueMonth > 0 ? round(($restaurantRevenueMonth / $deptTotal) * 100, 1) : 0.0,
                 'color' => 'bg-amber-500',
                 'textColor' => 'text-amber-500',
             ],
             [
                 'name' => 'Grocery & Minimart Retail',
-                'amount_minor' => $groceryRevenueMonth ?: (int) ($deptTotal * 0.10),
-                'percent' => $groceryRevenueMonth > 0 ? round(($groceryRevenueMonth / $deptTotal) * 100, 1) : 10.0,
+                'amount_minor' => $groceryRevenueMonth,
+                'percent' => $groceryRevenueMonth > 0 ? round(($groceryRevenueMonth / $deptTotal) * 100, 1) : 0.0,
                 'color' => 'bg-indigo-600',
                 'textColor' => 'text-indigo-600',
             ],
             [
                 'name' => 'Guest Services & Other',
-                'amount_minor' => $otherRevenueMonth ?: (int) ($deptTotal * 0.04),
-                'percent' => $otherRevenueMonth > 0 ? round(($otherRevenueMonth / $deptTotal) * 100, 1) : 4.0,
+                'amount_minor' => $otherRevenueMonth,
+                'percent' => $otherRevenueMonth > 0 ? round(($otherRevenueMonth / $deptTotal) * 100, 1) : 0.0,
                 'color' => 'bg-emerald-500',
                 'textColor' => 'text-emerald-500',
             ],
@@ -817,12 +878,13 @@ class AccountingController extends Controller
 
         // B. From Guest Payments (Debit Cash/Bank, Credit Receivables)
         $recentPayments = Payment::where('tenant_id', $tenantId)
+            ->where('status', 'confirmed')
             ->latest()
             ->take(50)
             ->get();
 
         foreach ($recentPayments as $pmt) {
-            $cashCode = match ($pmt->method ?? 'cash') {
+            $cashCode = match ($pmt->payment_method ?? 'cash') {
                 'bank', 'bank_transfer' => '1020',
                 'mpesa', 'tigopesa', 'airtelmoney' => '1040',
                 default => '1010',
@@ -836,9 +898,9 @@ class AccountingController extends Controller
                 'account_name' => 'Cash & Liquid Funds',
                 'counterpart_code' => '1050',
                 'reference' => $pmt->reference ?: ('RCT-'.substr($pmt->id, 0, 6)),
-                'description' => 'Guest Payment Receipt ('.($pmt->method ?? 'Cash').')',
+                'description' => 'Guest Payment Receipt ('.($pmt->payment_method ?? 'Cash').')',
                 'entity' => 'Guest Settlement',
-                'payment_method' => strtoupper($pmt->method ?? 'cash'),
+                'payment_method' => strtoupper($pmt->payment_method ?? 'cash'),
                 'debit_minor' => (int) $pmt->amount_minor,
                 'credit_minor' => 0,
                 'status' => $pmt->status ?? 'confirmed',
@@ -854,7 +916,7 @@ class AccountingController extends Controller
                 'reference' => $pmt->reference ?: ('RCT-'.substr($pmt->id, 0, 6)),
                 'description' => 'Payment Applied to Folio Balance',
                 'entity' => 'Guest Settlement',
-                'payment_method' => strtoupper($pmt->method ?? 'cash'),
+                'payment_method' => strtoupper($pmt->payment_method ?? 'cash'),
                 'debit_minor' => 0,
                 'credit_minor' => (int) $pmt->amount_minor,
                 'status' => $pmt->status ?? 'confirmed',
@@ -958,11 +1020,11 @@ class AccountingController extends Controller
             $groceryRevenueMonth,
             $otherRevenueMonth,
             $fbSuppliesExpensesMonth,
-            $expensesMonth,
             $accountsReceivable,
             $accountsPayable,
-            $cashOnHand,
-            $totalBankAndCash,
+            $cashTenderBalance,
+            $bankTenderBalance,
+            $mobileTenderBalance,
             $expenses
         ) {
             $bal = match ($acc->code) {
@@ -976,15 +1038,16 @@ class AccountingController extends Controller
                 '5004' => (int) $expenses->where('category', 'payroll')->sum('amount_minor'),
                 '5005' => (int) $expenses->where('category', 'repairs')->sum('amount_minor'),
                 '5006' => (int) $expenses->where('category', 'administrative')->sum('amount_minor'),
-                '1010' => max(15000000, $cashOnHand),
-                '1020' => 1845000000,
-                '1030' => 642000000,
-                '1040' => 315000000,
+                '1010' => max(0, $cashTenderBalance),
+                '1020' => max(0, $bankTenderBalance),
+                '1030' => 0,
+                '1040' => max(0, $mobileTenderBalance),
                 '1050' => $accountsReceivable,
                 '2010' => $accountsPayable,
                 default => (int) ($acc->balance_minor ?? 0),
             };
             $acc->balance_minor = $bal;
+
             return $acc;
         });
 

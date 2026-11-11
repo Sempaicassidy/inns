@@ -52,7 +52,7 @@ class DashboardController extends Controller
                 'housekeeper', 'housekeeping_supervisor' => ['housekeeping.index', 'housekeeping', 'housekeeping'],
                 'pos_cashier', 'cashier', 'waiter', 'bartender', 'chef',
                 'restaurant_cashier', 'restaurant_staff' => ['pos.index', 'restaurant_pos', 'restaurant_pos'],
-                'grocery_cashier', 'supermarket_cashier' => ['grocery.pos', 'grocery_pos', 'grocery_pos'],
+                'grocery_cashier', 'supermarket_cashier' => ['grocery.dashboard', 'grocery_pos', 'grocery_pos'],
                 'storekeeper', 'procurement_manager' => ['inventory.index', 'inventory', 'inventory'],
                 'night_auditor' => ['night-audit.index', null, null],
                 'hr_manager' => ['hr.index', 'hr_payroll', 'hr_payroll'],

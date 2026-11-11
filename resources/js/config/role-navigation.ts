@@ -476,7 +476,8 @@ export const roleNavigation: Record<string, RoleNavigationDef> = {
         navigation: [
             { name: 'Dashboard', route: 'dashboard', icon: 'Home', active: ['dashboard'] },
             { name: 'POS Terminal (Restaurant & Bar)', route: 'pos.index', icon: 'Utensils', active: ['pos.*'], feature: 'restaurant_pos' },
-            { name: 'Super / Mini Market POS', route: 'grocery.pos', icon: 'ShoppingBag', active: ['grocery.*'], feature: 'grocery_pos' },
+            { name: 'Super Market Dashboard', route: 'grocery.dashboard', icon: 'ShoppingBag', active: ['grocery.dashboard'], feature: 'grocery_pos' },
+            { name: 'Super / Mini Market POS', route: 'grocery.pos', icon: 'ShoppingBag', active: ['grocery.pos'], feature: 'grocery_pos' },
             { name: 'Restaurant Orders & Menu', route: 'restaurant.index', icon: 'Utensils', active: ['restaurant.*'], feature: 'restaurant_pos' },
             { name: 'My Profile & Account', route: 'profile.edit', icon: 'Settings', active: ['profile.*'] },
             { name: 'Sign Out', icon: 'LogOut', isLogout: true },
@@ -549,6 +550,7 @@ export const roleNavigation: Record<string, RoleNavigationDef> = {
         navigation: [
             { name: 'Dashboard', route: 'dashboard', icon: 'Home', active: ['dashboard'] },
             { name: 'Central Store & Stock', route: 'inventory.index', icon: 'Package', active: ['inventory.*'], feature: 'inventory' },
+            { name: 'Super Market Dashboard', route: 'grocery.dashboard', icon: 'ShoppingBag', active: ['grocery.dashboard'], feature: 'grocery_pos' },
             { name: 'Super / Mini Market POS', route: 'grocery.pos', icon: 'ShoppingBag', active: ['grocery.pos'], feature: 'grocery_pos' },
             { name: 'My Profile & Account', route: 'profile.edit', icon: 'Settings', active: ['profile.*'] },
             { name: 'Sign Out', icon: 'LogOut', isLogout: true },

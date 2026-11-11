@@ -5,15 +5,20 @@ import {
     AlertCircle,
     ArrowRight,
     BarChart3,
+    Barcode,
     Bed,
     Check,
+    Coins,
     CreditCard,
     DollarSign,
+    LayoutGrid,
+    List,
     Minus,
     Package,
     Plus,
     Printer,
     Receipt,
+    RotateCcw,
     Search,
     ShoppingBag,
     ShoppingCart,
@@ -23,7 +28,7 @@ import {
     Truck,
     X,
 } from 'lucide-react';
-import { useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import ReceiptModal from '@/Components/ReceiptModal';
 import { ReceiptData } from '@/Utils/receiptPrinter';
 import { queueOperation } from '@/offline/queue';
@@ -86,13 +91,19 @@ export default function GroceryPos({
 }: GroceryPosProps) {
     const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [orderType, setOrderType] = useState<'counter' | 'room' | 'takeaway'>('counter');
     const [cart, setCart] = useState<{ item: GroceryItem; quantity: number }[]>([]);
+    const [cashTendered, setCashTendered] = useState<string>('');
     const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
     const [currentReceiptData, setCurrentReceiptData] = useState<ReceiptData | null>(null);
     const [isRecentOrdersOpen, setIsRecentOrdersOpen] = useState(false);
     const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
     const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
+    const userRole = (auth?.user as any)?.active_role || (auth?.user as any)?.role || 'staff';
+    const isManager = ['owner', 'super_admin', 'general_manager', 'manager', 'admin'].includes(userRole);
 
     // Add Product Form (Quick Add SKU right from POS terminal)
     const addProductForm = useForm({
@@ -129,7 +140,20 @@ export default function GroceryPos({
             maximumFractionDigits: 0,
         }).format((minor || 0) / 100);
 
-    const addToCart = (item: GroceryItem) => {
+    const subtotalMinor = useMemo(
+        () => cart.reduce((sum, c) => sum + c.item.price_minor * c.quantity, 0),
+        [cart]
+    );
+    const totalItemsCount = useMemo(
+        () => cart.reduce((sum, c) => sum + c.quantity, 0),
+        [cart]
+    );
+
+    const totalMajor = subtotalMinor / 100;
+    const tenderedNum = Number(cashTendered) || 0;
+    const changeDue = tenderedNum > 0 ? tenderedNum - totalMajor : 0;
+
+    const addToCart = (item: GroceryItem, qtyDelta: number = 1) => {
         if (item.stock_quantity <= 0) {
             toastError(`"${item.name}" is out of stock.`);
             return;
@@ -137,14 +161,14 @@ export default function GroceryPos({
         setCart((prev) => {
             const existing = prev.find((c) => c.item.id === item.id);
             const inCart = existing?.quantity ?? 0;
-            if (inCart + 1 > item.stock_quantity) {
+            if (inCart + qtyDelta > item.stock_quantity) {
                 toastError(`Only ${item.stock_quantity} ${item.unit}(s) of "${item.name}" in stock.`);
                 return prev;
             }
             if (existing) {
-                return prev.map((c) => (c.item.id === item.id ? { ...c, quantity: c.quantity + 1 } : c));
+                return prev.map((c) => (c.item.id === item.id ? { ...c, quantity: c.quantity + qtyDelta } : c));
             }
-            return [...prev, { item, quantity: 1 }];
+            return [...prev, { item, quantity: qtyDelta }];
         });
     };
 
@@ -170,10 +194,10 @@ export default function GroceryPos({
         setCart((prev) => prev.filter((c) => c.item.id !== itemId));
     };
 
-    const clearCart = () => setCart([]);
-
-    const subtotalMinor = cart.reduce((sum, c) => sum + c.item.price_minor * c.quantity, 0);
-    const totalItemsCount = cart.reduce((sum, c) => sum + c.quantity, 0);
+    const clearCart = () => {
+        setCart([]);
+        setCashTendered('');
+    };
 
     const handleRoomSelect = (stayId: string) => {
         const stay = activeStays.find((s) => s.stay_id === stayId);
@@ -189,6 +213,50 @@ export default function GroceryPos({
         }
     };
 
+    const filteredItems = useMemo(() => {
+        const q = searchQuery.trim().toLowerCase();
+        return items.filter((item) => {
+            const matchesCategory = selectedCategoryId === 'all' || item.pos_category_id === selectedCategoryId;
+            const matchesSearch =
+                !q ||
+                item.name.toLowerCase().includes(q) ||
+                item.code?.toLowerCase().includes(q);
+            return matchesCategory && matchesSearch;
+        });
+    }, [items, selectedCategoryId, searchQuery]);
+
+    // Handle barcode scanner input / Enter key on search
+    const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const q = searchQuery.trim().toLowerCase();
+            if (!q) return;
+
+            // 1. Exact match on barcode/SKU
+            const exactCodeMatch = items.find((i) => i.code?.toLowerCase() === q);
+            if (exactCodeMatch) {
+                addToCart(exactCodeMatch);
+                setSearchQuery('');
+                return;
+            }
+
+            // 2. Exact match on name
+            const exactNameMatch = items.find((i) => i.name.toLowerCase() === q);
+            if (exactNameMatch) {
+                addToCart(exactNameMatch);
+                setSearchQuery('');
+                return;
+            }
+
+            // 3. Single filtered item match
+            if (filteredItems.length === 1) {
+                addToCart(filteredItems[0]);
+                setSearchQuery('');
+                return;
+            }
+        }
+    };
+
     const buildReceipt = (orderNumber: string): ReceiptData => ({
         hotelName: (auth?.tenant as any)?.name || 'SUPER / MINI MARKET',
         hotelAddress: (auth?.property as any)?.address || (auth?.tenant as any)?.address || undefined,
@@ -198,11 +266,11 @@ export default function GroceryPos({
         receiptNumber: orderNumber,
         receiptType: 'POS RECEIPT',
         dateTime: new Date().toLocaleString(),
-        cashierName: auth?.user?.name || 'Cashier',
+        cashierName: (auth?.user as any)?.name || 'Cashier',
         guestName: saleData.guest_name || 'Walk-in Customer',
         tableName: saleData.payment_method === 'room_folio'
             ? `Room ${activeStays.find((s) => s.room_id === saleData.room_id)?.room_number ?? saleData.room_id}`
-            : orderType === 'takeaway' ? 'Takeaway Counter' : 'Retail Checkout Counter',
+            : orderType === 'takeaway' ? 'Takeaway Counter' : 'Super Market Counter',
         items: cart.map((c) => ({
             description: c.item.name,
             quantity: c.quantity,
@@ -213,11 +281,14 @@ export default function GroceryPos({
         tax: 0,
         taxRatePercent: 0,
         grandTotal: subtotalMinor,
-        paymentMethod: saleData.payment_method,
-        amountPaid: subtotalMinor,
+        paymentMethod: saleData.payment_method.toUpperCase(),
+        amountPaid: saleData.payment_method === 'cash' && tenderedNum > 0 ? tenderedNum * 100 : subtotalMinor,
         balanceDue: 0,
+        notes: saleData.payment_method === 'cash' && tenderedNum >= totalMajor
+            ? `Cash Received: TSh ${tenderedNum.toLocaleString()} | Change Due: TSh ${changeDue.toLocaleString()}`
+            : undefined,
         amountsAreMinor: true,
-        footerText: 'Thank you for shopping at our Super / Mini Market!',
+        footerText: 'Thank you for shopping with us! Welcome again.',
     });
 
     const handleCheckout = (e: React.FormEvent) => {
@@ -271,6 +342,9 @@ export default function GroceryPos({
                 setIsReceiptModalOpen(true);
                 clearCart();
                 reset();
+                if (searchInputRef.current) {
+                    searchInputRef.current.focus();
+                }
             });
         };
 
@@ -280,11 +354,19 @@ export default function GroceryPos({
         }
 
         submitSale(route('grocery.orders.store'), {
-            onSuccess: () => {
-                setCurrentReceiptData(receiptSnapshot);
+            onSuccess: (page: any) => {
+                const serverReceipt = page.props?.flash?.sale_receipt;
+                if (serverReceipt) {
+                    setCurrentReceiptData(serverReceipt);
+                } else {
+                    setCurrentReceiptData(receiptSnapshot);
+                }
                 setIsReceiptModalOpen(true);
                 clearCart();
                 reset();
+                if (searchInputRef.current) {
+                    searchInputRef.current.focus();
+                }
             },
             onError: () => {
                 if (typeof navigator !== 'undefined' && !navigator.onLine) {
@@ -327,14 +409,14 @@ export default function GroceryPos({
         receiptNumber: order.order_number,
         receiptType: 'POS RECEIPT',
         dateTime: new Date(order.created_at).toLocaleString(),
-        cashierName: auth?.user?.name || 'Cashier',
+        cashierName: (auth?.user as any)?.name || 'Cashier',
         guestName: order.guest_name || 'Walk-in Customer',
-        tableName: order.room_number ? `Room ${order.room_number}` : 'Retail Checkout Counter',
-        items: order.items.length > 0
+        tableName: order.room_number ? `Room ${order.room_number}` : 'Super Market Counter',
+        items: order.items?.length > 0
             ? order.items.map((it) => ({
                 description: it.item_name,
                 quantity: it.quantity,
-                unit_price: it.total_minor / (it.quantity || 1),
+                unit_price: Math.round(it.total_minor / (it.quantity || 1)),
                 amount: it.total_minor,
             }))
             : [{ description: `Retail Sale #${order.order_number}`, quantity: 1, unit_price: order.total_minor, amount: order.total_minor }],
@@ -342,105 +424,171 @@ export default function GroceryPos({
         tax: 0,
         taxRatePercent: 0,
         grandTotal: order.total_minor,
-        paymentMethod: order.payment_method,
+        paymentMethod: order.payment_method.toUpperCase(),
         amountPaid: order.total_minor,
         balanceDue: 0,
         amountsAreMinor: true,
-        footerText: 'Thank you for shopping at our Super / Mini Market!',
-    });
-
-    const filteredItems = items.filter((item) => {
-        const matchesCategory = selectedCategoryId === 'all' || item.pos_category_id === selectedCategoryId;
-        const matchesSearch =
-            item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.code?.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesCategory && matchesSearch;
+        footerText: 'Thank you for shopping with us! Welcome again.',
     });
 
     return (
         <AuthenticatedLayout>
             <Head title="Super / Mini Market POS — Cashier Checkout Terminal" />
 
-            <div className="space-y-6">
-                {/* 1. Header & Navigation Hub */}
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <span className="p-2 bg-blue-50 text-blue-600 rounded-xl">
-                                <ShoppingBag className="w-5 h-5" />
-                            </span>
-                            <div>
-                                <h1 className="text-2xl font-bold text-slate-900">Super / Mini Market POS</h1>
-                                <p className="text-xs text-slate-500">Retail sales terminal — scan products, build cart & instant receipts</p>
+            <div className="space-y-5">
+                {/* 1. Header & Cashier Status Bar */}
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold shadow-2xs border border-blue-100">
+                                    <ShoppingBag className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Super / Mini Market POS</h1>
+                                    <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                                        <span className="flex items-center gap-1 text-slate-700 font-semibold">
+                                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                            Cashier: <strong className="text-slate-900">{(auth?.user as any)?.name || 'Cashier'}</strong>
+                                        </span>
+                                        <span className="text-slate-300">•</span>
+                                        <span>Terminal Active</span>
+                                    </div>
+                                </div>
                             </div>
+
+                            {/* Manager Quick Navigation if Manager */}
+                            {isManager && (
+                                <div className="flex items-center gap-1.5 pt-2">
+                                    <span className="px-3 py-1 bg-blue-50 text-blue-700 font-bold text-xs rounded-lg border border-blue-100 flex items-center gap-1">
+                                        <ShoppingCart className="w-3.5 h-3.5" />
+                                        <span>POS Terminal</span>
+                                    </span>
+                                    <Link
+                                        href={route('grocery.index', { tab: 'inventory' })}
+                                        className="px-3 py-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-semibold text-xs rounded-lg transition flex items-center gap-1"
+                                    >
+                                        <Package className="w-3.5 h-3.5 text-slate-400" />
+                                        <span>Manage Inventory</span>
+                                    </Link>
+                                    <Link
+                                        href={route('grocery.index')}
+                                        className="px-3 py-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-semibold text-xs rounded-lg transition flex items-center gap-1"
+                                    >
+                                        <BarChart3 className="w-3.5 h-3.5 text-slate-400" />
+                                        <span>Margin Reports</span>
+                                    </Link>
+                                </div>
+                            )}
                         </div>
 
-                        {/* Top Module Switcher Tabs */}
-                        <div className="flex items-center gap-1.5 mt-3 bg-slate-100 p-1 rounded-xl w-fit border border-slate-200">
-                            <div className="px-3.5 py-1.5 bg-white text-blue-600 font-bold text-xs rounded-lg shadow-2xs flex items-center gap-1.5">
-                                <ShoppingCart className="w-3.5 h-3.5" />
-                                <span>POS Checkout</span>
+                        {/* Top Action Buttons & Shift Summary */}
+                        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setIsRecentOrdersOpen(true)}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition shadow-2xs cursor-pointer active:scale-95"
+                            >
+                                <Receipt className="w-4 h-4 text-slate-500" />
+                                <span>Recent Receipts ({recentOrders.length})</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setIsAddProductModalOpen(true)}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+                            >
+                                <Plus className="w-4 h-4" />
+                                <span>Quick Add SKU</span>
+                            </button>
+
+                            <div className="flex items-center gap-2 pl-1 border-l border-slate-200">
+                                <div className="bg-slate-50 border border-slate-200/80 rounded-xl px-3.5 py-1.5 text-right min-w-[110px]">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Today's Sales</span>
+                                    <div className="text-sm font-black text-slate-900">{formatCurrency(stats.today_total_minor)}</div>
+                                </div>
+
+                                <div className="bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-1.5 text-center min-w-[60px]">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Orders</span>
+                                    <div className="text-sm font-black text-blue-600">{stats.today_order_count}</div>
+                                </div>
                             </div>
-                            <Link
-                                href={route('grocery.index', { tab: 'inventory' })}
-                                className="px-3.5 py-1.5 text-slate-600 hover:text-slate-900 font-semibold text-xs rounded-lg transition flex items-center gap-1.5"
-                            >
-                                <Package className="w-3.5 h-3.5 text-slate-400" />
-                                <span>Inventory & SKUs</span>
-                            </Link>
-                            <Link
-                                href={route('grocery.index')}
-                                className="px-3.5 py-1.5 text-slate-600 hover:text-slate-900 font-semibold text-xs rounded-lg transition flex items-center gap-1.5"
-                            >
-                                <BarChart3 className="w-3.5 h-3.5 text-slate-400" />
-                                <span>Valuation & Margin</span>
-                            </Link>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-3">
-                        <button
-                            type="button"
-                            onClick={() => setIsAddProductModalOpen(true)}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span>Quick Add SKU</span>
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={() => setIsRecentOrdersOpen(true)}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition shadow-2xs cursor-pointer"
-                        >
-                            <Receipt className="w-4 h-4 text-slate-500" />
-                            <span>Recent Receipts ({recentOrders.length})</span>
-                        </button>
-
-                        <div className="bg-white border border-slate-200 rounded-xl px-4 py-2 shadow-2xs">
-                            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Today's Sales</span>
-                            <div className="text-base font-extrabold text-slate-900">{formatCurrency(stats.today_total_minor)}</div>
-                        </div>
-
-                        <div className="bg-white border border-slate-200 rounded-xl px-4 py-2 shadow-2xs text-center min-w-[70px]">
-                            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Orders</span>
-                            <div className="text-base font-extrabold text-blue-600">{stats.today_order_count}</div>
                         </div>
                     </div>
                 </div>
 
                 {/* 2. Main POS Grid: Product Catalog + Sticky Cart */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                    {/* Left Column: Product Search, Category Pills & Products Grid */}
-                    <div className="lg:col-span-8 space-y-4">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+                    {/* Left Column: Product Search, Category Pills & Products Grid/List */}
+                    <div className="lg:col-span-7 xl:col-span-8 space-y-4">
+                        {/* Search, Barcode Scanner & View Toggle Bar */}
+                        <div className="flex items-center gap-2.5">
+                            <div className="relative flex-1">
+                                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-slate-400">
+                                    <Barcode className="w-5 h-5 text-blue-600" />
+                                    <Search className="w-4 h-4 text-slate-400" />
+                                </div>
+                                <input
+                                    ref={searchInputRef}
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onKeyDown={handleSearchKeyDown}
+                                    placeholder="Scan barcode or type name / SKU (Press Enter to add)..."
+                                    className="w-full pl-16 pr-10 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 shadow-2xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition"
+                                />
+                                {searchQuery && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSearchQuery('');
+                                            searchInputRef.current?.focus();
+                                        }}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded-md cursor-pointer"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* View Switcher: Grid vs List */}
+                            <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={() => setViewMode('grid')}
+                                    className={`p-2 rounded-lg transition cursor-pointer ${
+                                        viewMode === 'grid'
+                                            ? 'bg-white text-blue-600 shadow-2xs'
+                                            : 'text-slate-500 hover:text-slate-800'
+                                    }`}
+                                    title="Grid View (Cards)"
+                                >
+                                    <LayoutGrid className="w-4 h-4" />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setViewMode('list')}
+                                    className={`p-2 rounded-lg transition cursor-pointer ${
+                                        viewMode === 'list'
+                                            ? 'bg-white text-blue-600 shadow-2xs'
+                                            : 'text-slate-500 hover:text-slate-800'
+                                    }`}
+                                    title="List View (Compact Rows)"
+                                >
+                                    <List className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+
                         {/* Category filter pills */}
                         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
                             <button
                                 onClick={() => setSelectedCategoryId('all')}
-                                className={`px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${selectedCategoryId === 'all'
-                                    ? 'bg-blue-600 text-white shadow-xs'
-                                    : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
-                                    }`}
+                                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                                    selectedCategoryId === 'all'
+                                        ? 'bg-blue-600 text-white shadow-xs'
+                                        : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+                                }`}
                             >
                                 All Items ({items.length})
                             </button>
@@ -450,15 +598,21 @@ export default function GroceryPos({
                                     <button
                                         key={cat.id}
                                         onClick={() => setSelectedCategoryId(cat.id)}
-                                        className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${selectedCategoryId === cat.id
-                                            ? 'bg-blue-600 text-white shadow-xs'
-                                            : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
-                                            }`}
+                                        className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                                            selectedCategoryId === cat.id
+                                                ? 'bg-blue-600 text-white shadow-xs'
+                                                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+                                        }`}
                                     >
                                         <Package className="w-3.5 h-3.5" />
                                         <span>{cat.name}</span>
-                                        <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${selectedCategoryId === cat.id ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-500'
-                                            }`}>
+                                        <span
+                                            className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                                                selectedCategoryId === cat.id
+                                                    ? 'bg-blue-500 text-white'
+                                                    : 'bg-slate-100 text-slate-500'
+                                            }`}
+                                        >
                                             {countInCat}
                                         </span>
                                     </button>
@@ -467,7 +621,7 @@ export default function GroceryPos({
                             <button
                                 type="button"
                                 onClick={() => setIsAddCategoryModalOpen(true)}
-                                className="px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1 bg-white border border-dashed border-slate-300 text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50/50"
+                                className="px-3 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1 bg-white border border-dashed border-slate-300 text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50/50"
                                 title="Create a new product category"
                             >
                                 <Plus className="w-3.5 h-3.5" />
@@ -475,163 +629,263 @@ export default function GroceryPos({
                             </button>
                         </div>
 
-                        {/* Search Bar */}
-                        <div className="relative">
-                            <Search className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search retail products by name, brand, or SKU barcode..."
-                                className="w-full pl-11 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition"
-                            />
-                            {searchQuery && (
+                        {/* Product Catalog Display (Grid View or List View) */}
+                        {filteredItems.length === 0 ? (
+                            <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center text-slate-500 space-y-3 shadow-2xs">
+                                <ShoppingBag className="w-12 h-12 mx-auto text-slate-300" />
+                                <h3 className="font-bold text-slate-800 text-base">No retail products found</h3>
+                                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                                    {searchQuery
+                                        ? `No product matches "${searchQuery}". Scan a different barcode or add a new SKU.`
+                                        : 'No products in this category yet. Click "Quick Add SKU" to add your first product.'}
+                                </p>
                                 <button
                                     type="button"
-                                    onClick={() => setSearchQuery('')}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded-md cursor-pointer"
+                                    onClick={() => setIsAddProductModalOpen(true)}
+                                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer"
                                 >
-                                    <X className="w-4 h-4" />
+                                    <Plus className="w-4 h-4" />
+                                    <span>Add New SKU Now</span>
                                 </button>
-                            )}
-                        </div>
+                            </div>
+                        ) : viewMode === 'grid' ? (
+                            /* GRID VIEW */
+                            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+                                {filteredItems.map((item) => {
+                                    const outOfStock = item.stock_quantity <= 0;
+                                    const inCartItem = cart.find((c) => c.item.id === item.id);
 
-                        {/* Product List — compact rows to leave room for the cart */}
-                        <div className="space-y-1.5">
-                            {filteredItems.map((item) => {
-                                const outOfStock = item.stock_quantity <= 0;
-                                const inCartItem = cart.find((c) => c.item.id === item.id);
-
-                                return (
-                                    <div
-                                        key={item.id}
-                                        onClick={() => !outOfStock && addToCart(item)}
-                                        className={`relative flex items-center gap-3 px-3 py-2 rounded-xl border text-left transition-all duration-150 select-none ${outOfStock
-                                            ? 'border-slate-200/70 opacity-55 cursor-not-allowed bg-slate-50/50'
-                                            : inCartItem
-                                                ? 'border-blue-400 bg-blue-50/60 shadow-xs cursor-pointer'
-                                                : 'border-slate-200/80 bg-white hover:border-blue-300 hover:bg-blue-50/30 cursor-pointer'
+                                    return (
+                                        <div
+                                            key={item.id}
+                                            onClick={() => !outOfStock && addToCart(item)}
+                                            className={`group relative rounded-2xl border p-3 flex flex-col justify-between transition-all select-none ${
+                                                outOfStock
+                                                    ? 'border-slate-200 bg-slate-50/60 opacity-60 cursor-not-allowed'
+                                                    : inCartItem
+                                                    ? 'border-blue-500 bg-blue-50/40 shadow-xs cursor-pointer ring-1 ring-blue-500/20'
+                                                    : 'border-slate-200/90 bg-white hover:border-blue-300 hover:shadow-xs hover:bg-blue-50/10 cursor-pointer'
                                             }`}
-                                    >
-                                        {/* Thumbnail */}
-                                        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50/50 border border-slate-100 flex items-center justify-center shrink-0">
-                                            <Package className="w-5 h-5 text-blue-600/70" />
-                                        </div>
+                                        >
+                                            <div>
+                                                {/* Top row: Stock badge & SKU */}
+                                                <div className="flex items-center justify-between gap-1 mb-2">
+                                                    <span className="text-[10px] font-mono font-bold text-slate-400 uppercase truncate">
+                                                        {item.code || 'SKU'}
+                                                    </span>
+                                                    <span
+                                                        className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full shrink-0 ${
+                                                            outOfStock
+                                                                ? 'bg-rose-100 text-rose-700'
+                                                                : item.stock_quantity <= 10
+                                                                ? 'bg-amber-100 text-amber-800'
+                                                                : 'bg-emerald-100 text-emerald-800'
+                                                        }`}
+                                                    >
+                                                        {outOfStock ? 'Out' : `${item.stock_quantity} ${item.unit}`}
+                                                    </span>
+                                                </div>
 
-                                        {/* Name + SKU */}
-                                        <div className="flex-1 min-w-0">
-                                            <h4 className="font-bold text-slate-900 text-sm leading-tight truncate">
-                                                {item.name}
-                                            </h4>
-                                            <div className="flex items-center gap-2 mt-0.5">
-                                                <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">
-                                                    {item.code || 'SKU'}
-                                                </span>
-                                                <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${outOfStock
-                                                    ? 'bg-rose-100 text-rose-700'
-                                                    : item.stock_quantity <= 10
-                                                        ? 'bg-amber-100 text-amber-800'
-                                                        : 'bg-emerald-100 text-emerald-800'
-                                                    }`}>
-                                                    {outOfStock ? 'Out of stock' : `${item.stock_quantity} ${item.unit} left`}
-                                                </span>
+                                                {/* Icon / Image Placeholder */}
+                                                <div className="w-full h-20 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center mb-2.5 group-hover:scale-[1.02] transition-transform">
+                                                    <Package className="w-8 h-8 text-blue-600/70" />
+                                                </div>
+
+                                                {/* Product Name */}
+                                                <h4 className="font-bold text-slate-900 text-xs sm:text-sm leading-snug line-clamp-2 min-h-[2.5rem]">
+                                                    {item.name}
+                                                </h4>
+                                            </div>
+
+                                            {/* Bottom row: Price and In-Cart Controller */}
+                                            <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5">
+                                                <div className="text-blue-600 font-black text-xs sm:text-sm">
+                                                    {formatCurrency(item.price_minor)}
+                                                </div>
+
+                                                {inCartItem ? (
+                                                    <div
+                                                        className="flex items-center gap-1 bg-white border border-blue-200 rounded-lg p-0.5 shadow-2xs"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => updateQuantity(item.id, -1)}
+                                                            className="w-6 h-6 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center cursor-pointer"
+                                                        >
+                                                            −
+                                                        </button>
+                                                        <span className="w-5 text-center font-black text-xs text-blue-700">
+                                                            {inCartItem.quantity}
+                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => updateQuantity(item.id, 1)}
+                                                            className="w-6 h-6 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center cursor-pointer"
+                                                        >
+                                                            +
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        disabled={outOfStock}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (!outOfStock) addToCart(item);
+                                                        }}
+                                                        className={`px-2.5 py-1 rounded-lg font-bold text-xs transition flex items-center gap-1 ${
+                                                            outOfStock
+                                                                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                                                : 'bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 cursor-pointer active:scale-95'
+                                                        }`}
+                                                    >
+                                                        <Plus className="w-3 h-3" />
+                                                        <span>Add</span>
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            /* LIST VIEW (Compact Rows) */
+                            <div className="space-y-1.5">
+                                {filteredItems.map((item) => {
+                                    const outOfStock = item.stock_quantity <= 0;
+                                    const inCartItem = cart.find((c) => c.item.id === item.id);
 
-                                        {/* Price */}
-                                        <div className="text-right shrink-0">
-                                            <span className="text-blue-600 font-black text-sm whitespace-nowrap">
-                                                {formatCurrency(item.price_minor)}
-                                            </span>
-                                        </div>
-
-                                        {/* In-cart qty or Add button */}
-                                        {inCartItem ? (
-                                            <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => updateQuantity(item.id, -1)}
-                                                    className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-sm flex items-center justify-center cursor-pointer"
-                                                >
-                                                    −
-                                                </button>
-                                                <span className="w-7 text-center font-black text-sm text-slate-900">
-                                                    {inCartItem.quantity}
-                                                </span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => updateQuantity(item.id, 1)}
-                                                    className="w-7 h-7 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-black text-sm flex items-center justify-center cursor-pointer"
-                                                >
-                                                    +
-                                                </button>
+                                    return (
+                                        <div
+                                            key={item.id}
+                                            onClick={() => !outOfStock && addToCart(item)}
+                                            className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition-all select-none ${
+                                                outOfStock
+                                                    ? 'border-slate-200 bg-slate-50/60 opacity-60 cursor-not-allowed'
+                                                    : inCartItem
+                                                    ? 'border-blue-400 bg-blue-50/50 shadow-2xs cursor-pointer'
+                                                    : 'border-slate-200/90 bg-white hover:border-blue-300 hover:bg-blue-50/20 cursor-pointer shadow-2xs'
+                                            }`}
+                                        >
+                                            {/* Thumbnail */}
+                                            <div className="w-10 h-10 rounded-lg bg-blue-50/60 border border-slate-100 flex items-center justify-center shrink-0">
+                                                <Package className="w-5 h-5 text-blue-600/70" />
                                             </div>
-                                        ) : (
-                                            <button
-                                                type="button"
-                                                disabled={outOfStock}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    if (!outOfStock) addToCart(item);
-                                                }}
-                                                className={`px-3 py-1.5 rounded-lg font-bold text-xs transition shrink-0 flex items-center gap-1 ${outOfStock
-                                                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                                                    : 'bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 cursor-pointer'
+
+                                            {/* Name + SKU */}
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="font-bold text-slate-900 text-sm leading-tight truncate">
+                                                    {item.name}
+                                                </h4>
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">
+                                                        {item.code || 'SKU'}
+                                                    </span>
+                                                    <span
+                                                        className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${
+                                                            outOfStock
+                                                                ? 'bg-rose-100 text-rose-700'
+                                                                : item.stock_quantity <= 10
+                                                                ? 'bg-amber-100 text-amber-800'
+                                                                : 'bg-emerald-100 text-emerald-800'
+                                                        }`}
+                                                    >
+                                                        {outOfStock ? 'Out of stock' : `${item.stock_quantity} ${item.unit} left`}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Price */}
+                                            <div className="text-right shrink-0">
+                                                <span className="text-blue-600 font-black text-sm whitespace-nowrap">
+                                                    {formatCurrency(item.price_minor)}
+                                                </span>
+                                            </div>
+
+                                            {/* In-cart qty or Add button */}
+                                            {inCartItem ? (
+                                                <div
+                                                    className="flex items-center gap-1 shrink-0 bg-white border border-blue-200 rounded-lg p-0.5"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => updateQuantity(item.id, -1)}
+                                                        className="w-7 h-7 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-sm flex items-center justify-center cursor-pointer"
+                                                    >
+                                                        −
+                                                    </button>
+                                                    <span className="w-7 text-center font-black text-sm text-blue-700">
+                                                        {inCartItem.quantity}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => updateQuantity(item.id, 1)}
+                                                        className="w-7 h-7 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-black text-sm flex items-center justify-center cursor-pointer"
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    disabled={outOfStock}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (!outOfStock) addToCart(item);
+                                                    }}
+                                                    className={`px-3 py-1.5 rounded-lg font-bold text-xs transition shrink-0 flex items-center gap-1 ${
+                                                        outOfStock
+                                                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                                            : 'bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 cursor-pointer active:scale-95'
                                                     }`}
-                                            >
-                                                <Plus className="w-3.5 h-3.5" />
-                                                <span>Add</span>
-                                            </button>
-                                        )}
-                                    </div>
-                                );
-                            })}
-
-                            {filteredItems.length === 0 && (
-                                <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center text-slate-500 space-y-3">
-                                    <ShoppingBag className="w-12 h-12 mx-auto text-slate-300" />
-                                    <h3 className="font-bold text-slate-800 text-base">No retail products found</h3>
-                                    <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                                        {searchQuery
-                                            ? `No product matches "${searchQuery}". Clear your search or add a new SKU.`
-                                            : 'No products in this category yet. Click "Quick Add SKU" to add your first product.'}
-                                    </p>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsAddProductModalOpen(true)}
-                                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer"
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                        <span>Add New SKU Now</span>
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+                                                >
+                                                    <Plus className="w-3.5 h-3.5" />
+                                                    <span>Add</span>
+                                                </button>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
 
                     {/* Right Column: Checkout Cart Sidebar */}
-                    <div className="lg:col-span-4">
-                        <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm sticky top-6 space-y-5">
+                    <div className="lg:col-span-5 xl:col-span-4">
+                        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-sm sticky top-4 space-y-4">
                             {/* Cart Header */}
                             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                                 <div className="flex items-center gap-2">
-                                    <ShoppingCart className="w-5 h-5 text-blue-600" />
-                                    <h2 className="text-base font-extrabold text-slate-900">Current Order</h2>
+                                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                                        <ShoppingCart className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-base font-black text-slate-900 leading-tight">Order Cart</h2>
+                                        <span className="text-[11px] font-bold text-slate-500">
+                                            {totalItemsCount} item{totalItemsCount === 1 ? '' : 's'} selected
+                                        </span>
+                                    </div>
                                 </div>
                                 {cart.length > 0 && (
                                     <button
                                         type="button"
                                         onClick={clearCart}
-                                        className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2 py-1 rounded-lg transition cursor-pointer"
+                                        className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2 py-1 rounded-lg transition cursor-pointer flex items-center gap-1"
                                     >
-                                        Clear Cart
+                                        <RotateCcw className="w-3 h-3" />
+                                        <span>Reset</span>
                                     </button>
                                 )}
                             </div>
 
                             <form onSubmit={handleCheckout} className="space-y-4">
-                                {/* Order Type Pills (Retail Counter / Room Delivery / Takeaway) */}
+                                {/* Order Type Selector (Retail Counter / Room Delivery / Takeaway) */}
                                 <div>
+                                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+                                        Order Destination
+                                    </label>
                                     <div className="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl">
                                         <button
                                             type="button"
@@ -641,10 +895,11 @@ export default function GroceryPos({
                                                     setSaleData('payment_method', 'cash');
                                                 }
                                             }}
-                                            className={`py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${orderType === 'counter'
-                                                ? 'bg-blue-600 text-white shadow-xs'
-                                                : 'text-slate-600 hover:text-slate-900'
-                                                }`}
+                                            className={`py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
+                                                orderType === 'counter'
+                                                    ? 'bg-blue-600 text-white shadow-xs'
+                                                    : 'text-slate-600 hover:text-slate-900'
+                                            }`}
                                         >
                                             Counter
                                         </button>
@@ -654,10 +909,11 @@ export default function GroceryPos({
                                                 setOrderType('room');
                                                 setSaleData('payment_method', 'room_folio');
                                             }}
-                                            className={`py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${orderType === 'room'
-                                                ? 'bg-blue-600 text-white shadow-xs'
-                                                : 'text-slate-600 hover:text-slate-900'
-                                                }`}
+                                            className={`py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
+                                                orderType === 'room'
+                                                    ? 'bg-blue-600 text-white shadow-xs'
+                                                    : 'text-slate-600 hover:text-slate-900'
+                                            }`}
                                         >
                                             Room
                                         </button>
@@ -669,10 +925,11 @@ export default function GroceryPos({
                                                     setSaleData('payment_method', 'cash');
                                                 }
                                             }}
-                                            className={`py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${orderType === 'takeaway'
-                                                ? 'bg-blue-600 text-white shadow-xs'
-                                                : 'text-slate-600 hover:text-slate-900'
-                                                }`}
+                                            className={`py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
+                                                orderType === 'takeaway'
+                                                    ? 'bg-blue-600 text-white shadow-xs'
+                                                    : 'text-slate-600 hover:text-slate-900'
+                                            }`}
                                         >
                                             Takeaway
                                         </button>
@@ -684,7 +941,7 @@ export default function GroceryPos({
                                     <div className="space-y-1">
                                         <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                                             <Bed className="w-3.5 h-3.5 text-blue-600" />
-                                            <span>Post to Guest Room Folio</span>
+                                            <span>Post to Guest Room Folio *</span>
                                         </label>
                                         <select
                                             value={activeStays.find((s) => s.room_id === saleData.room_id)?.stay_id ?? ''}
@@ -714,42 +971,45 @@ export default function GroceryPos({
                                 )}
 
                                 {/* Cart Items List */}
-                                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                                <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
                                     {cart.length > 0 ? (
                                         cart.map((c) => (
                                             <div
                                                 key={c.item.id}
-                                                className="p-3 bg-slate-50 border border-slate-200/80 rounded-2xl flex items-center justify-between gap-3 text-xs"
+                                                className="p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between gap-2 text-xs"
                                             >
                                                 <div className="flex-1 min-w-0">
                                                     <div className="font-bold text-slate-900 truncate">{c.item.name}</div>
                                                     <div className="text-[11px] text-slate-500">
-                                                        {formatCurrency(c.item.price_minor)} each
+                                                        {formatCurrency(c.item.price_minor)} × {c.quantity} ={' '}
+                                                        <strong className="text-slate-800">
+                                                            {formatCurrency(c.item.price_minor * c.quantity)}
+                                                        </strong>
                                                     </div>
                                                 </div>
 
-                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                <div className="flex items-center gap-1 shrink-0">
                                                     <button
                                                         type="button"
                                                         onClick={() => updateQuantity(c.item.id, -1)}
-                                                        className="w-7 h-7 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 flex items-center justify-center text-slate-700 transition cursor-pointer"
+                                                        className="w-6 h-6 rounded-md border border-slate-300 bg-white hover:bg-slate-100 flex items-center justify-center text-slate-700 transition cursor-pointer"
                                                     >
-                                                        <Minus className="w-3.5 h-3.5" />
+                                                        <Minus className="w-3 h-3" />
                                                     </button>
-                                                    <span className="w-7 text-center font-black text-slate-900 text-sm">
+                                                    <span className="w-6 text-center font-black text-slate-900 text-xs">
                                                         {c.quantity}
                                                     </span>
                                                     <button
                                                         type="button"
                                                         onClick={() => updateQuantity(c.item.id, 1)}
-                                                        className="w-7 h-7 rounded-lg bg-blue-600 text-white hover:bg-blue-700 flex items-center justify-center transition cursor-pointer shadow-2xs"
+                                                        className="w-6 h-6 rounded-md bg-blue-600 text-white hover:bg-blue-700 flex items-center justify-center transition cursor-pointer shadow-2xs"
                                                     >
-                                                        <Plus className="w-3.5 h-3.5" />
+                                                        <Plus className="w-3 h-3" />
                                                     </button>
                                                     <button
                                                         type="button"
                                                         onClick={() => removeFromCart(c.item.id)}
-                                                        className="w-7 h-7 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 flex items-center justify-center transition cursor-pointer ml-1"
+                                                        className="w-6 h-6 rounded-md hover:bg-rose-50 text-slate-400 hover:text-rose-600 flex items-center justify-center transition cursor-pointer ml-0.5"
                                                         title="Remove item"
                                                     >
                                                         <Trash2 className="w-3.5 h-3.5" />
@@ -758,39 +1018,30 @@ export default function GroceryPos({
                                             </div>
                                         ))
                                     ) : (
-                                        <div className="py-10 text-center space-y-2 border-2 border-dashed border-slate-200 rounded-2xl">
-                                            <ShoppingBag className="w-10 h-10 mx-auto text-slate-300" />
+                                        <div className="py-8 text-center space-y-2 border-2 border-dashed border-slate-200 rounded-xl">
+                                            <ShoppingBag className="w-8 h-8 mx-auto text-slate-300" />
                                             <p className="text-xs font-bold text-slate-500">Cart is empty</p>
                                             <p className="text-[11px] text-slate-400 max-w-[200px] mx-auto">
-                                                Tap any product on the left catalog to add it to this sale.
+                                                Scan a barcode or tap products to build order.
                                             </p>
                                         </div>
                                     )}
                                 </div>
 
                                 {/* Payment Method Grid (4 Big Buttons) */}
-                                <div className="space-y-2 pt-2 border-t border-slate-100">
-                                    <label className="text-xs font-bold text-slate-700 block">Payment Method</label>
+                                <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                                        Payment Method
+                                    </label>
                                     <div className="grid grid-cols-2 gap-2">
                                         <button
                                             type="button"
-                                            onClick={() => setSaleData('payment_method', 'room_folio')}
-                                            className={`p-3 rounded-xl border flex items-center gap-2 text-xs font-bold transition cursor-pointer ${saleData.payment_method === 'room_folio'
-                                                ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-xs'
-                                                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                                                }`}
-                                        >
-                                            <Bed className="w-4 h-4 text-blue-600" />
-                                            <span>Room Folio</span>
-                                        </button>
-
-                                        <button
-                                            type="button"
                                             onClick={() => setSaleData('payment_method', 'cash')}
-                                            className={`p-3 rounded-xl border flex items-center gap-2 text-xs font-bold transition cursor-pointer ${saleData.payment_method === 'cash'
-                                                ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-xs'
-                                                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                                                }`}
+                                            className={`p-2.5 rounded-xl border flex items-center gap-2 text-xs font-bold transition cursor-pointer ${
+                                                saleData.payment_method === 'cash'
+                                                    ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-xs ring-1 ring-blue-500/20'
+                                                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                            }`}
                                         >
                                             <DollarSign className="w-4 h-4 text-emerald-600" />
                                             <span>Cash</span>
@@ -799,10 +1050,11 @@ export default function GroceryPos({
                                         <button
                                             type="button"
                                             onClick={() => setSaleData('payment_method', 'mpesa')}
-                                            className={`p-3 rounded-xl border flex items-center gap-2 text-xs font-bold transition cursor-pointer ${saleData.payment_method === 'mpesa'
-                                                ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-xs'
-                                                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                                                }`}
+                                            className={`p-2.5 rounded-xl border flex items-center gap-2 text-xs font-bold transition cursor-pointer ${
+                                                saleData.payment_method === 'mpesa'
+                                                    ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-xs ring-1 ring-blue-500/20'
+                                                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                            }`}
                                         >
                                             <Smartphone className="w-4 h-4 text-emerald-600" />
                                             <span>M-Pesa</span>
@@ -811,16 +1063,91 @@ export default function GroceryPos({
                                         <button
                                             type="button"
                                             onClick={() => setSaleData('payment_method', 'card')}
-                                            className={`p-3 rounded-xl border flex items-center gap-2 text-xs font-bold transition cursor-pointer ${saleData.payment_method === 'card'
-                                                ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-xs'
-                                                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                                                }`}
+                                            className={`p-2.5 rounded-xl border flex items-center gap-2 text-xs font-bold transition cursor-pointer ${
+                                                saleData.payment_method === 'card'
+                                                    ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-xs ring-1 ring-blue-500/20'
+                                                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                            }`}
                                         >
                                             <CreditCard className="w-4 h-4 text-indigo-600" />
                                             <span>Card</span>
                                         </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setSaleData('payment_method', 'room_folio')}
+                                            className={`p-2.5 rounded-xl border flex items-center gap-2 text-xs font-bold transition cursor-pointer ${
+                                                saleData.payment_method === 'room_folio'
+                                                    ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-xs ring-1 ring-blue-500/20'
+                                                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            <Bed className="w-4 h-4 text-blue-600" />
+                                            <span>Room Folio</span>
+                                        </button>
                                     </div>
                                 </div>
+
+                                {/* CASH TENDERED & CHENJI CALCULATOR */}
+                                {saleData.payment_method === 'cash' && cart.length > 0 && (
+                                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                                <Coins className="w-3.5 h-3.5 text-amber-600" />
+                                                <span>Cash Received (TZS)</span>
+                                            </label>
+                                            <span className="text-[11px] font-bold text-slate-500">
+                                                Bill: {formatCurrency(subtotalMinor)}
+                                            </span>
+                                        </div>
+
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={cashTendered}
+                                            onChange={(e) => setCashTendered(e.target.value)}
+                                            placeholder={`e.g. ${totalMajor || 5000}`}
+                                            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                                        />
+
+                                        {/* Quick denomination chips */}
+                                        <div className="flex flex-wrap gap-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => setCashTendered(String(totalMajor))}
+                                                className="px-2 py-1 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-md text-[10px] font-bold cursor-pointer"
+                                            >
+                                                Exact
+                                            </button>
+                                            {[2000, 5000, 10000, 20000, 50000, 100000].map((amt) => (
+                                                <button
+                                                    key={amt}
+                                                    type="button"
+                                                    onClick={() => setCashTendered(String(amt))}
+                                                    className="px-2 py-1 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-md text-[10px] font-bold cursor-pointer"
+                                                >
+                                                    {amt >= 1000 ? `${amt / 1000}k` : amt}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {/* Change Due (Chenji) or Shortage Display */}
+                                        {tenderedNum > 0 && (
+                                            <div
+                                                className={`p-2.5 rounded-lg flex items-center justify-between text-xs font-extrabold ${
+                                                    changeDue >= 0
+                                                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                                        : 'bg-amber-50 text-amber-800 border border-amber-200'
+                                                }`}
+                                            >
+                                                <span>{changeDue >= 0 ? 'Chenji (Change Due):' : 'Bado (Shortage):'}</span>
+                                                <span className="text-sm">
+                                                    TSh {Math.abs(changeDue).toLocaleString()}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
 
                                 {saleData.payment_method === 'room_folio' && (
                                     <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-[11px] text-blue-800 flex items-start gap-2">
@@ -834,12 +1161,14 @@ export default function GroceryPos({
                                 {/* Total and Place Order Button */}
                                 <div className="border-t border-slate-200 pt-3 space-y-2">
                                     <div className="flex items-center justify-between text-xs text-slate-500">
-                                        <span>Items count</span>
+                                        <span>Total Items</span>
                                         <span className="font-bold text-slate-800">{totalItemsCount}</span>
                                     </div>
-                                    <div className="flex items-center justify-between text-base font-extrabold text-slate-900">
+                                    <div className="flex items-center justify-between text-base font-black text-slate-900">
                                         <span>Total Amount</span>
-                                        <span className="text-blue-600 text-lg">{formatCurrency(subtotalMinor)}</span>
+                                        <span className="text-blue-600 text-lg font-black">
+                                            {formatCurrency(subtotalMinor)}
+                                        </span>
                                     </div>
 
                                     <button
@@ -848,7 +1177,11 @@ export default function GroceryPos({
                                         className="w-full mt-2 py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm rounded-xl shadow-md transition active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
                                     >
                                         <Check className="w-4 h-4" />
-                                        <span>{processing ? 'Processing Sale...' : `Complete Sale (${formatCurrency(subtotalMinor)})`}</span>
+                                        <span>
+                                            {processing
+                                                ? 'Processing Sale...'
+                                                : `Complete Sale (${formatCurrency(subtotalMinor)})`}
+                                        </span>
                                     </button>
                                 </div>
                             </form>

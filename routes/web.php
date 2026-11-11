@@ -205,6 +205,7 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     // 6c. POS Grocery & Retail Minimart Management (Manager Portal & Counter Sales)
     Route::middleware(['tenant.feature:grocery_pos', 'module.access:grocery_pos'])->group(function () {
         Route::get('/grocery', [GroceryController::class, 'index'])->name('grocery.index');
+        Route::get('/grocery/dashboard', [GroceryController::class, 'dashboard'])->name('grocery.dashboard');
         Route::get('/grocery/pos', [GroceryController::class, 'pos'])->name('grocery.pos');
         Route::post('/grocery/categories', [GroceryController::class, 'storeCategory'])->name('grocery.categories.store');
         Route::post('/grocery/items', [GroceryController::class, 'storeItem'])->name('grocery.items.store');

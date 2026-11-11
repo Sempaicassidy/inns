@@ -344,6 +344,130 @@ class GroceryController extends Controller
         ]);
     }
 
+    /**
+     * Super / Mini Market cashier dashboard — sales overview, stock alerts
+     * and recent activity for the supermarket workspace.
+     */
+    public function dashboard(Request $request): Response
+    {
+        $user = $request->user();
+        $tenantId = $user->tenant_id;
+        $property = $user->property ?? ($tenantId ? Property::where('tenant_id', $tenantId)->first() : null);
+
+        $this->ensureDefaultGrocerySetup((string) $tenantId, $property?->id);
+
+        $paidScope = fn () => PosOrder::where('tenant_id', $tenantId)
+            ->where('outlet_type', 'grocery')
+            ->whereIn('payment_status', ['paid', 'posted_to_room']);
+
+        $todayRevenueMinor = (int) $paidScope()
+            ->whereDate('created_at', Carbon::today())
+            ->sum('total_minor');
+
+        $monthRevenueMinor = (int) $paidScope()
+            ->whereMonth('created_at', Carbon::now()->month)
+            ->whereYear('created_at', Carbon::now()->year)
+            ->sum('total_minor');
+
+        $todayOrderCount = (int) PosOrder::where('tenant_id', $tenantId)
+            ->where('outlet_type', 'grocery')
+            ->whereDate('created_at', Carbon::today())
+            ->count();
+
+        $itemsSoldToday = (int) PosOrderItem::whereHas('order', function ($q) use ($tenantId) {
+            $q->where('tenant_id', $tenantId)
+                ->where('outlet_type', 'grocery')
+                ->whereIn('payment_status', ['paid', 'posted_to_room'])
+                ->whereDate('created_at', Carbon::today());
+        })->sum('quantity');
+
+        $topItemsToday = PosOrderItem::whereHas('order', function ($q) use ($tenantId) {
+            $q->where('tenant_id', $tenantId)
+                ->where('outlet_type', 'grocery')
+                ->whereIn('payment_status', ['paid', 'posted_to_room'])
+                ->whereDate('created_at', Carbon::today());
+        })
+            ->selectRaw('item_name, sum(quantity) as total_qty, sum(total_minor) as total_sales_minor')
+            ->groupBy('item_name')
+            ->orderByDesc('total_qty')
+            ->take(6)
+            ->get()
+            ->map(fn ($i) => [
+                'name' => $i->item_name,
+                'quantity' => (int) $i->total_qty,
+                'total_minor' => (int) $i->total_sales_minor,
+            ]);
+
+        $paymentBreakdown = PosOrder::where('tenant_id', $tenantId)
+            ->where('outlet_type', 'grocery')
+            ->whereDate('created_at', Carbon::today())
+            ->whereIn('payment_status', ['paid', 'posted_to_room'])
+            ->selectRaw('payment_method, count(*) as orders_count, sum(total_minor) as total_minor')
+            ->groupBy('payment_method')
+            ->get()
+            ->map(fn ($p) => [
+                'method' => $p->payment_method ?? 'cash',
+                'orders_count' => (int) $p->orders_count,
+                'total_minor' => (int) $p->total_minor,
+            ]);
+
+        $lowStockItems = PosItem::where('tenant_id', $tenantId)
+            ->where('department', 'grocery')
+            ->where('is_available', true)
+            ->whereColumn('stock_quantity', '<=', 'reorder_level')
+            ->orderBy('stock_quantity')
+            ->take(8)
+            ->get(['id', 'name', 'stock_quantity', 'reorder_level', 'unit'])
+            ->map(fn ($i) => [
+                'id' => $i->id,
+                'name' => $i->name,
+                'stock_quantity' => (int) $i->stock_quantity,
+                'reorder_level' => (int) $i->reorder_level,
+                'unit' => $i->unit ?? 'pcs',
+            ]);
+
+        $totalSkus = PosItem::where('tenant_id', $tenantId)
+            ->where('department', 'grocery')
+            ->where('is_available', true)
+            ->count();
+
+        $recentOrders = PosOrder::with('room')
+            ->where('tenant_id', $tenantId)
+            ->where('outlet_type', 'grocery')
+            ->latest()
+            ->take(10)
+            ->get()
+            ->map(fn ($order) => [
+                'id' => $order->id,
+                'order_number' => $order->order_number,
+                'guest_name' => $order->guest_name ?? 'Walk-In Customer',
+                'room_number' => $order->room?->room_number ?? null,
+                'total_minor' => $order->total_minor,
+                'payment_method' => $order->payment_method ?? 'cash',
+                'payment_status' => $order->payment_status,
+                'created_at' => $order->created_at->format('d M Y, H:i'),
+            ]);
+
+        return Inertia::render('Grocery/Dashboard', [
+            'stats' => [
+                'today_revenue_minor' => $todayRevenueMinor,
+                'month_revenue_minor' => $monthRevenueMinor,
+                'today_order_count' => $todayOrderCount,
+                'items_sold_today' => $itemsSoldToday,
+                'total_skus' => $totalSkus,
+                'low_stock_count' => PosItem::where('tenant_id', $tenantId)
+                    ->where('department', 'grocery')
+                    ->where('is_available', true)
+                    ->whereColumn('stock_quantity', '<=', 'reorder_level')
+                    ->count(),
+            ],
+            'topItemsToday' => $topItemsToday,
+            'paymentBreakdown' => $paymentBreakdown,
+            'lowStockItems' => $lowStockItems,
+            'recentOrders' => $recentOrders,
+        ]);
+    }
+
     public function storeItem(Request $request): RedirectResponse
     {
         $validated = $request->validate([

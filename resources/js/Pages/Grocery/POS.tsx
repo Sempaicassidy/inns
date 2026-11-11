@@ -479,59 +479,79 @@ export default function GroceryPos({
                                 const inCartItem = cart.find((c) => c.item.id === item.id);
 
                                 return (
-                                    <button
+                                    <div
                                         key={item.id}
-                                        type="button"
-                                        onClick={() => addToCart(item)}
-                                        disabled={outOfStock}
-                                        className={`relative bg-white border rounded-2xl p-4 text-left transition-all duration-150 flex flex-col justify-between group ${
+                                        onClick={() => !outOfStock && addToCart(item)}
+                                        className={`relative bg-white border rounded-2xl p-4 text-left transition-all duration-200 flex flex-col justify-between select-none ${
                                             outOfStock
-                                                ? 'border-slate-200 opacity-60 cursor-not-allowed bg-slate-50/50'
+                                                ? 'border-slate-200 opacity-60 cursor-not-allowed bg-slate-50/60'
                                                 : inCartItem
-                                                ? 'border-blue-500 shadow-sm ring-1 ring-blue-500/30 cursor-pointer'
-                                                : 'border-slate-200 hover:border-blue-400 hover:shadow-md cursor-pointer active:scale-98'
+                                                ? 'border-blue-500 shadow-md ring-2 ring-blue-500/20 bg-blue-50/20 cursor-pointer active:scale-98'
+                                                : 'border-slate-200/90 hover:border-blue-400 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer active:scale-98'
                                         }`}
                                     >
                                         {inCartItem && (
-                                            <span className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-blue-600 text-white font-black text-xs flex items-center justify-center shadow-xs">
-                                                {inCartItem.quantity}
+                                            <span className="absolute -top-2.5 -right-2 px-2.5 py-0.5 rounded-full bg-blue-600 text-white font-black text-xs shadow-md border-2 border-white flex items-center gap-1 z-10 animate-in zoom-in-75 duration-150">
+                                                <Check className="w-3 h-3 stroke-[3]" />
+                                                <span>{inCartItem.quantity}</span>
                                             </span>
                                         )}
 
                                         <div>
                                             <div className="flex items-center justify-between gap-1 mb-2">
-                                                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
-                                                    {item.code || 'RETAIL'}
+                                                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md truncate max-w-[120px]">
+                                                    {item.code || 'SKU'}
                                                 </span>
+                                                <div
+                                                    className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                                                        outOfStock
+                                                            ? 'bg-rose-100 text-rose-700'
+                                                            : item.stock_quantity <= 10
+                                                            ? 'bg-amber-100 text-amber-800'
+                                                            : 'bg-emerald-100 text-emerald-800'
+                                                    }`}
+                                                >
+                                                    {outOfStock ? 'Out' : `${item.stock_quantity} ${item.unit}`}
+                                                </div>
                                             </div>
 
-                                            <div className="aspect-square bg-slate-50 rounded-xl mb-3 flex items-center justify-center border border-slate-100 group-hover:bg-blue-50/50 transition">
-                                                <Package className="w-9 h-9 text-slate-400 group-hover:text-blue-500 transition" />
+                                            <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-2xl bg-gradient-to-br from-blue-50 via-slate-50 to-indigo-50/40 border border-slate-100 flex items-center justify-center my-2 shadow-2xs group-hover:scale-105 transition-transform duration-200">
+                                                <Package className="w-8 h-8 sm:w-9 sm:h-9 text-blue-600/80" />
                                             </div>
 
-                                            <h4 className="font-bold text-slate-900 text-sm leading-snug line-clamp-2">
+                                            <h4 className="font-extrabold text-slate-900 text-sm leading-snug line-clamp-2 min-h-[2.5rem] mt-1">
                                                 {item.name}
                                             </h4>
                                         </div>
 
                                         <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
-                                            <div className="text-blue-600 font-extrabold text-sm sm:text-base">
-                                                {formatCurrency(item.price_minor)}
+                                            <div>
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Price</span>
+                                                <div className="text-blue-600 font-black text-base sm:text-lg tracking-tight">
+                                                    {formatCurrency(item.price_minor)}
+                                                </div>
                                             </div>
 
-                                            <div
-                                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                            <button
+                                                type="button"
+                                                disabled={outOfStock}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (!outOfStock) addToCart(item);
+                                                }}
+                                                className={`px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1 ${
                                                     outOfStock
-                                                        ? 'bg-rose-50 text-rose-700'
-                                                        : item.stock_quantity <= 10
-                                                        ? 'bg-amber-50 text-amber-700'
-                                                        : 'bg-emerald-50 text-emerald-700'
+                                                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                                        : inCartItem
+                                                        ? 'bg-blue-600 text-white shadow-xs'
+                                                        : 'bg-blue-50 hover:bg-blue-100 text-blue-700 cursor-pointer'
                                                 }`}
                                             >
-                                                {outOfStock ? 'Out of stock' : `${item.stock_quantity} ${item.unit}`}
-                                            </div>
+                                                <Plus className="w-3.5 h-3.5" />
+                                                <span>Add</span>
+                                            </button>
                                         </div>
-                                    </button>
+                                    </div>
                                 );
                             })}
 
@@ -962,6 +982,7 @@ export default function GroceryPos({
                     onClose={() => setIsReceiptModalOpen(false)}
                     receiptData={currentReceiptData}
                     title="Retail Sale Receipt (POS)"
+                    showKOT={false}
                 />
             )}
 

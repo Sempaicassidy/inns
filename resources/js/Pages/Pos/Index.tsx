@@ -136,6 +136,10 @@ export default function PosIndex({
         );
     };
 
+    const removeFromCart = (itemId: string) => {
+        setCart((prev) => prev.filter((c) => c.item.id !== itemId));
+    };
+
     const clearCart = () => setCart([]);
 
     const subtotalMinor = cart.reduce((sum, c) => sum + c.item.price_minor * c.quantity, 0);
@@ -437,24 +441,74 @@ export default function PosIndex({
                         </div>
 
                         {/* Menu Grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {filteredItems.map((item) => (
-                                <button
-                                    key={item.id}
-                                    onClick={() => addToCart(item)}
-                                    className="bg-white border border-[#E2E8F0] rounded-lg p-4 text-left hover:border-[#2563EB] hover:shadow-md transition group"
-                                >
-                                    <div className="aspect-square bg-[#F8FAFC] rounded-lg mb-3 flex items-center justify-center">
-                                        {item.image ? (
-                                            <img src={item.image} alt={item.name} className="w-full h-full object-cover rounded-lg" />
-                                        ) : (
-                                            <Utensils className="w-8 h-8 text-[#64748B]" />
+                        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4">
+                            {filteredItems.map((item) => {
+                                const inCartItem = cart.find((c) => c.item.id === item.id);
+
+                                return (
+                                    <div
+                                        key={item.id}
+                                        onClick={() => addToCart(item)}
+                                        className={`relative bg-white border rounded-2xl p-4 text-left transition-all duration-200 flex flex-col justify-between select-none ${
+                                            inCartItem
+                                                ? 'border-blue-500 shadow-md ring-2 ring-blue-500/20 bg-blue-50/20 cursor-pointer active:scale-98'
+                                                : 'border-slate-200/90 hover:border-blue-400 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer active:scale-98'
+                                        }`}
+                                    >
+                                        {inCartItem && (
+                                            <span className="absolute -top-2.5 -right-2 px-2.5 py-0.5 rounded-full bg-blue-600 text-white font-black text-xs shadow-md border-2 border-white flex items-center gap-1 z-10 animate-in zoom-in-75 duration-150">
+                                                <Check className="w-3 h-3 stroke-[3]" />
+                                                <span>{inCartItem.quantity}</span>
+                                            </span>
                                         )}
+
+                                        <div>
+                                            <div className="flex items-center justify-between gap-1 mb-2">
+                                                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md truncate max-w-[120px]">
+                                                    {item.code || 'ITEM'}
+                                                </span>
+                                            </div>
+
+                                            <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-2xl bg-gradient-to-br from-amber-50 via-slate-50 to-orange-50/40 border border-slate-100 flex items-center justify-center my-2 shadow-2xs overflow-hidden">
+                                                {item.image ? (
+                                                    <img src={item.image} alt={item.name} className="w-full h-full object-cover rounded-xl" />
+                                                ) : (
+                                                    <Utensils className="w-8 h-8 sm:w-9 sm:h-9 text-amber-600/80" />
+                                                )}
+                                            </div>
+
+                                            <h4 className="font-extrabold text-slate-900 text-sm leading-snug line-clamp-2 min-h-[2.5rem] mt-1">
+                                                {item.name}
+                                            </h4>
+                                        </div>
+
+                                        <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
+                                            <div>
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Price</span>
+                                                <div className="text-blue-600 font-black text-base sm:text-lg tracking-tight">
+                                                    {formatCurrency(item.price_minor)}
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    addToCart(item);
+                                                }}
+                                                className={`px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1 ${
+                                                    inCartItem
+                                                        ? 'bg-blue-600 text-white shadow-xs'
+                                                        : 'bg-blue-50 hover:bg-blue-100 text-blue-700 cursor-pointer'
+                                                }`}
+                                            >
+                                                <Plus className="w-3.5 h-3.5" />
+                                                <span>Add</span>
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div className="font-medium text-[#1E293B] text-sm truncate">{item.name}</div>
-                                    <div className="text-[#2563EB] font-bold text-sm mt-1">{formatCurrency(item.price_minor)}</div>
-                                </button>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -529,37 +583,56 @@ export default function PosIndex({
                                 )}
 
                                 {/* Cart Items */}
-                                <div className="max-h-64 overflow-y-auto space-y-2">
+                                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
                                     {cart.length > 0 ? (
                                         cart.map((c) => (
-                                            <div key={c.item.id} className="flex items-center justify-between p-3 bg-[#F8FAFC] rounded-lg">
-                                                <div className="flex-1">
-                                                    <div className="font-medium text-[#1E293B] text-sm">{c.item.name}</div>
-                                                    <div className="text-xs text-[#64748B]">{formatCurrency(c.item.price_minor)} each</div>
+                                            <div
+                                                key={c.item.id}
+                                                className="p-3 bg-slate-50 border border-slate-200/80 rounded-2xl flex items-center justify-between gap-3 text-xs"
+                                            >
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="font-bold text-slate-900 truncate">{c.item.name}</div>
+                                                    <div className="text-[11px] text-slate-500">
+                                                        {formatCurrency(c.item.price_minor)} each
+                                                    </div>
                                                 </div>
-                                                <div className="flex items-center gap-2">
+
+                                                <div className="flex items-center gap-1.5 shrink-0">
                                                     <button
                                                         type="button"
                                                         onClick={() => updateQuantity(c.item.id, -1)}
-                                                        className="w-8 h-8 rounded border border-[#E2E8F0] flex items-center justify-center hover:bg-[#E2E8F0]"
+                                                        className="w-7 h-7 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 flex items-center justify-center text-slate-700 transition cursor-pointer"
                                                     >
-                                                        <Minus className="w-4 h-4" />
+                                                        <Minus className="w-3.5 h-3.5" />
                                                     </button>
-                                                    <span className="w-8 text-center font-bold text-[#1E293B]">{c.quantity}</span>
+                                                    <span className="w-7 text-center font-black text-slate-900 text-sm">
+                                                        {c.quantity}
+                                                    </span>
                                                     <button
                                                         type="button"
                                                         onClick={() => updateQuantity(c.item.id, 1)}
-                                                        className="w-8 h-8 rounded bg-[#2563EB] text-white flex items-center justify-center hover:bg-[#1E3A5F]"
+                                                        className="w-7 h-7 rounded-lg bg-blue-600 text-white hover:bg-blue-700 flex items-center justify-center transition cursor-pointer shadow-2xs"
                                                     >
-                                                        <Plus className="w-4 h-4" />
+                                                        <Plus className="w-3.5 h-3.5" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeFromCart(c.item.id)}
+                                                        className="w-7 h-7 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 flex items-center justify-center transition cursor-pointer ml-1"
+                                                        title="Remove item"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
                                                     </button>
                                                 </div>
                                             </div>
                                         ))
                                     ) : (
-                                        <div className="text-center py-8 text-[#64748B]">
-                                            <ShoppingBag className="w-12 h-12 mx-auto mb-2 text-[#CBD5E1]" />
-                                            <p className="text-sm">Cart is empty</p>
+                                        <div className="py-10 text-center space-y-2 border-2 border-dashed border-slate-200 rounded-2xl">
+                                            <ShoppingBag className="w-10 h-10 mx-auto text-slate-300" />
+                                            <p className="text-xs font-bold text-slate-500">Cart is empty</p>
+                                            <p className="text-[11px] text-slate-400 max-w-[200px] mx-auto">
+                                                Tap any dish or drink from the menu to add it to this order.
+                                            </p>
                                         </div>
                                     )}
                                 </div>

@@ -350,10 +350,8 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
         Route::delete('/saas-admin/users/{user}', [SaasAdminController::class, 'destroyGlobalUser'])->name('saas-admin.users.destroy');
         Route::post('/saas-admin/users/{user}/toggle', [SaasAdminController::class, 'toggleUserStatus'])->name('saas-admin.users.toggle');
 
-        // Website CMS & Marketing & Support
+        // Website CMS settings
         Route::post('/saas-admin/cms/update', [SaasAdminController::class, 'updateCmsSettings'])->name('saas-admin.cms.update');
-        Route::post('/saas-admin/marketing/promos', [SaasAdminController::class, 'storePromoCode'])->name('saas-admin.marketing.promos.store');
-        Route::post('/saas-admin/support/resolve', [SaasAdminController::class, 'resolveSupportTicket'])->name('saas-admin.support.resolve');
     });
 
     // 12. Night Audit

@@ -18,7 +18,6 @@ import {
     ChevronLeft,
     ChevronRight,
     ChevronUp,
-    Clock,
     Coins,
     Copy,
     CreditCard,
@@ -242,7 +241,6 @@ interface SaasAdminProps extends PageProps {
         suspended_tenants: number;
         monthly_revenue: number;
         sms_balance: number;
-        demo_requests: number;
     };
     tenants: TenantItem[];
     plans: PlanItem[];
@@ -299,6 +297,7 @@ interface SaasAdminProps extends PageProps {
     }>;
     sms_provider: {
         name: string;
+        provider_name?: string;
         sender_id: string;
         balance: number;
         is_active: boolean;
@@ -329,16 +328,15 @@ interface SaasAdminProps extends PageProps {
         created_at: string;
     }>;
     system_health: {
-        uptime: string;
-        server_cluster: string;
+        app_name: string;
+        app_env: string;
+        server_host: string;
         php_version: string;
         laravel_version: string;
-        database_status: string;
+        database_driver: string;
         database_name: string;
         cache_driver: string;
-        queue_status: string;
-        last_backup: string;
-        storage_used: string;
+        queue_connection: string;
         total_rooms: number;
         total_users: number;
         total_invoices: number;
@@ -347,11 +345,7 @@ interface SaasAdminProps extends PageProps {
     };
     global_users?: Array<any>;
     roles_matrix?: Array<any>;
-    demo_requests?: Array<any>;
     cms_content?: any;
-    marketing_data?: any;
-    conversion_funnel?: any;
-    support_tickets?: Array<any>;
     available_features?: Array<{
         key: string;
         name: string;
@@ -385,11 +379,7 @@ export default function SaasAdminDashboard({
     system_health,
     global_users = [],
     roles_matrix = [],
-    demo_requests = [],
     cms_content,
-    marketing_data,
-    conversion_funnel,
-    support_tickets = [],
     available_features = [],
 }: SaasAdminProps) {
     // Current Active Tab
@@ -415,24 +405,12 @@ export default function SaasAdminDashboard({
         if (activeTab === 'cms_faqs') return 'faqs';
         return 'landing';
     });
-    const [marketingSubTab, setMarketingSubTab] = useState<'promos' | 'demos' | 'funnel'>(() => {
-        if (activeTab === 'demos') return 'demos';
-        if (activeTab === 'funnel') return 'funnel';
-        return 'promos';
-    });
-    const [noticesSubTab, setNoticesSubTab] = useState<'broadcasts' | 'alerts'>(() => activeTab === 'system_alerts' ? 'alerts' : 'broadcasts');
-
     React.useEffect(() => {
         if (activeTab === 'roles') setUserSubTab('roles');
         if (activeTab === 'users') setUserSubTab('users');
         if (activeTab === 'cms_landing') setCmsSubTab('landing');
         if (activeTab === 'cms_pricing') setCmsSubTab('pricing');
         if (activeTab === 'cms_faqs') setCmsSubTab('faqs');
-        if (activeTab === 'marketing') setMarketingSubTab('promos');
-        if (activeTab === 'demos') setMarketingSubTab('demos');
-        if (activeTab === 'funnel') setMarketingSubTab('funnel');
-        if (activeTab === 'notices') setNoticesSubTab('broadcasts');
-        if (activeTab === 'system_alerts') setNoticesSubTab('alerts');
     }, [activeTab]);
 
     const [userSearchTerm, setUserSearchTerm] = useState('');
@@ -440,9 +418,6 @@ export default function SaasAdminDashboard({
     const [showCreateUserModal, setShowCreateUserModal] = useState(false);
     const [showEditUserModal, setShowEditUserModal] = useState(false);
     const [selectedUserToEdit, setSelectedUserToEdit] = useState<any>(null);
-    const [showCreatePromoModal, setShowCreatePromoModal] = useState(false);
-    const [showReplyTicketModal, setShowReplyTicketModal] = useState(false);
-    const [selectedTicket, setSelectedTicket] = useState<any>(null);
 
     const createUserForm = useForm({
         name: '',
@@ -459,14 +434,6 @@ export default function SaasAdminDashboard({
         tenant_id: '',
         password: '',
         is_active: true,
-    });
-
-    const promoForm = useForm({
-        code: '',
-        discount_percent: 15,
-        applies_to: 'All Plans',
-        max_uses: 50,
-        expires_at: '2026-12-31',
     });
 
     interface HeroSlideItem {
@@ -622,11 +589,6 @@ export default function SaasAdminDashboard({
         liveCmsForm.setData('remove_hero_image', true);
         setHeroImagePreview(null);
     };
-
-    const replyTicketForm = useForm({
-        ticket_id: '',
-        resolution_note: '',
-    });
 
     // Modals visibility
     const [showOnboardModal, setShowOnboardModal] = useState(false);
@@ -1067,16 +1029,6 @@ export default function SaasAdminDashboard({
         }
     };
 
-    const submitPromo = (e: React.FormEvent) => {
-        e.preventDefault();
-        promoForm.post(route('saas-admin.marketing.promos.store'), {
-            onSuccess: () => {
-                setShowCreatePromoModal(false);
-                promoForm.reset();
-            },
-        });
-    };
-
     const submitCmsUpdate = (e: React.FormEvent) => {
         e.preventDefault();
         setIsSavingCms(true);
@@ -1115,31 +1067,6 @@ export default function SaasAdminDashboard({
             forceFormData: true,
             onFinish: () => setIsSavingCms(false),
         });
-    };
-
-    const submitReplyTicket = (e: React.FormEvent) => {
-        e.preventDefault();
-        replyTicketForm.post(route('saas-admin.support.resolve'), {
-            onSuccess: () => {
-                setShowReplyTicketModal(false);
-                replyTicketForm.reset();
-            },
-        });
-    };
-
-    const handleConvertLeadToQuote = (lead: any) => {
-        quotationForm.setData({
-            customer_name: lead.contact_name,
-            customer_email: lead.email,
-            customer_phone: lead.phone,
-            company_name: lead.hotel_name,
-            plan_code: lead.requested_plan.toLowerCase().includes('enterprise') ? 'enterprise' : (lead.requested_plan.toLowerCase().includes('starter') ? 'starter' : 'pro'),
-            amount: 350000,
-            description: `THE INNS Hotel PMS Subscription for ${lead.hotel_name} (${lead.rooms_count} Rooms)`,
-            tenant_id: '',
-            valid_until: '',
-        });
-        setShowCreateQuotationModal(true);
     };
 
     const filteredGlobalUsers = global_users.filter((u) => {
@@ -1346,11 +1273,10 @@ export default function SaasAdminDashboard({
                                         key={tab.key}
                                         type="button"
                                         onClick={() => handleSwitchTab(tab.key)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                            isActive
-                                                ? 'bg-blue-600 text-white shadow-xs'
-                                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
-                                        }`}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${isActive
+                                            ? 'bg-blue-600 text-white shadow-xs'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                                            }`}
                                     >
                                         {tab.label}
                                     </button>
@@ -1373,11 +1299,10 @@ export default function SaasAdminDashboard({
                                         key={tab.key}
                                         type="button"
                                         onClick={() => handleSwitchTab(tab.key)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                            isActive
-                                                ? 'bg-blue-600 text-white shadow-xs'
-                                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
-                                        }`}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${isActive
+                                            ? 'bg-blue-600 text-white shadow-xs'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                                            }`}
                                     >
                                         {tab.label}
                                     </button>
@@ -1400,11 +1325,10 @@ export default function SaasAdminDashboard({
                                         key={tab.key}
                                         type="button"
                                         onClick={() => handleSwitchTab(tab.key)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                            isActive
-                                                ? 'bg-blue-600 text-white shadow-xs'
-                                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
-                                        }`}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${isActive
+                                            ? 'bg-blue-600 text-white shadow-xs'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                                            }`}
                                     >
                                         {tab.label}
                                     </button>
@@ -1412,26 +1336,23 @@ export default function SaasAdminDashboard({
                             })}
                         </div>
 
-                        {/* Group: Website & Marketing */}
+                        {/* Group: Website CMS */}
                         <div className="flex items-center bg-slate-50 p-1 rounded-xl border border-slate-200/80">
                             {[
                                 { key: 'cms_landing', label: 'Website & CMS' },
-                                { key: 'marketing', label: `Demos & Leads (${demo_requests.length})` },
                             ].map((tab) => {
                                 const isActive =
                                     activeTab === tab.key ||
-                                    (tab.key === 'cms_landing' && (activeTab === 'cms_landing' || activeTab === 'cms_pricing' || activeTab === 'cms_faqs')) ||
-                                    (tab.key === 'marketing' && (activeTab === 'marketing' || activeTab === 'demos' || activeTab === 'funnel'));
+                                    (tab.key === 'cms_landing' && (activeTab === 'cms_landing' || activeTab === 'cms_pricing' || activeTab === 'cms_faqs'));
                                 return (
                                     <button
                                         key={tab.key}
                                         type="button"
                                         onClick={() => handleSwitchTab(tab.key)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                            isActive
-                                                ? 'bg-blue-600 text-white shadow-xs'
-                                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
-                                        }`}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${isActive
+                                            ? 'bg-blue-600 text-white shadow-xs'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                                            }`}
                                     >
                                         {tab.label}
                                     </button>
@@ -1443,14 +1364,12 @@ export default function SaasAdminDashboard({
                         <div className="flex items-center bg-slate-50 p-1 rounded-xl border border-slate-200/80">
                             {[
                                 { key: 'notices', label: `Alerts (${notices.length})` },
-                                { key: 'support', label: `Support (${support_tickets.length})` },
                                 { key: 'users', label: 'Users & Roles' },
                                 { key: 'system', label: 'System Admin' },
                             ].map((tab) => {
                                 const isActive =
                                     activeTab === tab.key ||
                                     (tab.key === 'notices' && (activeTab === 'notices' || activeTab === 'system_alerts')) ||
-                                    (tab.key === 'support' && activeTab === 'support') ||
                                     (tab.key === 'users' && (activeTab === 'roles' || activeTab === 'users')) ||
                                     (tab.key === 'system' && activeTab === 'system');
                                 return (
@@ -1458,11 +1377,10 @@ export default function SaasAdminDashboard({
                                         key={tab.key}
                                         type="button"
                                         onClick={() => handleSwitchTab(tab.key)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                            isActive
-                                                ? 'bg-blue-600 text-white shadow-xs'
-                                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
-                                        }`}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${isActive
+                                            ? 'bg-blue-600 text-white shadow-xs'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                                            }`}
                                     >
                                         {tab.label}
                                     </button>
@@ -1477,54 +1395,38 @@ export default function SaasAdminDashboard({
                 {/* TAB 1: EXECUTIVE COMMAND CENTER OVERVIEW */}
                 {activeTab === 'overview' && (
                     <div className="space-y-6">
-                        {/* Executive Summary Cards (6 KPIs) */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5 sm:gap-4">
+                        {/* Executive Summary Cards — unique metrics only; core KPIs live in the top strip */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-4">
                             <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Est. Platform ARR</span>
                                 <div className="text-base sm:text-lg font-black text-slate-900 mt-1 truncate">
                                     TZS {new Intl.NumberFormat('en-TZ').format(kpis.monthly_revenue * 12)}
                                 </div>
-                                <span className="text-[10px] font-bold text-emerald-600 mt-0.5 block">Annual Run Rate</span>
-                            </div>
-
-                            <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Monthly MRR</span>
-                                <div className="text-base sm:text-lg font-black text-emerald-700 mt-1 truncate">
-                                    TZS {new Intl.NumberFormat('en-TZ').format(kpis.monthly_revenue)}
-                                </div>
-                                <span className="text-[10px] font-bold text-slate-500 mt-0.5 block">Active Recurring</span>
-                            </div>
-
-                            <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Hotels Active</span>
-                                <div className="text-base sm:text-lg font-black text-blue-700 mt-1">
-                                    {kpis.active_subscriptions} <span className="text-xs text-slate-400 font-semibold">/ {kpis.total_tenants}</span>
-                                </div>
-                                <span className="text-[10px] font-bold text-blue-600 mt-0.5 block">{kpis.trial_tenants} Trials • {kpis.suspended_tenants} Paused</span>
+                                <span className="text-[10px] font-bold text-slate-500 mt-0.5 block">Annual Run Rate</span>
                             </div>
 
                             <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Rooms</span>
                                 <div className="text-base sm:text-lg font-black text-slate-900 mt-1">
-                                    {system_health?.total_rooms || 240}
+                                    {system_health?.total_rooms ?? 0}
                                 </div>
-                                <span className="text-[10px] font-bold text-slate-500 mt-0.5 block">In Network</span>
+                                <span className="text-[10px] font-bold text-slate-500 mt-0.5 block">Across All Hotels</span>
                             </div>
 
                             <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">SMS Master Balance</span>
-                                <div className="text-base sm:text-lg font-black text-amber-700 mt-1 truncate">
-                                    {new Intl.NumberFormat('en-TZ').format(kpis.sms_balance)}
-                                </div>
-                                <span className="text-[10px] font-bold text-slate-500 mt-0.5 block">SwalaSMS Credits</span>
-                            </div>
-
-                            <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Pending Actions</span>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Platform Users</span>
                                 <div className="text-base sm:text-lg font-black text-indigo-700 mt-1">
-                                    {demo_requests.length} Leads
+                                    {system_health?.total_users ?? 0}
                                 </div>
-                                <span className="text-[10px] font-bold text-rose-600 mt-0.5 block">{support_tickets.filter((t: any) => t.status === 'open').length} Open Tickets</span>
+                                <span className="text-[10px] font-bold text-slate-500 mt-0.5 block">Across All Tenants</span>
+                            </div>
+
+                            <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">System Notifications</span>
+                                <div className="text-base sm:text-lg font-black text-slate-900 mt-1">
+                                    {system_health?.total_notifications ?? 0}
+                                </div>
+                                <span className="text-[10px] font-bold text-slate-500 mt-0.5 block">Broadcasts Sent</span>
                             </div>
                         </div>
 
@@ -1535,15 +1437,7 @@ export default function SaasAdminDashboard({
                                 {/* Quick Actions */}
                                 <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-2xs space-y-3">
                                     <h3 className="font-extrabold text-sm text-slate-900">Executive Quick Actions</h3>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowOnboardModal(true)}
-                                            className="p-3 rounded-xl bg-blue-50/80 hover:bg-blue-100 text-blue-800 text-left transition border border-blue-100"
-                                        >
-                                            <span className="font-bold text-xs block">+ Onboard Hotel</span>
-                                            <span className="text-[10px] text-blue-600 block mt-0.5">Setup new property</span>
-                                        </button>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                                         <button
                                             type="button"
                                             onClick={() => setShowCreateQuotationModal(true)}
@@ -1561,14 +1455,6 @@ export default function SaasAdminDashboard({
                                         >
                                             <span className="font-bold text-xs block">Top-up SMS</span>
                                             <span className="text-[10px] text-amber-600 block mt-0.5">Hotel credit wallet</span>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowNoticeModal(true)}
-                                            className="p-3 rounded-xl bg-purple-50/80 hover:bg-purple-100 text-purple-800 text-left transition border border-purple-100"
-                                        >
-                                            <span className="font-bold text-xs block">Broadcast Alert</span>
-                                            <span className="text-[10px] text-purple-600 block mt-0.5">System message to GMs</span>
                                         </button>
                                         <button
                                             type="button"
@@ -1628,35 +1514,41 @@ export default function SaasAdminDashboard({
                             <div className="lg:col-span-5 bg-white rounded-2xl p-5 border border-slate-200/90 shadow-2xs space-y-4">
                                 <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
                                     <h3 className="font-extrabold text-sm text-slate-900">Platform Infrastructure Status</h3>
-                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                        100% Operational
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200 uppercase">
+                                        {system_health?.app_env ?? 'env'}
                                     </span>
                                 </div>
 
                                 <div className="divide-y divide-slate-100 text-xs">
                                     <div className="py-2.5 flex items-center justify-between">
                                         <span className="text-slate-500">App Environment</span>
-                                        <span className="font-mono font-bold text-slate-900">WAMP Production Node</span>
+                                        <span className="font-mono font-bold text-slate-900 uppercase">{system_health?.app_env ?? '—'}</span>
+                                    </div>
+                                    <div className="py-2.5 flex items-center justify-between">
+                                        <span className="text-slate-500">Server Host</span>
+                                        <span className="font-mono font-bold text-slate-900">{system_health?.server_host ?? '—'}</span>
                                     </div>
                                     <div className="py-2.5 flex items-center justify-between">
                                         <span className="text-slate-500">PHP Version</span>
-                                        <span className="font-mono font-bold text-slate-900">{system_health?.php_version || 'PHP 8.3'}</span>
+                                        <span className="font-mono font-bold text-slate-900">{system_health?.php_version ?? '—'}</span>
                                     </div>
                                     <div className="py-2.5 flex items-center justify-between">
                                         <span className="text-slate-500">Laravel Framework</span>
-                                        <span className="font-mono font-bold text-slate-900">{system_health?.laravel_version || '12.0'}</span>
+                                        <span className="font-mono font-bold text-slate-900">{system_health?.laravel_version ?? '—'}</span>
                                     </div>
                                     <div className="py-2.5 flex items-center justify-between">
-                                        <span className="text-slate-500">Database Engine</span>
-                                        <span className="font-mono font-bold text-slate-900">{system_health?.database_status || 'MySQL InnoDB'}</span>
+                                        <span className="text-slate-500">Database</span>
+                                        <span className="font-mono font-bold text-slate-900">{system_health?.database_driver ?? '—'} · {system_health?.database_name ?? '—'}</span>
+                                    </div>
+                                    <div className="py-2.5 flex items-center justify-between">
+                                        <span className="text-slate-500">Cache / Queue</span>
+                                        <span className="font-mono font-bold text-slate-900">{system_health?.cache_driver ?? '—'} / {system_health?.queue_connection ?? '—'}</span>
                                     </div>
                                     <div className="py-2.5 flex items-center justify-between">
                                         <span className="text-slate-500">Financial SMS Gateway</span>
-                                        <span className="font-bold text-emerald-700">SwalaSMS Active (SWALATECH)</span>
-                                    </div>
-                                    <div className="py-2.5 flex items-center justify-between">
-                                        <span className="text-slate-500">Automated Daily Backups</span>
-                                        <span className="font-semibold text-slate-700">Active (03:00 AM)</span>
+                                        <span className={`font-bold ${sms_provider?.is_active ? 'text-emerald-700' : 'text-slate-500'}`}>
+                                            {sms_provider?.is_active ? `${sms_provider.provider_name || 'SMS Provider'} Active` : 'Not configured'}
+                                        </span>
                                     </div>
                                 </div>
 
@@ -1774,7 +1666,7 @@ export default function SaasAdminDashboard({
                                     onClick={() => setShowOnboardModal(true)}
                                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
                                 >
-                                    
+
                                     <span>Add Hotel</span>
                                 </button>
                             </div>
@@ -1825,13 +1717,12 @@ export default function SaasAdminDashboard({
                                                 </td>
 
                                                 <td className="py-4 px-4">
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
-                                                        tenant.plan === 'enterprise'
-                                                            ? 'bg-purple-100 text-purple-800 border border-purple-200'
-                                                            : tenant.plan === 'pro' || tenant.plan === 'professional'
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${tenant.plan === 'enterprise'
+                                                        ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                                                        : tenant.plan === 'pro' || tenant.plan === 'professional'
                                                             ? 'bg-blue-100 text-blue-800 border border-blue-200'
                                                             : 'bg-slate-100 text-slate-800 border border-slate-200'
-                                                    }`}>
+                                                        }`}>
                                                         {tenant.plan_name || tenant.plan}
                                                     </span>
                                                     <span className="block text-slate-500 text-[11px] mt-1 font-semibold">
@@ -1870,7 +1761,7 @@ export default function SaasAdminDashboard({
                                                         onClick={() => handleOpenIssueSms(tenant.id)}
                                                         className="text-[10px] font-bold text-blue-600 hover:text-blue-800 mt-1 inline-flex items-center gap-0.5 cursor-pointer"
                                                     >
-                                                        
+
                                                         Top-up SMS
                                                     </button>
                                                 </td>
@@ -1932,11 +1823,10 @@ export default function SaasAdminDashboard({
                                                             type="button"
                                                             onClick={() => handleToggleTenant(tenant.id)}
                                                             title={tenant.is_active ? 'Suspend Hotel Operations' : 'Reactivate Hotel'}
-                                                            className={`p-1.5 rounded-lg transition cursor-pointer ${
-                                                                tenant.is_active
-                                                                    ? 'text-amber-500 hover:bg-amber-50'
-                                                                    : 'text-emerald-600 hover:bg-emerald-50'
-                                                            }`}
+                                                            className={`p-1.5 rounded-lg transition cursor-pointer ${tenant.is_active
+                                                                ? 'text-amber-500 hover:bg-amber-50'
+                                                                : 'text-emerald-600 hover:bg-emerald-50'
+                                                                }`}
                                                         >
                                                             <Power className="w-4 h-4" />
                                                         </button>
@@ -2052,13 +1942,12 @@ export default function SaasAdminDashboard({
                                                 <td className="py-3 px-4">{sub.expires_at}</td>
                                                 <td className="py-3 px-4 text-slate-500">{sub.grace_period_ends_at}</td>
                                                 <td className="py-3 px-4">
-                                                    <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                                                        sub.status === 'active'
-                                                            ? 'bg-emerald-100 text-emerald-800'
-                                                            : sub.status === 'grace_period'
+                                                    <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${sub.status === 'active'
+                                                        ? 'bg-emerald-100 text-emerald-800'
+                                                        : sub.status === 'grace_period'
                                                             ? 'bg-amber-100 text-amber-800'
                                                             : 'bg-rose-100 text-rose-800'
-                                                    }`}>
+                                                        }`}>
                                                         {sub.status}
                                                     </span>
                                                 </td>
@@ -2086,7 +1975,7 @@ export default function SaasAdminDashboard({
                                     onClick={() => setShowCreateQuotationModal(true)}
                                     className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
                                 >
-                                    
+
                                     <span>Create Quotation</span>
                                 </button>
                                 <button
@@ -2094,7 +1983,7 @@ export default function SaasAdminDashboard({
                                     onClick={() => setShowCreateInvoiceModal(true)}
                                     className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
                                 >
-                                    
+
                                     <span>Issue Invoice</span>
                                 </button>
                             </div>
@@ -2128,13 +2017,12 @@ export default function SaasAdminDashboard({
                                                 <td className="py-3 px-4 font-bold text-slate-800">TZS {new Intl.NumberFormat('en-TZ').format(quote.total_tzs)}</td>
                                                 <td className="py-3 px-4 text-slate-500">{quote.valid_until}</td>
                                                 <td className="py-3 px-4">
-                                                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                                                        quote.status === 'converted' || quote.status === 'accepted'
-                                                            ? 'bg-emerald-100 text-emerald-800'
-                                                            : quote.status === 'sent'
+                                                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${quote.status === 'converted' || quote.status === 'accepted'
+                                                        ? 'bg-emerald-100 text-emerald-800'
+                                                        : quote.status === 'sent'
                                                             ? 'bg-blue-100 text-blue-800'
                                                             : 'bg-slate-100 text-slate-700'
-                                                    }`}>
+                                                        }`}>
                                                         {quote.status}
                                                     </span>
                                                 </td>
@@ -2188,13 +2076,12 @@ export default function SaasAdminDashboard({
                                                 <td className="py-3 px-4 font-bold text-slate-800">TZS {new Intl.NumberFormat('en-TZ').format(inv.balance_tzs)}</td>
                                                 <td className="py-3 px-4 text-slate-500">{inv.due_date}</td>
                                                 <td className="py-3 px-4">
-                                                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                                                        inv.status === 'paid'
-                                                            ? 'bg-emerald-100 text-emerald-800'
-                                                            : inv.status === 'unpaid'
+                                                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${inv.status === 'paid'
+                                                        ? 'bg-emerald-100 text-emerald-800'
+                                                        : inv.status === 'unpaid'
                                                             ? 'bg-rose-100 text-rose-800'
                                                             : 'bg-amber-100 text-amber-800'
-                                                    }`}>
+                                                        }`}>
                                                         {inv.status}
                                                     </span>
                                                 </td>
@@ -2264,7 +2151,7 @@ export default function SaasAdminDashboard({
                                 onClick={() => setShowCreateContractModal(true)}
                                 className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
                             >
-                                
+
                                 <span>Generate Contract</span>
                             </button>
                         </div>
@@ -2298,11 +2185,10 @@ export default function SaasAdminDashboard({
                                                     {contract.document_hash ? contract.document_hash.substring(0, 16) + '...' : 'N/A'}
                                                 </td>
                                                 <td className="py-3 px-4">
-                                                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                                                        contract.status === 'signed' || contract.status === 'active'
-                                                            ? 'bg-emerald-100 text-emerald-800'
-                                                            : 'bg-amber-100 text-amber-800'
-                                                    }`}>
+                                                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${contract.status === 'signed' || contract.status === 'active'
+                                                        ? 'bg-emerald-100 text-emerald-800'
+                                                        : 'bg-amber-100 text-amber-800'
+                                                        }`}>
                                                         {contract.status}
                                                     </span>
                                                 </td>
@@ -2552,88 +2438,39 @@ export default function SaasAdminDashboard({
                 {(activeTab === 'notices' || activeTab === 'system_alerts') && (
                     <div className="space-y-6">
                         {/* Subnav switcher */}
-                        <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl w-fit">
-                            <button
-                                type="button"
-                                onClick={() => setNoticesSubTab('broadcasts')}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                    noticesSubTab === 'broadcasts' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                                }`}
-                            >
-                                Tenant Broadcasts ({notices.length})
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setNoticesSubTab('alerts')}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                    noticesSubTab === 'alerts' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                                }`}
-                            >
-                                System Alerts & Maintenance
-                            </button>
-                        </div>
-                        {noticesSubTab === 'alerts' && (
-                            <div className="p-5 rounded-2xl bg-amber-50 border border-amber-200 flex items-start justify-between gap-4">
-                                <div className="flex items-start gap-3">
-                                    <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 mt-0.5">
-                                        <Clock className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-sm text-amber-950">Scheduled System Maintenance Window</h4>
-                                        <p className="text-xs text-amber-800 mt-1">
-                                            Next automated routine database optimization and backup cycle is scheduled every night at <strong>03:00 AM EAT</strong>. Zero downtime expected.
-                                        </p>
-                                        <div className="flex items-center gap-2 mt-2">
-                                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
-                                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                                All Services Operational
-                                            </span>
-                                            <span className="text-xs text-amber-700">Cluster: {system_health.server_cluster}</span>
-                                        </div>
-                                    </div>
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between flex-wrap gap-4 bg-white rounded-2xl p-4 border border-slate-200 shadow-xs">
+                                <div>
+                                    <h3 className="font-extrabold text-base text-slate-900">Tenant Broadcast Notices</h3>
+                                    <p className="text-xs text-slate-500">Send real-time alerts and notices to hotel managers and front desks across Tanzania.</p>
                                 </div>
                                 <button
                                     type="button"
                                     onClick={() => setShowNoticeModal(true)}
-                                    className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-2xs transition shrink-0 cursor-pointer"
+                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer"
                                 >
-                                    Post Emergency Alert
+
+                                    <span>Create Notice</span>
                                 </button>
                             </div>
-                        )}
-                    <div className="space-y-6">
-                        <div className="flex items-center justify-between flex-wrap gap-4 bg-white rounded-2xl p-4 border border-slate-200 shadow-xs">
-                            <div>
-                                <h3 className="font-extrabold text-base text-slate-900">Tenant Broadcast Notices</h3>
-                                <p className="text-xs text-slate-500">Send real-time alerts and notices to hotel managers and front desks across Tanzania.</p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setShowNoticeModal(true)}
-                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer"
-                            >
-                                
-                                <span>Create Notice</span>
-                            </button>
-                        </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {notices.map((notice) => (
-                                <div key={notice.id} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md">
-                                            {notice.target}
-                                        </span>
-                                        <span className="text-xs text-slate-400">{notice.created_at}</span>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {notices.map((notice) => (
+                                    <div key={notice.id} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md">
+                                                {notice.target}
+                                            </span>
+                                            <span className="text-xs text-slate-400">{notice.created_at}</span>
+                                        </div>
+                                        <h4 className="font-bold text-sm text-slate-900">{notice.title}</h4>
+                                        <p className="text-xs text-slate-600 leading-relaxed">{notice.message}</p>
                                     </div>
-                                    <h4 className="font-bold text-sm text-slate-900">{notice.title}</h4>
-                                    <p className="text-xs text-slate-600 leading-relaxed">{notice.message}</p>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
 
                 {/* TAB 8: SYSTEM ADMINISTRATION & DIAGNOSTICS */}
                 {activeTab === 'system' && (
@@ -2644,7 +2481,7 @@ export default function SaasAdminDashboard({
                                     <Server className="w-5 h-5 text-blue-600" />
                                     <span>Platform Health, Database & Diagnostics</span>
                                 </h3>
-                                <p className="text-xs text-slate-500 mt-1">Real-time node metrics, MySQL InnoDB engine status, and cache management.</p>
+                                <p className="text-xs text-slate-500 mt-1">Live environment, database, cache and queue diagnostics.</p>
                             </div>
                             <button
                                 type="button"
@@ -2656,17 +2493,17 @@ export default function SaasAdminDashboard({
                             </button>
                         </div>
 
-                        {/* Real Node Diagnostics */}
+                        {/* Live Environment Diagnostics */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
                             <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
-                                <span className="text-slate-400 block text-[11px]">Cluster Uptime</span>
-                                <span className="text-lg font-black text-emerald-600">{system_health.uptime}</span>
-                                <span className="text-[10px] text-slate-500 block mt-1">{system_health.server_cluster}</span>
+                                <span className="text-slate-400 block text-[11px]">Environment</span>
+                                <span className="text-lg font-black text-emerald-600 uppercase">{system_health.app_env}</span>
+                                <span className="text-[10px] text-slate-500 block mt-1">{system_health.app_name} · {system_health.server_host}</span>
                             </div>
                             <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
-                                <span className="text-slate-400 block text-[11px]">Database Status</span>
-                                <span className="text-lg font-black text-slate-900">{system_health.database_status}</span>
-                                <span className="text-[10px] text-slate-500 block mt-1">DB: {system_health.database_name}</span>
+                                <span className="text-slate-400 block text-[11px]">Database</span>
+                                <span className="text-lg font-black text-slate-900 uppercase">{system_health.database_driver}</span>
+                                <span className="text-[10px] text-slate-500 block mt-1">{system_health.database_name}</span>
                             </div>
                             <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
                                 <span className="text-slate-400 block text-[11px]">Software Versions</span>
@@ -2674,9 +2511,9 @@ export default function SaasAdminDashboard({
                                 <span className="text-[10px] text-slate-500 block mt-1">Laravel {system_health.laravel_version}</span>
                             </div>
                             <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
-                                <span className="text-slate-400 block text-[11px]">Last Automated Backup</span>
-                                <span className="text-lg font-black text-blue-600">{system_health.last_backup}</span>
-                                <span className="text-[10px] text-slate-500 block mt-1">Storage: {system_health.storage_used}</span>
+                                <span className="text-slate-400 block text-[11px]">Cache & Queue</span>
+                                <span className="text-lg font-black text-blue-600">{system_health.cache_driver}</span>
+                                <span className="text-[10px] text-slate-500 block mt-1">Queue: {system_health.queue_connection}</span>
                             </div>
                         </div>
 
@@ -2716,18 +2553,16 @@ export default function SaasAdminDashboard({
                             <button
                                 type="button"
                                 onClick={() => setUserSubTab('users')}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                    userSubTab === 'users' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                                }`}
+                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${userSubTab === 'users' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                                    }`}
                             >
                                 Global SaaS Users ({global_users.length})
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setUserSubTab('roles')}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                    userSubTab === 'roles' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                                }`}
+                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${userSubTab === 'roles' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                                    }`}
                             >
                                 Roles & Permissions Matrix ({roles_matrix.length})
                             </button>
@@ -2766,7 +2601,7 @@ export default function SaasAdminDashboard({
                                         onClick={() => setShowCreateUserModal(true)}
                                         className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer"
                                     >
-                                        
+
                                         <span>Create SaaS User</span>
                                     </button>
                                 </div>
@@ -2808,24 +2643,22 @@ export default function SaasAdminDashboard({
                                                             </span>
                                                         </td>
                                                         <td className="py-3 px-4">
-                                                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                                                u.role === 'super_admin'
-                                                                    ? 'bg-purple-100 text-purple-700 border border-purple-200'
-                                                                    : u.role === 'owner'
+                                                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${u.role === 'super_admin'
+                                                                ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                                                                : u.role === 'owner'
                                                                     ? 'bg-amber-100 text-amber-900 border border-amber-300 font-black'
                                                                     : u.role === 'general_manager'
-                                                                    ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                                                                    : u.role === 'receptionist'
-                                                                    ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
-                                                                    : 'bg-slate-100 text-slate-700 border border-slate-200'
-                                                            }`}>
+                                                                        ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                                                                        : u.role === 'receptionist'
+                                                                            ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                                                                            : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                                                }`}>
                                                                 {u.role === 'owner' ? '👑 Owner' : u.role.replace('_', ' ')}
                                                             </span>
                                                         </td>
                                                         <td className="py-3 px-4">
-                                                            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                                                                u.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
-                                                            }`}>
+                                                            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold ${u.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                                                                }`}>
                                                                 <span className={`w-1.5 h-1.5 rounded-full ${u.is_active ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                                                                 {u.is_active ? 'Active' : 'Suspended'}
                                                             </span>
@@ -2848,11 +2681,10 @@ export default function SaasAdminDashboard({
                                                                     type="button"
                                                                     onClick={() => handleToggleUserStatus(u.id, u.name)}
                                                                     title={u.is_active ? 'Deactivate User' : 'Activate User'}
-                                                                    className={`px-2 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer ${
-                                                                        u.is_active
-                                                                            ? 'text-amber-700 hover:bg-amber-50 border border-amber-200'
-                                                                            : 'text-emerald-700 hover:bg-emerald-50 border border-emerald-200'
-                                                                    }`}
+                                                                    className={`px-2 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer ${u.is_active
+                                                                        ? 'text-amber-700 hover:bg-amber-50 border border-amber-200'
+                                                                        : 'text-emerald-700 hover:bg-emerald-50 border border-emerald-200'
+                                                                        }`}
                                                                 >
                                                                     {u.is_active ? 'Deactivate' : 'Activate'}
                                                                 </button>
@@ -2916,27 +2748,24 @@ export default function SaasAdminDashboard({
                             <button
                                 type="button"
                                 onClick={() => setCmsSubTab('landing')}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                    cmsSubTab === 'landing' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                                }`}
+                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${cmsSubTab === 'landing' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                                    }`}
                             >
                                 Landing Page Content
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setCmsSubTab('pricing')}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                    cmsSubTab === 'pricing' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                                }`}
+                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${cmsSubTab === 'pricing' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                                    }`}
                             >
                                 Pricing Plans Display ({plans.length})
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setCmsSubTab('faqs')}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                    cmsSubTab === 'faqs' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                                }`}
+                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${cmsSubTab === 'faqs' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                                    }`}
                             >
                                 Testimonials & FAQs
                             </button>
@@ -2987,9 +2816,8 @@ export default function SaasAdminDashboard({
                                                 return (
                                                     <div
                                                         key={slide.id || idx}
-                                                        className={`bg-white rounded-2xl border transition-all duration-200 shadow-xs overflow-hidden ${
-                                                            isActivePreview ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-slate-200'
-                                                        }`}
+                                                        className={`bg-white rounded-2xl border transition-all duration-200 shadow-xs overflow-hidden ${isActivePreview ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-slate-200'
+                                                            }`}
                                                     >
                                                         {/* Slide Header Toolbar */}
                                                         <div className="bg-slate-50/80 px-4 py-3 border-b border-slate-200/80 flex items-center justify-between gap-3">
@@ -3031,9 +2859,8 @@ export default function SaasAdminDashboard({
                                                                     type="button"
                                                                     onClick={() => setActivePreviewIndex(idx)}
                                                                     title="View Simulation"
-                                                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 transition cursor-pointer ${
-                                                                        isActivePreview ? 'bg-blue-600 text-white shadow-2xs' : 'bg-slate-200/80 text-slate-700 hover:bg-slate-300'
-                                                                    }`}
+                                                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 transition cursor-pointer ${isActivePreview ? 'bg-blue-600 text-white shadow-2xs' : 'bg-slate-200/80 text-slate-700 hover:bg-slate-300'
+                                                                        }`}
                                                                 >
                                                                     <Eye className="w-3.5 h-3.5" />
                                                                     <span>Preview</span>
@@ -3241,11 +3068,10 @@ export default function SaasAdminDashboard({
                                                         key={sIdx}
                                                         type="button"
                                                         onClick={() => setActivePreviewIndex(sIdx)}
-                                                        className={`px-3 py-1 rounded-lg text-[10px] font-bold transition shrink-0 cursor-pointer ${
-                                                            activePreviewIndex === sIdx
-                                                                ? 'bg-[#D4AF37] text-slate-950 shadow-xs'
-                                                                : 'bg-slate-800/80 text-slate-400 hover:bg-slate-800 hover:text-white'
-                                                        }`}
+                                                        className={`px-3 py-1 rounded-lg text-[10px] font-bold transition shrink-0 cursor-pointer ${activePreviewIndex === sIdx
+                                                            ? 'bg-[#D4AF37] text-slate-950 shadow-xs'
+                                                            : 'bg-slate-800/80 text-slate-400 hover:bg-slate-800 hover:text-white'
+                                                            }`}
                                                     >
                                                         Slide {sIdx + 1}
                                                     </button>
@@ -3302,11 +3128,10 @@ export default function SaasAdminDashboard({
                                                                     <span
                                                                         key={dIdx}
                                                                         onClick={() => setActivePreviewIndex(dIdx)}
-                                                                        className={`transition-all rounded-full cursor-pointer ${
-                                                                            dIdx === activePreviewIndex
-                                                                                ? 'w-6 h-2 bg-[#D4AF37]'
-                                                                                : 'w-2 h-2 bg-slate-300 hover:bg-slate-400'
-                                                                        }`}
+                                                                        className={`transition-all rounded-full cursor-pointer ${dIdx === activePreviewIndex
+                                                                            ? 'w-6 h-2 bg-[#D4AF37]'
+                                                                            : 'w-2 h-2 bg-slate-300 hover:bg-slate-400'
+                                                                            }`}
                                                                     />
                                                                 ))}
                                                             </div>
@@ -3442,335 +3267,6 @@ export default function SaasAdminDashboard({
                     </div>
                 )}
 
-                {/* TAB 11: MARKETING, DEMOS & CONVERSIONS */}
-                {(activeTab === 'marketing' || activeTab === 'demos' || activeTab === 'funnel') && (
-                    <div className="space-y-6">
-                        <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl w-fit">
-                            <button
-                                type="button"
-                                onClick={() => setMarketingSubTab('promos')}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                    marketingSubTab === 'promos' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                                }`}
-                            >
-                                Campaigns & Promos
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setMarketingSubTab('demos')}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                    marketingSubTab === 'demos' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                                }`}
-                            >
-                                Demo & Trial Inquiries ({demo_requests.length})
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setMarketingSubTab('funnel')}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                    marketingSubTab === 'funnel' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                                }`}
-                            >
-                                Conversion Funnel Analytics
-                            </button>
-                        </div>
-
-                        {marketingSubTab === 'promos' && (
-                            <div className="space-y-6">
-                                <div className="flex items-center justify-between flex-wrap gap-4 bg-white rounded-2xl p-4 border border-slate-200 shadow-xs">
-                                    <div>
-                                        <h3 className="font-extrabold text-base text-slate-900">Promotional Discount Codes</h3>
-                                        <p className="text-xs text-slate-500">Configure promotional vouchers for onboarding campaigns and sales outreach.</p>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowCreatePromoModal(true)}
-                                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer"
-                                    >
-                                        
-                                        <span>Create Promo Code</span>
-                                    </button>
-                                </div>
-
-                                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-                                    <table className="w-full text-left text-xs">
-                                        <thead>
-                                            <tr className="bg-slate-50 text-slate-500 uppercase tracking-wider font-bold text-[10px] border-b border-slate-100">
-                                                <th className="py-3 px-4">Coupon Code</th>
-                                                <th className="py-3 px-4">Discount</th>
-                                                <th className="py-3 px-4">Applies To</th>
-                                                <th className="py-3 px-4">Usage Count</th>
-                                                <th className="py-3 px-4">Expiry Date</th>
-                                                <th className="py-3 px-4 text-right">Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100">
-                                            {marketing_data?.promos?.map((promo: any) => (
-                                                <tr key={promo.id} className="hover:bg-slate-50/70 transition">
-                                                    <td className="py-3 px-4 font-mono font-black text-blue-600 text-sm">
-                                                        {promo.code}
-                                                    </td>
-                                                    <td className="py-3 px-4 font-bold text-slate-900">
-                                                        {promo.discount_percent}% OFF
-                                                    </td>
-                                                    <td className="py-3 px-4 text-slate-600">{promo.applies_to}</td>
-                                                    <td className="py-3 px-4 font-semibold text-slate-700">
-                                                        {promo.uses_count} / {promo.max_uses} used
-                                                    </td>
-                                                    <td className="py-3 px-4 text-slate-500">{promo.expires_at}</td>
-                                                    <td className="py-3 px-4 text-right">
-                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                                            promo.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'
-                                                        }`}>
-                                                            {promo.is_active ? 'Active' : 'Expired'}
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                <div className="bg-white rounded-2xl p-5 border border-slate-200 space-y-4">
-                                    <h4 className="font-extrabold text-sm text-slate-900">Marketing Acquisition Channels</h4>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-                                        {marketing_data?.channels?.map((ch: any, idx: number) => (
-                                            <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
-                                                <span className="font-bold text-slate-800 block text-xs">{ch.name}</span>
-                                                <div className="flex items-baseline justify-between mt-2">
-                                                    <span className="text-xl font-black text-slate-900">{ch.leads} Leads</span>
-                                                    <span className="text-xs font-black text-emerald-600">{ch.conversion_rate}</span>
-                                                </div>
-                                                <span className="text-[11px] text-slate-400 block">{ch.converted} converted to paying</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {marketingSubTab === 'demos' && (
-                            <div className="space-y-4">
-                                <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs flex items-center justify-between">
-                                    <div>
-                                        <h3 className="font-extrabold text-base text-slate-900">Prospective Hotel Demo Inquiries</h3>
-                                        <p className="text-xs text-slate-500">Inbound requests submitted by lodge and hotel owners requesting live walkthroughs.</p>
-                                    </div>
-                                    <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 font-bold text-xs">
-                                        {demo_requests.length} High-Intent Leads
-                                    </span>
-                                </div>
-
-                                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-                                    <table className="w-full text-left text-xs">
-                                        <thead>
-                                            <tr className="bg-slate-50 text-slate-500 uppercase tracking-wider font-bold text-[10px] border-b border-slate-100">
-                                                <th className="py-3 px-4">Hotel / Lodge</th>
-                                                <th className="py-3 px-4">Contact Person</th>
-                                                <th className="py-3 px-4">Rooms & City</th>
-                                                <th className="py-3 px-4">Requested Plan</th>
-                                                <th className="py-3 px-4">Status</th>
-                                                <th className="py-3 px-4 text-right">Quick Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100">
-                                            {demo_requests.map((demo: any) => (
-                                                <tr key={demo.id} className="hover:bg-slate-50/70 transition">
-                                                    <td className="py-3 px-4">
-                                                        <div className="font-bold text-slate-900">{demo.hotel_name}</div>
-                                                        <div className="text-[11px] text-slate-400">Received {demo.created_at}</div>
-                                                    </td>
-                                                    <td className="py-3 px-4">
-                                                        <div className="font-bold text-slate-800">{demo.contact_name}</div>
-                                                        <div className="flex items-center gap-2 mt-0.5">
-                                                            <a href={`tel:${demo.phone}`} className="text-blue-600 hover:underline text-[11px]">
-                                                                {demo.phone}
-                                                            </a>
-                                                            <span>•</span>
-                                                            <a href={`https://wa.me/${demo.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="text-emerald-600 hover:underline text-[11px] font-bold">
-                                                                WhatsApp
-                                                            </a>
-                                                        </div>
-                                                    </td>
-                                                    <td className="py-3 px-4">
-                                                        <span className="font-bold text-slate-900">{demo.rooms_count} Rooms</span>
-                                                        <span className="text-[11px] text-slate-400 block">{demo.city}</span>
-                                                    </td>
-                                                    <td className="py-3 px-4 font-semibold text-slate-700">{demo.requested_plan}</td>
-                                                    <td className="py-3 px-4">
-                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                                            demo.status === 'new' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
-                                                        }`}>
-                                                            {demo.status.replace('_', ' ')}
-                                                        </span>
-                                                    </td>
-                                                    <td className="py-3 px-4 text-right">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleConvertLeadToQuote(demo)}
-                                                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs shadow-2xs transition cursor-pointer"
-                                                        >
-                                                            <Receipt className="w-3 h-3" />
-                                                            <span>Send Quote</span>
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-
-                        {marketingSubTab === 'funnel' && (
-                            <div className="space-y-6">
-                                <div className="bg-white rounded-2xl p-5 border border-slate-200 space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <h3 className="font-extrabold text-base text-slate-900">SaaS Growth & Conversion Funnel</h3>
-                                            <p className="text-xs text-slate-500">Real-time pipeline metrics from website visitor to paid recurring subscription.</p>
-                                        </div>
-                                        <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
-                                            {conversion_funnel?.conversion_rate_lead_to_paying || '10.4%'} Overall Conversion
-                                        </span>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 pt-2 text-center">
-                                        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">1. Visitors</span>
-                                            <span className="text-2xl font-black text-slate-900 mt-1 block">
-                                                {new Intl.NumberFormat('en-TZ').format(conversion_funnel?.visitors || 1240)}
-                                            </span>
-                                            <span className="text-[10px] text-slate-500 mt-1 block">Traffic source</span>
-                                        </div>
-
-                                        <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200">
-                                            <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider block">2. Inquiries</span>
-                                            <span className="text-2xl font-black text-blue-700 mt-1 block">
-                                                {conversion_funnel?.inquiries || 48}
-                                            </span>
-                                            <span className="text-[10px] text-blue-600 font-bold mt-1 block">3.8% rate</span>
-                                        </div>
-
-                                        <div className="p-4 rounded-2xl bg-indigo-50 border border-indigo-200">
-                                            <span className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider block">3. Demos</span>
-                                            <span className="text-2xl font-black text-indigo-700 mt-1 block">
-                                                {conversion_funnel?.demos || 22}
-                                            </span>
-                                            <span className="text-[10px] text-indigo-600 font-bold mt-1 block">45.8% rate</span>
-                                        </div>
-
-                                        <div className="p-4 rounded-2xl bg-purple-50 border border-purple-200">
-                                            <span className="text-[11px] font-bold text-purple-600 uppercase tracking-wider block">4. Quotations</span>
-                                            <span className="text-2xl font-black text-purple-700 mt-1 block">
-                                                {conversion_funnel?.quotations || 14}
-                                            </span>
-                                            <span className="text-[10px] text-purple-600 font-bold mt-1 block">63.6% rate</span>
-                                        </div>
-
-                                        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
-                                            <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider block">5. Active Hotels</span>
-                                            <span className="text-2xl font-black text-emerald-700 mt-1 block">
-                                                {conversion_funnel?.active_paying_tenants || kpis.active_subscriptions}
-                                            </span>
-                                            <span className="text-[10px] text-emerald-600 font-bold mt-1 block">Paying Recurring</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* TAB 12: SUPPORT DESK & TICKET MANAGEMENT */}
-                {activeTab === 'support' && (
-                    <div className="space-y-6">
-                        <div className="flex items-center justify-between flex-wrap gap-4 bg-white rounded-2xl p-4 border border-slate-200 shadow-xs">
-                            <div>
-                                <h3 className="font-extrabold text-base text-slate-900">Tenant Support Desk & Impersonation Hub</h3>
-                                <p className="text-xs text-slate-500">Resolve tenant issues, manage help tickets, and launch 1-click workspace support login.</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs">
-                                    Live Support Online
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-                            <table className="w-full text-left text-xs">
-                                <thead>
-                                    <tr className="bg-slate-50 text-slate-500 uppercase tracking-wider font-bold text-[10px] border-b border-slate-100">
-                                        <th className="py-3 px-4">Ticket</th>
-                                        <th className="py-3 px-4">Hotel / Tenant</th>
-                                        <th className="py-3 px-4">Category & Subject</th>
-                                        <th className="py-3 px-4">Priority</th>
-                                        <th className="py-3 px-4">Status</th>
-                                        <th className="py-3 px-4 text-right">Support Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {support_tickets.map((t: any) => (
-                                        <tr key={t.id} className="hover:bg-slate-50/70 transition">
-                                            <td className="py-3 px-4 font-mono font-bold text-slate-900">
-                                                {t.id}
-                                                <span className="block font-normal text-[10px] text-slate-400">{t.created_at}</span>
-                                            </td>
-                                            <td className="py-3 px-4">
-                                                <div className="font-bold text-slate-900">{t.tenant_name}</div>
-                                                <div className="text-[11px] text-slate-400">{t.sender_name}</div>
-                                            </td>
-                                            <td className="py-3 px-4">
-                                                <div className="font-bold text-slate-800">{t.subject}</div>
-                                                <div className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">{t.message}</div>
-                                            </td>
-                                            <td className="py-3 px-4">
-                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                                    t.priority === 'high' ? 'bg-rose-100 text-rose-800' : 'bg-blue-100 text-blue-800'
-                                                }`}>
-                                                    {t.priority}
-                                                </span>
-                                            </td>
-                                            <td className="py-3 px-4">
-                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                                    t.status === 'open'
-                                                        ? 'bg-amber-100 text-amber-800'
-                                                        : t.status === 'in_progress'
-                                                        ? 'bg-indigo-100 text-indigo-800'
-                                                        : 'bg-emerald-100 text-emerald-800'
-                                                }`}>
-                                                    {t.status.replace('_', ' ')}
-                                                </span>
-                                            </td>
-                                            <td className="py-3 px-4 text-right space-x-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setSelectedTicket(t);
-                                                        replyTicketForm.setData('ticket_id', t.id);
-                                                        setShowReplyTicketModal(true);
-                                                    }}
-                                                    className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-bold transition cursor-pointer"
-                                                >
-                                                    Reply / Resolve
-                                                </button>
-                                                {t.tenant_id && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleImpersonate(t.tenant_id!, t.tenant_name)}
-                                                        className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-2xs transition cursor-pointer"
-                                                    >
-                                                        Support Login
-                                                    </button>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                )}
             </div>
 
             {/* ─── MODALS SECTION ───────────────────────────────────────── */}
@@ -4088,7 +3584,7 @@ export default function SaasAdminDashboard({
                                         </span>
                                     </div>
                                     <p className="text-xs text-slate-500 mt-0.5">
-                                        Hotel: <strong className="text-slate-800">{selectedTenantForFeatures.name}</strong> • 
+                                        Hotel: <strong className="text-slate-800">{selectedTenantForFeatures.name}</strong> •
                                         Subdomain: <span className="font-mono text-slate-600">{selectedTenantForFeatures.subdomain}.theinns.com</span>
                                     </p>
                                 </div>
@@ -4168,7 +3664,7 @@ export default function SaasAdminDashboard({
                             {/* Render Features Grouped by Category */}
                             {Object.entries(
                                 (available_features || []).reduce((acc: Record<string, any[]>, item: any) => {
-                                    const matchesSearch = !featureSearch || 
+                                    const matchesSearch = !featureSearch ||
                                         item.name.toLowerCase().includes(featureSearch.toLowerCase()) ||
                                         item.description.toLowerCase().includes(featureSearch.toLowerCase()) ||
                                         item.category.toLowerCase().includes(featureSearch.toLowerCase());
@@ -4197,11 +3693,10 @@ export default function SaasAdminDashboard({
                                                 <div
                                                     key={feature.key}
                                                     onClick={() => handleToggleSingleFeature(feature.key)}
-                                                    className={`p-3.5 rounded-2xl border transition-all cursor-pointer select-none flex items-start justify-between gap-3 ${
-                                                        isEnabled
-                                                            ? 'bg-white border-indigo-200 shadow-xs hover:border-indigo-300 ring-1 ring-indigo-500/10'
-                                                            : 'bg-slate-50/60 border-slate-200 hover:bg-slate-100/60 opacity-75'
-                                                    }`}
+                                                    className={`p-3.5 rounded-2xl border transition-all cursor-pointer select-none flex items-start justify-between gap-3 ${isEnabled
+                                                        ? 'bg-white border-indigo-200 shadow-xs hover:border-indigo-300 ring-1 ring-indigo-500/10'
+                                                        : 'bg-slate-50/60 border-slate-200 hover:bg-slate-100/60 opacity-75'
+                                                        }`}
                                                 >
                                                     <div className="flex-1 pr-2">
                                                         <div className="flex items-center gap-2">
@@ -4222,19 +3717,16 @@ export default function SaasAdminDashboard({
                                                                 e.stopPropagation();
                                                                 handleToggleSingleFeature(feature.key);
                                                             }}
-                                                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                                                                isEnabled ? 'bg-indigo-600' : 'bg-slate-300'
-                                                            }`}
+                                                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${isEnabled ? 'bg-indigo-600' : 'bg-slate-300'
+                                                                }`}
                                                         >
                                                             <span
-                                                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                                                                    isEnabled ? 'translate-x-5' : 'translate-x-0'
-                                                                }`}
+                                                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${isEnabled ? 'translate-x-5' : 'translate-x-0'
+                                                                    }`}
                                                             />
                                                         </button>
-                                                        <span className={`block text-[10px] font-bold text-center mt-1 uppercase tracking-tight ${
-                                                            isEnabled ? 'text-indigo-600' : 'text-slate-400'
-                                                        }`}>
+                                                        <span className={`block text-[10px] font-bold text-center mt-1 uppercase tracking-tight ${isEnabled ? 'text-indigo-600' : 'text-slate-400'
+                                                            }`}>
                                                             {isEnabled ? 'Active' : 'Off'}
                                                         </span>
                                                     </div>
@@ -5559,156 +5051,6 @@ export default function SaasAdminDashboard({
                 </div>
             )}
 
-            {/* MODAL: CREATE PROMO CODE */}
-            {showCreatePromoModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-                    <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 my-8">
-                        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                            <div>
-                                <h3 className="font-extrabold text-base text-slate-900">Create Marketing Promo Code</h3>
-                                <p className="text-xs text-slate-500">Generate discount vouchers for prospective hotel onboarding.</p>
-                            </div>
-                            <button type="button" onClick={() => setShowCreatePromoModal(false)} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <form onSubmit={submitPromo} className="space-y-4 pt-4 text-xs">
-                            <div>
-                                <label className="font-bold text-slate-700 block mb-1">Promo Coupon Code *</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={promoForm.data.code}
-                                    onChange={(e) => promoForm.setData('code', e.target.value.toUpperCase())}
-                                    placeholder="e.g. SABA2026"
-                                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono font-bold uppercase"
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="font-bold text-slate-700 block mb-1">Discount % *</label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        max="100"
-                                        required
-                                        value={promoForm.data.discount_percent}
-                                        onChange={(e) => promoForm.setData('discount_percent', parseInt(e.target.value) || 0)}
-                                        className="w-full px-3 py-2 rounded-xl border border-slate-300"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="font-bold text-slate-700 block mb-1">Max Uses Allowed</label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        required
-                                        value={promoForm.data.max_uses}
-                                        onChange={(e) => promoForm.setData('max_uses', parseInt(e.target.value) || 1)}
-                                        className="w-full px-3 py-2 rounded-xl border border-slate-300"
-                                    />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="font-bold text-slate-700 block mb-1">Applicable Tier</label>
-                                    <select
-                                        value={promoForm.data.applies_to}
-                                        onChange={(e) => promoForm.setData('applies_to', e.target.value)}
-                                        className="w-full px-3 py-2 rounded-xl border border-slate-300"
-                                    >
-                                        <option value="All Plans">All Plans</option>
-                                        <option value="Hotel & Safari Pro">Hotel & Safari Pro</option>
-                                        <option value="Enterprise Multi-Branch">Enterprise Multi-Branch</option>
-                                        <option value="Boutique Starter">Boutique Starter</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="font-bold text-slate-700 block mb-1">Expiry Date *</label>
-                                    <input
-                                        type="date"
-                                        required
-                                        value={promoForm.data.expires_at}
-                                        onChange={(e) => promoForm.setData('expires_at', e.target.value)}
-                                        className="w-full px-3 py-2 rounded-xl border border-slate-300"
-                                    />
-                                </div>
-                            </div>
-                            <div className="pt-3 flex items-center justify-end gap-2">
-                                <button type="button" onClick={() => setShowCreatePromoModal(false)} className="px-4 py-2 border border-slate-200 rounded-xl font-bold text-slate-600 cursor-pointer">
-                                    Cancel
-                                </button>
-                                <button type="submit" disabled={promoForm.processing} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold flex items-center gap-1.5 shadow-xs cursor-pointer">
-                                    <Check className="w-3.5 h-3.5" />
-                                    <span>Save Promo Code</span>
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* MODAL: REPLY & RESOLVE SUPPORT TICKET */}
-            {showReplyTicketModal && selectedTicket && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-                    <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 my-8">
-                        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                            <div>
-                                <span className="font-mono text-[10px] font-bold text-blue-600 uppercase">
-                                    Ticket #{selectedTicket.id}
-                                </span>
-                                <h3 className="font-extrabold text-base text-slate-900 mt-0.5">{selectedTicket.subject}</h3>
-                                <p className="text-xs text-slate-500">{selectedTicket.tenant_name} • {selectedTicket.sender_name}</p>
-                            </div>
-                            <button type="button" onClick={() => setShowReplyTicketModal(false)} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <form onSubmit={submitReplyTicket} className="space-y-4 pt-4 text-xs">
-                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                                    Tenant Inquiry Message
-                                </span>
-                                <p className="text-slate-800 leading-relaxed">{selectedTicket.message}</p>
-                            </div>
-                            <div>
-                                <label className="font-bold text-slate-700 block mb-1">Resolution & Support Response Note</label>
-                                <textarea
-                                    rows={3}
-                                    value={replyTicketForm.data.resolution_note}
-                                    onChange={(e) => replyTicketForm.setData('resolution_note', e.target.value)}
-                                    placeholder="Explain how the issue was resolved or instructions provided to the hotel manager..."
-                                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-blue-500"
-                                />
-                            </div>
-                            <div className="pt-2 flex items-center justify-between">
-                                {selectedTicket.tenant_id && (
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setShowReplyTicketModal(false);
-                                            handleImpersonate(selectedTicket.tenant_id, selectedTicket.tenant_name);
-                                        }}
-                                        className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 cursor-pointer"
-                                    >
-                                        <span>Support Login as GM</span>
-                                        <ExternalLink className="w-3 h-3" />
-                                    </button>
-                                )}
-                                <div className="flex items-center gap-2 ml-auto">
-                                    <button type="button" onClick={() => setShowReplyTicketModal(false)} className="px-4 py-2 border border-slate-200 rounded-xl font-bold text-slate-600 cursor-pointer">
-                                        Cancel
-                                    </button>
-                                    <button type="submit" disabled={replyTicketForm.processing} className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex items-center gap-1.5 shadow-xs cursor-pointer">
-                                        <Check className="w-3.5 h-3.5" />
-                                        <span>Mark as Resolved</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
         </AuthenticatedLayout>
     );
 }

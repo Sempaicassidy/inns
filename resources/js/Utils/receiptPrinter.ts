@@ -95,13 +95,12 @@ function executePrint(innerHtml: string, pageStyles: string, docTitle: string = 
     const printFrame = document.createElement('iframe');
     printFrame.id = 'the-inns-receipt-iframe';
     printFrame.style.position = 'fixed';
-    printFrame.style.left = '-9999px';
-    printFrame.style.top = '0';
-    printFrame.style.width = '320px';
-    printFrame.style.height = '600px';
-    printFrame.style.opacity = '0';
-    printFrame.style.pointerEvents = 'none';
-    printFrame.style.border = '0';
+    printFrame.style.bottom = '0';
+    printFrame.style.right = '0';
+    printFrame.style.width = '0px';
+    printFrame.style.height = '0px';
+    printFrame.style.border = 'none';
+    printFrame.style.zIndex = '-1';
     document.body.appendChild(printFrame);
 
     let cleanedUp = false;
@@ -109,8 +108,10 @@ function executePrint(innerHtml: string, pageStyles: string, docTitle: string = 
         if (cleanedUp) return;
         cleanedUp = true;
         document.body.classList.remove('is-printing-receipt');
-        if (document.body.contains(printRoot)) printRoot.remove();
-        if (document.body.contains(printFrame)) printFrame.remove();
+        setTimeout(() => {
+            if (document.body.contains(printRoot)) printRoot.remove();
+            if (document.body.contains(printFrame)) printFrame.remove();
+        }, 1000);
     };
 
     window.addEventListener('afterprint', cleanup, { once: true });
@@ -123,6 +124,8 @@ function executePrint(innerHtml: string, pageStyles: string, docTitle: string = 
         doc.write(fullHtml);
         doc.close();
 
+        printFrame.contentWindow?.addEventListener('afterprint', cleanup, { once: true });
+
         setTimeout(() => {
             try {
                 printFrame.contentWindow?.focus();
@@ -132,7 +135,7 @@ function executePrint(innerHtml: string, pageStyles: string, docTitle: string = 
                 document.body.classList.add('is-printing-receipt');
                 window.print();
             }
-        }, 200);
+        }, 250);
     } else {
         // Direct body isolation fallback
         document.body.classList.add('is-printing-receipt');
@@ -402,7 +405,18 @@ export function generateKOTHtml(data: ReceiptData): string {
 const thermalStyles = `
     @page {
         size: 80mm auto;
-        margin: 0;
+        margin: 0mm !important;
+    }
+    @media print {
+        html, body {
+            width: 72mm !important;
+            margin: 0 auto !important;
+            padding: 3mm 2mm 8mm 2mm !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
     }
     * {
         box-sizing: border-box;
@@ -410,18 +424,19 @@ const thermalStyles = `
         padding: 0;
     }
     body {
-        font-family: 'Courier New', Courier, monospace;
+        font-family: 'Courier New', 'Lucida Console', Monaco, monospace;
         font-size: 11px;
-        line-height: 1.3;
-        color: #000;
-        background: #fff;
-        width: 76mm;
+        line-height: 1.35;
+        color: #000000;
+        background: #ffffff;
+        width: 72mm;
         margin: 0 auto;
         padding: 3mm 2mm 8mm 2mm;
+        -webkit-font-smoothing: antialiased;
     }
     .receipt-container {
         width: 100%;
-        max-width: 76mm;
+        max-width: 72mm;
         margin: 0 auto;
     }
     .text-center { text-align: center; }
@@ -430,17 +445,19 @@ const thermalStyles = `
     .font-bold { font-weight: bold; }
     .uppercase { text-transform: uppercase; }
     .divider {
-        border-top: 1px dashed #000;
-        margin: 5px 0;
+        border-top: 1px dashed #000000;
+        margin: 6px 0;
     }
     table {
         width: 100%;
         border-collapse: collapse;
+        table-layout: fixed;
     }
     .meta-row {
         display: flex;
         justify-content: space-between;
         margin-bottom: 2px;
+        font-size: 11px;
     }
     .summary-table td {
         padding: 2px 0;

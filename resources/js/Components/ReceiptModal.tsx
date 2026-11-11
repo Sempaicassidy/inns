@@ -7,13 +7,15 @@ interface ReceiptModalProps {
     onClose: () => void;
     receiptData: ReceiptData;
     title?: string;
+    showKOT?: boolean;
 }
 
 export default function ReceiptModal({
     isOpen,
     onClose,
     receiptData,
-    title = 'Order Receipt & Kitchen Dispatch'
+    title = 'Order Receipt & Kitchen Dispatch',
+    showKOT = true,
 }: ReceiptModalProps) {
     const [copied, setCopied] = useState(false);
     const [previewMode, setPreviewMode] = useState<'receipt' | 'kot'>('receipt');
@@ -51,31 +53,33 @@ export default function ReceiptModal({
                     </div>
                     <div className="flex items-center gap-2">
                         {/* Switch Preview Mode */}
-                        <div className="flex items-center bg-slate-200/80 p-0.5 rounded-xl text-xs font-bold">
-                            <button
-                                type="button"
-                                onClick={() => setPreviewMode('receipt')}
-                                className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${
-                                    previewMode === 'receipt'
-                                        ? 'bg-white text-slate-900 shadow-2xs'
-                                        : 'text-slate-600 hover:text-slate-900'
-                                }`}
-                            >
-                                Receipt
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setPreviewMode('kot')}
-                                className={`px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
-                                    previewMode === 'kot'
-                                        ? 'bg-white text-slate-900 shadow-2xs'
-                                        : 'text-slate-600 hover:text-slate-900'
-                                }`}
-                            >
-                                <ChefHat className="w-3.5 h-3.5 text-amber-600" />
-                                <span>KOT</span>
-                            </button>
-                        </div>
+                        {showKOT && (
+                            <div className="flex items-center bg-slate-200/80 p-0.5 rounded-xl text-xs font-bold">
+                                <button
+                                    type="button"
+                                    onClick={() => setPreviewMode('receipt')}
+                                    className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${
+                                        previewMode === 'receipt'
+                                            ? 'bg-white text-slate-900 shadow-2xs'
+                                            : 'text-slate-600 hover:text-slate-900'
+                                    }`}
+                                >
+                                    Receipt
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setPreviewMode('kot')}
+                                    className={`px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+                                        previewMode === 'kot'
+                                            ? 'bg-white text-slate-900 shadow-2xs'
+                                            : 'text-slate-600 hover:text-slate-900'
+                                    }`}
+                                >
+                                    <ChefHat className="w-3.5 h-3.5 text-amber-600" />
+                                    <span>KOT</span>
+                                </button>
+                            </div>
+                        )}
                         <button
                             type="button"
                             onClick={onClose}
@@ -291,14 +295,16 @@ export default function ReceiptModal({
                     </button>
 
                     <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
-                        <button
-                            type="button"
-                            onClick={() => printKOTReceipt(receiptData)}
-                            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-xs rounded-xl border border-amber-200 transition cursor-pointer shadow-2xs"
-                        >
-                            <ChefHat className="w-4 h-4 text-amber-700" />
-                            <span>Print Kitchen KOT</span>
-                        </button>
+                        {showKOT && (
+                            <button
+                                type="button"
+                                onClick={() => printKOTReceipt(receiptData)}
+                                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-xs rounded-xl border border-amber-200 transition cursor-pointer shadow-2xs"
+                            >
+                                <ChefHat className="w-4 h-4 text-amber-700" />
+                                <span>Print Kitchen KOT</span>
+                            </button>
+                        )}
                         <button
                             type="button"
                             onClick={() => printA4Invoice(receiptData)}

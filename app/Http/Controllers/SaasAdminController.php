@@ -352,17 +352,17 @@ class SaasAdminController extends Controller
             ]);
 
         // 13. System Diagnostics & Health (Real counts from database)
+        $defaultConnection = (string) config('database.default');
         $systemHealth = [
-            'uptime' => '99.98%',
-            'server_cluster' => 'WAMP Local Production Node (127.0.0.1)',
+            'app_name' => (string) config('app.name'),
+            'app_env' => (string) config('app.env'),
+            'server_host' => gethostname() ?: 'localhost',
             'php_version' => PHP_VERSION,
             'laravel_version' => app()->version(),
-            'database_status' => 'MySQL InnoDB Active',
-            'database_name' => config('database.connections.mysql.database'),
-            'cache_driver' => config('cache.default'),
-            'queue_status' => 'Sync Driver Ready',
-            'last_backup' => 'Today at 03:00 AM (Automated)',
-            'storage_used' => '1.42 GB / 50.0 GB',
+            'database_driver' => $defaultConnection,
+            'database_name' => (string) config("database.connections.{$defaultConnection}.database"),
+            'cache_driver' => (string) config('cache.default'),
+            'queue_connection' => (string) config('queue.default'),
             'total_rooms' => Room::count(),
             'total_users' => User::count(),
             'total_invoices' => SaasInvoice::count(),
@@ -449,60 +449,8 @@ class SaasAdminController extends Controller
                 'badge' => 'Point of Sale',
                 'scope' => 'Restaurant & Beverage POS',
                 'description' => 'Table orders, KOT kitchen tickets dispatch, food and beverage payment processing, and room charge transfers.',
-                'users_count' => User::where('role', 'restaurant_cashier')->orWhere('role', 'pos_cashier')->count() ?: 3,
+                'users_count' => User::where('role', 'restaurant_cashier')->orWhere('role', 'pos_cashier')->count(),
                 'permissions' => ['Table Ordering', 'KOT Dispatch', 'Cash / Card / Room Charge', 'Shift Closing'],
-            ],
-        ];
-
-        // 15. Real Demo & Trial Inquiries Pipeline
-        $demoRequests = [
-            [
-                'id' => 1,
-                'hotel_name' => 'Serengeti Migration Luxury Camp',
-                'contact_name' => 'Emmanuel Mtui',
-                'email' => 'e.mtui@serengeticamp.co.tz',
-                'phone' => '+255 784 112 233',
-                'rooms_count' => 24,
-                'city' => 'Serengeti, Mara',
-                'requested_plan' => 'Enterprise (Multi-Lodge)',
-                'status' => 'new',
-                'created_at' => Carbon::now()->subHours(2)->diffForHumans(),
-            ],
-            [
-                'id' => 2,
-                'hotel_name' => 'Zanzibar Sunset Beach Resort',
-                'contact_name' => 'Fatma Al-Harthy',
-                'email' => 'gm@zanzibarsunset.com',
-                'phone' => '+255 777 988 776',
-                'rooms_count' => 42,
-                'city' => 'Nungwi, Zanzibar',
-                'requested_plan' => 'Safari Pro (Multi-Branch)',
-                'status' => 'contacted',
-                'created_at' => Carbon::now()->subDay()->diffForHumans(),
-            ],
-            [
-                'id' => 3,
-                'hotel_name' => 'Arusha Mount Meru Grand Hotel',
-                'contact_name' => 'Peter Mollel',
-                'email' => 'info@mountmerugrand.co.tz',
-                'phone' => '+255 754 332 211',
-                'rooms_count' => 58,
-                'city' => 'Arusha Urban',
-                'requested_plan' => 'Enterprise (Unlimited)',
-                'status' => 'demo_scheduled',
-                'created_at' => Carbon::now()->subDays(2)->diffForHumans(),
-            ],
-            [
-                'id' => 4,
-                'hotel_name' => 'Dodoma Parliament View Suites',
-                'contact_name' => 'Aisha Mwamburi',
-                'email' => 'director@dodomasuites.com',
-                'phone' => '+255 768 554 433',
-                'rooms_count' => 18,
-                'city' => 'Dodoma Capital',
-                'requested_plan' => 'Boutique Starter',
-                'status' => 'converted_to_quote',
-                'created_at' => Carbon::now()->subDays(4)->diffForHumans(),
             ],
         ];
 
@@ -556,24 +504,7 @@ class SaasAdminController extends Controller
                 ['title' => 'Legal & E-Sign Contracts', 'description' => 'SHA-256 digital signing before service activation and auto-renewals.'],
                 ['title' => 'Financial SMS & WhatsApp', 'description' => 'Instant guest receipts, manager daily audits, and NextSMS wallet.'],
             ],
-            'testimonials' => [
-                [
-                    'id' => 1,
-                    'name' => 'Grace Masanja',
-                    'hotel' => 'Manyara Escarpment Sanctuary',
-                    'role' => 'Managing Director',
-                    'rating' => 5,
-                    'quote' => 'Since implementing THE INNS, revenue leakage dropped to zero, and guests receive automated SMS confirmations and digital folios instantly.',
-                ],
-                [
-                    'id' => 2,
-                    'name' => 'David Kimaro',
-                    'hotel' => 'Kilimanjaro Luxury Highlands',
-                    'role' => 'General Manager',
-                    'rating' => 5,
-                    'quote' => 'The one-click night audit and automated financial reconciliation made our accounting workflow seamless and error-free.',
-                ],
-            ],
+            'testimonials' => [],
             'faqs' => [
                 [
                     'id' => 1,
@@ -597,71 +528,6 @@ class SaasAdminController extends Controller
             $cmsContent['hero_slides'] = $defaultHeroSlides;
         }
 
-        // 17. Marketing Campaigns, Promo Codes & Funnel Analytics
-        $marketingData = [
-            'promos' => [
-                ['id' => 1, 'code' => 'KARIBU2026', 'discount_percent' => 15, 'applies_to' => 'Annual Safari Pro', 'uses_count' => 14, 'max_uses' => 50, 'is_active' => true, 'expires_at' => '31 Dec 2026'],
-                ['id' => 2, 'code' => 'ZANZIBARHOTEL', 'discount_percent' => 20, 'applies_to' => 'All Plans', 'uses_count' => 6, 'max_uses' => 25, 'is_active' => true, 'expires_at' => '30 Nov 2026'],
-                ['id' => 3, 'code' => 'LAUNCHSPECIAL', 'discount_percent' => 10, 'applies_to' => 'Boutique Starter', 'uses_count' => 29, 'max_uses' => 100, 'is_active' => false, 'expires_at' => '01 Oct 2026'],
-            ],
-            'channels' => [
-                ['name' => 'Direct Website Inquiries', 'leads' => 18, 'converted' => 6, 'conversion_rate' => '33.3%'],
-                ['name' => 'Hospitality & Tourism Expo Arusha', 'leads' => 14, 'converted' => 4, 'conversion_rate' => '28.5%'],
-                ['name' => 'WhatsApp Direct Outbound', 'leads' => 11, 'converted' => 5, 'conversion_rate' => '45.4%'],
-                ['name' => 'Customer Referrals', 'leads' => 5, 'converted' => 4, 'conversion_rate' => '80.0%'],
-            ],
-        ];
-
-        $conversionFunnel = [
-            'visitors' => 1240,
-            'inquiries' => 48,
-            'demos' => 22,
-            'quotations' => 14,
-            'invoices' => 9,
-            'active_paying_tenants' => $activeSubs ?: 5,
-            'conversion_rate_lead_to_paying' => '10.4%',
-        ];
-
-        // 18. Real Support Tickets Desk
-        $supportTickets = [
-            [
-                'id' => 'TCK-1092',
-                'tenant_id' => $tenants->first()['id'] ?? null,
-                'tenant_name' => $tenants->first()['name'] ?? 'Manyara Escarpment Sanctuary',
-                'sender_name' => 'David Kimaro (General Manager)',
-                'category' => 'Financial SMS Gateway',
-                'subject' => 'Ombi la Kuongeza Sender ID Maalum ya Hoteli',
-                'priority' => 'medium',
-                'status' => 'open',
-                'created_at' => Carbon::now()->subHours(2)->diffForHumans(),
-                'message' => 'Tungependa SMS zote za stakabadhi zitoke na jina la hoteli yetu badala ya jina la default. Tusaidieni kusanidi NextSMS sender ID.',
-            ],
-            [
-                'id' => 'TCK-1090',
-                'tenant_id' => $tenants->skip(1)->first()['id'] ?? ($tenants->first()['id'] ?? null),
-                'tenant_name' => $tenants->skip(1)->first()['name'] ?? 'Kilimanjaro Luxury Highlands',
-                'sender_name' => 'Grace Masanja',
-                'category' => 'Restaurant POS',
-                'subject' => 'Printer ya Jiko (Kitchen Ticket) Haipokei Ota',
-                'priority' => 'high',
-                'status' => 'in_progress',
-                'created_at' => Carbon::now()->subHours(6)->diffForHumans(),
-                'message' => 'Tumebadilisha mtandao wa WiFi na sasa printer ya jikoni haitoi KOT. Tunahitaji msaada wa kurekebisha IP address.',
-            ],
-            [
-                'id' => 'TCK-1088',
-                'tenant_id' => $tenants->first()['id'] ?? null,
-                'tenant_name' => $tenants->first()['name'] ?? 'Serengeti Safari Lodge',
-                'sender_name' => 'Juma Mkude',
-                'category' => 'Subscription & Billing',
-                'subject' => 'Uthibitisho wa Malipo ya Mwaka (Annual Renewal)',
-                'priority' => 'normal',
-                'status' => 'resolved',
-                'created_at' => Carbon::now()->subDays(2)->diffForHumans(),
-                'message' => 'Tumefanya malipo kupitia NMB Bank transfer na ankara imesasishwa kuwa imelipwa. Huduma inafanya kazi vizuri sana.',
-            ],
-        ];
-
         return Inertia::render('SaasAdmin/Index', [
             'kpis' => [
                 'total_tenants' => $totalTenants,
@@ -670,7 +536,6 @@ class SaasAdminController extends Controller
                 'suspended_tenants' => $suspendedTenants,
                 'monthly_revenue' => $totalMonthlyRevenue,
                 'sms_balance' => $smsBalance,
-                'demo_requests' => count($demoRequests),
             ],
             'tenants' => $tenants,
             'plans' => $plans,
@@ -705,11 +570,7 @@ class SaasAdminController extends Controller
             'system_health' => $systemHealth,
             'global_users' => $globalUsers,
             'roles_matrix' => $rolesMatrix,
-            'demo_requests' => $demoRequests,
             'cms_content' => $cmsContent,
-            'marketing_data' => $marketingData,
-            'conversion_funnel' => $conversionFunnel,
-            'support_tickets' => $supportTickets,
             'available_features' => array_values(Tenant::AVAILABLE_FEATURES),
         ]);
     }
@@ -1656,34 +1517,5 @@ class SaasAdminController extends Controller
         cache()->put('cms_landing_settings', $allSettings, now()->addMonths(6));
 
         return redirect()->back()->with('success', 'Hero slides and Website CMS settings have been saved successfully and are now live.');
-    }
-
-    /**
-     * Store marketing promo campaign.
-     */
-    public function storePromoCode(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'code' => 'required|string|max:30',
-            'discount_percent' => 'required|integer|min:1|max:100',
-            'applies_to' => 'required|string|max:100',
-            'max_uses' => 'required|integer|min:1',
-            'expires_at' => 'required|date',
-        ]);
-
-        return redirect()->back()->with('success', "Promo code '{$validated['code']}' created and activated.");
-    }
-
-    /**
-     * Resolve a support ticket.
-     */
-    public function resolveSupportTicket(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'ticket_id' => 'required|string',
-            'resolution_note' => 'nullable|string|max:500',
-        ]);
-
-        return redirect()->back()->with('success', "Support Ticket #{$validated['ticket_id']} marked as Resolved.");
     }
 }

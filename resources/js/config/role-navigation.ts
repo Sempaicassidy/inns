@@ -474,7 +474,6 @@ export const roleNavigation: Record<string, RoleNavigationDef> = {
         label: 'POS & Sales Staff',
         dashboard: 'pos.index',
         navigation: [
-            { name: 'Dashboard', route: 'dashboard', icon: 'Home', active: ['dashboard'] },
             { name: 'POS Terminal (Restaurant & Bar)', route: 'pos.index', icon: 'Utensils', active: ['pos.*'], feature: 'restaurant_pos' },
             { name: 'Super Market Dashboard', route: 'grocery.dashboard', icon: 'ShoppingBag', active: ['grocery.dashboard'], feature: 'grocery_pos' },
             { name: 'Super / Mini Market POS', route: 'grocery.pos', icon: 'ShoppingBag', active: ['grocery.pos'], feature: 'grocery_pos' },

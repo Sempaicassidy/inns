@@ -88,12 +88,17 @@ export default function OfflineSyncManager() {
                 const cache = await caches.open('the-inns-pwa-v14');
                 const isSubfolder = window.location.pathname.startsWith('/inns');
                 const prefix = isSubfolder ? '/inns' : '';
+                const userRole = auth?.user?.active_role || auth?.user?.role || 'staff';
+                const isManager = ['owner', 'super_admin', 'general_manager', 'manager', 'admin'].includes(userRole);
+                const isFrontDesk = isManager || ['receptionist', 'front_desk', 'front_office', 'front_office_manager'].includes(userRole);
+                const isHousekeeper = isManager || ['housekeeper', 'housekeeping_supervisor'].includes(userRole);
+                const isCashier = isManager || ['pos_cashier', 'cashier', 'grocery_cashier', 'supermarket_cashier', 'waiter', 'bartender'].includes(userRole);
+
                 const corePages = [
                     `${prefix}/dashboard`,
-                    `${prefix}/pos`,
-                    `${prefix}/housekeeping`,
-                    `${prefix}/reservations`,
-                    `${prefix}/calendar`
+                    ...(isCashier ? [`${prefix}/pos`, `${prefix}/grocery/pos`] : []),
+                    ...(isFrontDesk ? [`${prefix}/reservations`, `${prefix}/calendar`] : []),
+                    ...(isHousekeeper ? [`${prefix}/housekeeping`] : []),
                 ];
 
                 for (const path of corePages) {

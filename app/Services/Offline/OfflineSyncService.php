@@ -492,18 +492,36 @@ class OfflineSyncService
 
         $items = PosItem::where('tenant_id', $tenantId)
             ->where('is_available', true)
-            ->get(['id', 'name', 'code', 'pos_category_id', 'price_minor', 'unit', 'department', 'track_inventory', 'current_stock']);
+            ->get(['id', 'name', 'code', 'pos_category_id', 'price_minor', 'unit', 'department', 'stock_quantity'])
+            ->map(function ($item) {
+                $arr = $item->toArray();
+                $arr['current_stock'] = $item->stock_quantity;
+                $arr['track_inventory'] = true;
+                return $arr;
+            });
 
         // 2. Rooms & Room Types
         $roomTypes = RoomType::where('tenant_id', $tenantId)
-            ->get(['id', 'name', 'code', 'base_rate_minor', 'amenities', 'capacity_adults']);
+            ->get(['id', 'name', 'code', 'base_price_minor', 'amenities', 'max_adults'])
+            ->map(function ($rt) {
+                $arr = $rt->toArray();
+                $arr['base_rate_minor'] = $rt->base_price_minor;
+                $arr['capacity_adults'] = $rt->max_adults;
+                return $arr;
+            });
 
         $rooms = Room::where('tenant_id', $tenantId)
-            ->get(['id', 'room_type_id', 'room_number', 'floor', 'status', 'hk_status']);
+            ->get(['id', 'room_type_id', 'room_number', 'floor', 'status_occupancy', 'status_hk'])
+            ->map(function ($room) {
+                $arr = $room->toArray();
+                $arr['status'] = $room->status_occupancy;
+                $arr['hk_status'] = $room->status_hk;
+                return $arr;
+            });
 
         $ratePlans = RatePlan::where('tenant_id', $tenantId)
             ->where('is_active', true)
-            ->get(['id', 'name', 'code', 'rate_modifier_type', 'rate_modifier_amount']);
+            ->get(['id', 'name', 'code', 'meal_plan']);
 
         // 3. Properties
         $properties = Property::where('tenant_id', $tenantId)
@@ -545,11 +563,22 @@ class OfflineSyncService
 
         $updatedRooms = Room::where('tenant_id', $tenantId)
             ->where('updated_at', '>=', $since)
-            ->get(['id', 'room_type_id', 'room_number', 'status', 'hk_status']);
+            ->get(['id', 'room_type_id', 'room_number', 'floor', 'status_occupancy', 'status_hk'])
+            ->map(function ($room) {
+                $arr = $room->toArray();
+                $arr['status'] = $room->status_occupancy;
+                $arr['hk_status'] = $room->status_hk;
+                return $arr;
+            });
 
         $updatedItems = PosItem::where('tenant_id', $tenantId)
             ->where('updated_at', '>=', $since)
-            ->get(['id', 'name', 'code', 'pos_category_id', 'price_minor', 'is_available', 'current_stock']);
+            ->get(['id', 'name', 'code', 'pos_category_id', 'price_minor', 'is_available', 'stock_quantity', 'unit', 'department'])
+            ->map(function ($item) {
+                $arr = $item->toArray();
+                $arr['current_stock'] = $item->stock_quantity;
+                return $arr;
+            });
 
         return [
             'rooms' => $updatedRooms,

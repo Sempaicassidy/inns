@@ -31,24 +31,34 @@ class OfflineSyncController extends Controller
      */
     public function sync(Request $request): JsonResponse
     {
-        $user = Auth::user();
+        try {
+            $user = Auth::user();
 
-        $validated = $request->validate([
-            'device_id' => 'required|string|max:100',
-            'operations' => 'required|array',
-            'operations.*.operation_id' => 'required|string|max:100',
-            'operations.*.type' => 'required|string',
-            'operations.*.action' => 'required|string',
-            'operations.*.payload' => 'required|array',
-        ]);
+            $validated = $request->validate([
+                'device_id' => 'required|string|max:100',
+                'operations' => 'required|array',
+                'operations.*.operation_id' => 'required|string|max:100',
+                'operations.*.type' => 'required|string',
+                'operations.*.action' => 'required|string',
+                'operations.*.payload' => 'required|array',
+            ]);
 
-        $result = $this->syncService->syncBatch(
-            $user,
-            $validated['device_id'],
-            $validated['operations']
-        );
+            $result = $this->syncService->syncBatch(
+                $user,
+                $validated['device_id'],
+                $validated['operations']
+            );
 
-        return response()->json($result);
+            return response()->json($result);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('[OfflineSyncController@sync] Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'confirmed_operation_ids' => [],
+                'results' => [],
+            ], 500);
+        }
     }
 
     /**
@@ -56,13 +66,21 @@ class OfflineSyncController extends Controller
      */
     public function bootstrap(): JsonResponse
     {
-        $user = Auth::user();
-        $data = $this->syncService->getBootstrapData($user);
+        try {
+            $user = Auth::user();
+            $data = $this->syncService->getBootstrapData($user);
 
-        return response()->json([
-            'success' => true,
-            'data' => $data,
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('[OfflineSyncController@bootstrap] Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -70,15 +88,24 @@ class OfflineSyncController extends Controller
      */
     public function changes(Request $request): JsonResponse
     {
-        $user = Auth::user();
-        $cursor = $request->query('cursor');
+        try {
+            $user = Auth::user();
+            $cursor = $request->query('cursor');
 
-        $changes = $this->syncService->getChanges($user, $cursor);
+            $changes = $this->syncService->getChanges($user, $cursor);
 
-        return response()->json([
-            'success' => true,
-            'data' => $changes,
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $changes,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('[OfflineSyncController@changes] Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'data' => ['rooms' => [], 'items' => []],
+            ], 500);
+        }
     }
 }
 

@@ -508,8 +508,9 @@ class GroceryController extends Controller
         ]);
 
         $user = $request->user();
-        $property = $user->property;
         $tenantId = $user->tenant_id;
+        $property = $user->property ?? ($tenantId ? Property::where('tenant_id', $tenantId)->first() : null);
+        $propertyId = $property?->id ?? ($tenantId ? Property::where('tenant_id', $tenantId)->value('id') : null);
 
         if (! $tenantId) {
             return back()->withErrors(['items' => 'No tenant context for this sale.']);
@@ -543,7 +544,7 @@ class GroceryController extends Controller
             }
         }
 
-        DB::transaction(function () use ($validated, $user, $property, $tenantId, &$subtotal, &$orderLines) {
+        DB::transaction(function () use ($validated, $user, $propertyId, $tenantId, &$subtotal, &$orderLines) {
             foreach ($validated['items'] as $itemData) {
                 $item = PosItem::where('tenant_id', $tenantId)
                     ->where('department', 'grocery')
@@ -559,7 +560,7 @@ class GroceryController extends Controller
                 // Record stock movement for retail sale
                 StockMovement::create([
                     'tenant_id' => $tenantId,
-                    'property_id' => $property?->id,
+                    'property_id' => $propertyId,
                     'pos_item_id' => $item->id,
                     'movement_type' => 'issue_department',
                     'quantity' => $itemData['quantity'],
@@ -585,7 +586,7 @@ class GroceryController extends Controller
 
         $order = PosOrder::create([
             'tenant_id' => $tenantId,
-            'property_id' => $property?->id,
+            'property_id' => $propertyId,
             'user_id' => $user->id,
             'order_number' => $orderNumber,
             'outlet_type' => 'grocery',
@@ -610,7 +611,7 @@ class GroceryController extends Controller
         if ($paymentStatus === 'posted_to_room') {
             app(LedgerService::class)->post(
                 (string) $tenantId,
-                $property?->id,
+                $propertyId,
                 'pos_order',
                 (string) $order->id,
                 "Grocery sale #{$orderNumber} charged to guest folio",
@@ -622,7 +623,7 @@ class GroceryController extends Controller
         } else {
             app(LedgerService::class)->post(
                 (string) $tenantId,
-                $property?->id,
+                $propertyId,
                 'pos_order',
                 (string) $order->id,
                 "Grocery sale #{$orderNumber} ({$validated['payment_method']})",

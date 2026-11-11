@@ -206,6 +206,7 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     Route::middleware(['tenant.feature:grocery_pos', 'module.access:grocery_pos'])->group(function () {
         Route::get('/grocery', [GroceryController::class, 'index'])->name('grocery.index');
         Route::get('/grocery/pos', [GroceryController::class, 'pos'])->name('grocery.pos');
+        Route::post('/grocery/categories', [GroceryController::class, 'storeCategory'])->name('grocery.categories.store');
         Route::post('/grocery/items', [GroceryController::class, 'storeItem'])->name('grocery.items.store');
         Route::match(['put', 'patch'], '/grocery/items/{item}', [GroceryController::class, 'updateItem'])->name('grocery.items.update');
         Route::post('/grocery/items/{item}/restock', [GroceryController::class, 'restock'])->name('grocery.items.restock');

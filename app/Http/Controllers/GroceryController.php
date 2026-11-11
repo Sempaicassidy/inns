@@ -462,6 +462,38 @@ class GroceryController extends Controller
         return back()->with('success', "{$item->name} is now {$statusText}.");
     }
 
+    public function storeCategory(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:100',
+            'icon' => 'nullable|string|max:50',
+        ]);
+
+        $user = $request->user();
+        $tenantId = $user->tenant_id;
+        $property = $user->property ?? ($tenantId ? Property::where('tenant_id', $tenantId)->first() : null);
+
+        if (! $tenantId) {
+            return back()->withErrors(['name' => 'No tenant context for this category.']);
+        }
+
+        $maxOrder = PosCategory::where('tenant_id', $tenantId)
+            ->where('department', 'grocery')
+            ->max('sort_order') ?? 0;
+
+        PosCategory::create([
+            'tenant_id' => $tenantId,
+            'property_id' => $property?->id,
+            'department' => 'grocery',
+            'name' => $validated['name'],
+            'icon' => $validated['icon'] ?? 'package',
+            'sort_order' => $maxOrder + 1,
+            'is_active' => true,
+        ]);
+
+        return back()->with('success', "Category '{$validated['name']}' created successfully.");
+    }
+
     public function storeOrder(Request $request): RedirectResponse
     {
         $validated = $request->validate([

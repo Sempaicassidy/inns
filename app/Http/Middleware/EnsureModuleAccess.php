@@ -73,6 +73,22 @@ class EnsureModuleAccess
     ];
 
     /**
+     * Check whether a role is permitted to access a module, using the same
+     * allow-list as the middleware. Used to avoid redirect loops when
+     * role-based dashboard routing is resolved.
+     */
+    public static function roleCanAccessModule(string $module, ?string $role): bool
+    {
+        if (! $role) {
+            return true;
+        }
+
+        $allowed = self::MODULE_ROLES[$module] ?? null;
+
+        return $allowed === null || in_array($role, $allowed, true);
+    }
+
+    /**
      * Handle an incoming request.
      *
      * @param  Closure(Request): (Response)  $next

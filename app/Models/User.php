@@ -174,7 +174,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'housekeeper', 'housekeeping_supervisor' => 'housekeeping.index',
             'pos_cashier', 'cashier', 'waiter', 'bartender', 'chef',
             'restaurant_cashier', 'restaurant_staff' => 'pos.index',
-            'grocery_cashier', 'supermarket_cashier' => 'grocery.index',
+            'grocery_cashier', 'supermarket_cashier' => 'grocery.pos',
             'storekeeper', 'procurement_manager' => 'inventory.index',
             'accountant' => 'accounting.index',
             'night_auditor' => 'night-audit.index',

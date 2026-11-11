@@ -13,6 +13,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -212,6 +213,11 @@ class HousekeepingController extends Controller
 
     public function storeRoom(Request $request): RedirectResponse
     {
+        $user = $request->user();
+        $property = $this->resolveActiveProperty($request);
+        $tenantId = $property?->tenant_id ?? $user?->tenant_id;
+        $propertyId = $property ? $property->id : null;
+
         $validated = $request->validate([
             'room_number' => 'required|string|max:20',
             'room_type_id' => 'required|exists:room_types,id',
@@ -222,21 +228,57 @@ class HousekeepingController extends Controller
             'features.*' => 'string|max:60',
         ]);
 
-        $user = $request->user();
-        $property = $this->resolveActiveProperty($request);
-        $tenantId = $property?->tenant_id ?? $user?->tenant_id;
+        // Prevent duplicate room numbers within the same property (including soft-deleted rooms)
+        $existingRoom = Room::withTrashed()
+            ->where('tenant_id', $tenantId)
+            ->where(function ($q) use ($propertyId) {
+                if ($propertyId) {
+                    $q->where('property_id', $propertyId);
+                } else {
+                    $q->whereNull('property_id');
+                }
+            })
+            ->where('room_number', $validated['room_number'])
+            ->first();
 
-        Room::create([
-            'tenant_id' => $tenantId,
-            'property_id' => $property ? $property->id : null,
-            'room_number' => $validated['room_number'],
-            'room_type_id' => $validated['room_type_id'],
-            'floor' => $validated['floor'] ?? '1st Floor',
-            'status_occupancy' => $validated['status_occupancy'] ?? 'vacant',
-            'status_hk' => $validated['status_hk'] ?? 'clean',
-            'features' => $validated['features'] ?? [],
-            'is_active' => true,
-        ]);
+        if ($existingRoom) {
+            if ($existingRoom->trashed()) {
+                // If previously deleted, restore and update it
+                $existingRoom->restore();
+                $existingRoom->update([
+                    'room_type_id' => $validated['room_type_id'],
+                    'floor' => $validated['floor'] ?? '1st Floor',
+                    'status_occupancy' => $validated['status_occupancy'] ?? 'vacant',
+                    'status_hk' => $validated['status_hk'] ?? 'clean',
+                    'features' => $validated['features'] ?? [],
+                    'is_active' => true,
+                ]);
+
+                return redirect()->back()->with('success', "Room {$validated['room_number']} has been restored and updated successfully.");
+            }
+
+            throw ValidationException::withMessages([
+                'room_number' => "Namba ya chumba '{$validated['room_number']}' tayari ipo katika hoteli hii. Tafadhali chagua namba nyingine au hariri chumba kilichopo.",
+            ]);
+        }
+
+        try {
+            Room::create([
+                'tenant_id' => $tenantId,
+                'property_id' => $propertyId,
+                'room_number' => $validated['room_number'],
+                'room_type_id' => $validated['room_type_id'],
+                'floor' => $validated['floor'] ?? '1st Floor',
+                'status_occupancy' => $validated['status_occupancy'] ?? 'vacant',
+                'status_hk' => $validated['status_hk'] ?? 'clean',
+                'features' => $validated['features'] ?? [],
+                'is_active' => true,
+            ]);
+        } catch (\Throwable $e) {
+            throw ValidationException::withMessages([
+                'room_number' => "Namba ya chumba '{$validated['room_number']}' tayari imesajiliwa.",
+            ]);
+        }
 
         return redirect()->back()->with('success', "Room {$validated['room_number']} added successfully.");
     }

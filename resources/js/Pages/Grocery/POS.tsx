@@ -92,6 +92,7 @@ export default function GroceryPos({
     const [currentReceiptData, setCurrentReceiptData] = useState<ReceiptData | null>(null);
     const [isRecentOrdersOpen, setIsRecentOrdersOpen] = useState(false);
     const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
+    const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
 
     // Add Product Form (Quick Add SKU right from POS terminal)
     const addProductForm = useForm({
@@ -103,6 +104,12 @@ export default function GroceryPos({
         stock_quantity: 50,
         reorder_level: 10,
         unit: 'pcs',
+    });
+
+    // Add Category Form (cashier-created product categories)
+    const categoryForm = useForm({
+        name: '',
+        icon: 'package',
     });
 
     // Sale Checkout Form
@@ -300,6 +307,17 @@ export default function GroceryPos({
         });
     };
 
+    const handleQuickAddCategory = (e: React.FormEvent) => {
+        e.preventDefault();
+        categoryForm.post(route('grocery.categories.store'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                categoryForm.reset();
+                setIsAddCategoryModalOpen(false);
+            },
+        });
+    };
+
     const buildOrderReceiptData = (order: GroceryOrder): ReceiptData => ({
         hotelName: (auth?.tenant as any)?.name || 'SUPER / MINI MARKET',
         hotelAddress: (auth?.property as any)?.address || (auth?.tenant as any)?.address || undefined,
@@ -419,11 +437,10 @@ export default function GroceryPos({
                         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
                             <button
                                 onClick={() => setSelectedCategoryId('all')}
-                                className={`px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-                                    selectedCategoryId === 'all'
-                                        ? 'bg-blue-600 text-white shadow-xs'
-                                        : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
-                                }`}
+                                className={`px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${selectedCategoryId === 'all'
+                                    ? 'bg-blue-600 text-white shadow-xs'
+                                    : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+                                    }`}
                             >
                                 All Items ({items.length})
                             </button>
@@ -433,22 +450,29 @@ export default function GroceryPos({
                                     <button
                                         key={cat.id}
                                         onClick={() => setSelectedCategoryId(cat.id)}
-                                        className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                                            selectedCategoryId === cat.id
-                                                ? 'bg-blue-600 text-white shadow-xs'
-                                                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
-                                        }`}
+                                        className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${selectedCategoryId === cat.id
+                                            ? 'bg-blue-600 text-white shadow-xs'
+                                            : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+                                            }`}
                                     >
                                         <Package className="w-3.5 h-3.5" />
                                         <span>{cat.name}</span>
-                                        <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                                            selectedCategoryId === cat.id ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-500'
-                                        }`}>
+                                        <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${selectedCategoryId === cat.id ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-500'
+                                            }`}>
                                             {countInCat}
                                         </span>
                                     </button>
                                 );
                             })}
+                            <button
+                                type="button"
+                                onClick={() => setIsAddCategoryModalOpen(true)}
+                                className="px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer flex items-center gap-1 bg-white border border-dashed border-slate-300 text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50/50"
+                                title="Create a new product category"
+                            >
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>Category</span>
+                            </button>
                         </div>
 
                         {/* Search Bar */}
@@ -472,8 +496,8 @@ export default function GroceryPos({
                             )}
                         </div>
 
-                        {/* Product Cards Grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4">
+                        {/* Product List — compact rows to leave room for the cart */}
+                        <div className="space-y-1.5">
                             {filteredItems.map((item) => {
                                 const outOfStock = item.stock_quantity <= 0;
                                 const inCartItem = cart.find((c) => c.item.id === item.id);
@@ -482,56 +506,67 @@ export default function GroceryPos({
                                     <div
                                         key={item.id}
                                         onClick={() => !outOfStock && addToCart(item)}
-                                        className={`relative bg-white border rounded-2xl p-4 text-left transition-all duration-200 flex flex-col justify-between select-none ${
-                                            outOfStock
-                                                ? 'border-slate-200 opacity-60 cursor-not-allowed bg-slate-50/60'
-                                                : inCartItem
-                                                ? 'border-blue-500 shadow-md ring-2 ring-blue-500/20 bg-blue-50/20 cursor-pointer active:scale-98'
-                                                : 'border-slate-200/90 hover:border-blue-400 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer active:scale-98'
-                                        }`}
+                                        className={`relative flex items-center gap-3 px-3 py-2 rounded-xl border text-left transition-all duration-150 select-none ${outOfStock
+                                            ? 'border-slate-200/70 opacity-55 cursor-not-allowed bg-slate-50/50'
+                                            : inCartItem
+                                                ? 'border-blue-400 bg-blue-50/60 shadow-xs cursor-pointer'
+                                                : 'border-slate-200/80 bg-white hover:border-blue-300 hover:bg-blue-50/30 cursor-pointer'
+                                            }`}
                                     >
-                                        {inCartItem && (
-                                            <span className="absolute -top-2.5 -right-2 px-2.5 py-0.5 rounded-full bg-blue-600 text-white font-black text-xs shadow-md border-2 border-white flex items-center gap-1 z-10 animate-in zoom-in-75 duration-150">
-                                                <Check className="w-3 h-3 stroke-[3]" />
-                                                <span>{inCartItem.quantity}</span>
-                                            </span>
-                                        )}
-
-                                        <div>
-                                            <div className="flex items-center justify-between gap-1 mb-2">
-                                                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md truncate max-w-[120px]">
-                                                    {item.code || 'SKU'}
-                                                </span>
-                                                <div
-                                                    className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
-                                                        outOfStock
-                                                            ? 'bg-rose-100 text-rose-700'
-                                                            : item.stock_quantity <= 10
-                                                            ? 'bg-amber-100 text-amber-800'
-                                                            : 'bg-emerald-100 text-emerald-800'
-                                                    }`}
-                                                >
-                                                    {outOfStock ? 'Out' : `${item.stock_quantity} ${item.unit}`}
-                                                </div>
-                                            </div>
-
-                                            <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-2xl bg-gradient-to-br from-blue-50 via-slate-50 to-indigo-50/40 border border-slate-100 flex items-center justify-center my-2 shadow-2xs group-hover:scale-105 transition-transform duration-200">
-                                                <Package className="w-8 h-8 sm:w-9 sm:h-9 text-blue-600/80" />
-                                            </div>
-
-                                            <h4 className="font-extrabold text-slate-900 text-sm leading-snug line-clamp-2 min-h-[2.5rem] mt-1">
-                                                {item.name}
-                                            </h4>
+                                        {/* Thumbnail */}
+                                        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50/50 border border-slate-100 flex items-center justify-center shrink-0">
+                                            <Package className="w-5 h-5 text-blue-600/70" />
                                         </div>
 
-                                        <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
-                                            <div>
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Price</span>
-                                                <div className="text-blue-600 font-black text-base sm:text-lg tracking-tight">
-                                                    {formatCurrency(item.price_minor)}
-                                                </div>
+                                        {/* Name + SKU */}
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="font-bold text-slate-900 text-sm leading-tight truncate">
+                                                {item.name}
+                                            </h4>
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                                <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">
+                                                    {item.code || 'SKU'}
+                                                </span>
+                                                <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${outOfStock
+                                                    ? 'bg-rose-100 text-rose-700'
+                                                    : item.stock_quantity <= 10
+                                                        ? 'bg-amber-100 text-amber-800'
+                                                        : 'bg-emerald-100 text-emerald-800'
+                                                    }`}>
+                                                    {outOfStock ? 'Out of stock' : `${item.stock_quantity} ${item.unit} left`}
+                                                </span>
                                             </div>
+                                        </div>
 
+                                        {/* Price */}
+                                        <div className="text-right shrink-0">
+                                            <span className="text-blue-600 font-black text-sm whitespace-nowrap">
+                                                {formatCurrency(item.price_minor)}
+                                            </span>
+                                        </div>
+
+                                        {/* In-cart qty or Add button */}
+                                        {inCartItem ? (
+                                            <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateQuantity(item.id, -1)}
+                                                    className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-sm flex items-center justify-center cursor-pointer"
+                                                >
+                                                    −
+                                                </button>
+                                                <span className="w-7 text-center font-black text-sm text-slate-900">
+                                                    {inCartItem.quantity}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateQuantity(item.id, 1)}
+                                                    className="w-7 h-7 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-black text-sm flex items-center justify-center cursor-pointer"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                        ) : (
                                             <button
                                                 type="button"
                                                 disabled={outOfStock}
@@ -539,24 +574,21 @@ export default function GroceryPos({
                                                     e.stopPropagation();
                                                     if (!outOfStock) addToCart(item);
                                                 }}
-                                                className={`px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1 ${
-                                                    outOfStock
-                                                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                                                        : inCartItem
-                                                        ? 'bg-blue-600 text-white shadow-xs'
-                                                        : 'bg-blue-50 hover:bg-blue-100 text-blue-700 cursor-pointer'
-                                                }`}
+                                                className={`px-3 py-1.5 rounded-lg font-bold text-xs transition shrink-0 flex items-center gap-1 ${outOfStock
+                                                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                                    : 'bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 cursor-pointer'
+                                                    }`}
                                             >
                                                 <Plus className="w-3.5 h-3.5" />
                                                 <span>Add</span>
                                             </button>
-                                        </div>
+                                        )}
                                     </div>
                                 );
                             })}
 
                             {filteredItems.length === 0 && (
-                                <div className="col-span-full bg-white border border-slate-200 rounded-2xl p-12 text-center text-slate-500 space-y-3">
+                                <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center text-slate-500 space-y-3">
                                     <ShoppingBag className="w-12 h-12 mx-auto text-slate-300" />
                                     <h3 className="font-bold text-slate-800 text-base">No retail products found</h3>
                                     <p className="text-xs text-slate-500 max-w-sm mx-auto">
@@ -609,11 +641,10 @@ export default function GroceryPos({
                                                     setSaleData('payment_method', 'cash');
                                                 }
                                             }}
-                                            className={`py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
-                                                orderType === 'counter'
-                                                    ? 'bg-blue-600 text-white shadow-xs'
-                                                    : 'text-slate-600 hover:text-slate-900'
-                                            }`}
+                                            className={`py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${orderType === 'counter'
+                                                ? 'bg-blue-600 text-white shadow-xs'
+                                                : 'text-slate-600 hover:text-slate-900'
+                                                }`}
                                         >
                                             Counter
                                         </button>
@@ -623,11 +654,10 @@ export default function GroceryPos({
                                                 setOrderType('room');
                                                 setSaleData('payment_method', 'room_folio');
                                             }}
-                                            className={`py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
-                                                orderType === 'room'
-                                                    ? 'bg-blue-600 text-white shadow-xs'
-                                                    : 'text-slate-600 hover:text-slate-900'
-                                            }`}
+                                            className={`py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${orderType === 'room'
+                                                ? 'bg-blue-600 text-white shadow-xs'
+                                                : 'text-slate-600 hover:text-slate-900'
+                                                }`}
                                         >
                                             Room
                                         </button>
@@ -639,11 +669,10 @@ export default function GroceryPos({
                                                     setSaleData('payment_method', 'cash');
                                                 }
                                             }}
-                                            className={`py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
-                                                orderType === 'takeaway'
-                                                    ? 'bg-blue-600 text-white shadow-xs'
-                                                    : 'text-slate-600 hover:text-slate-900'
-                                            }`}
+                                            className={`py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${orderType === 'takeaway'
+                                                ? 'bg-blue-600 text-white shadow-xs'
+                                                : 'text-slate-600 hover:text-slate-900'
+                                                }`}
                                         >
                                             Takeaway
                                         </button>
@@ -746,11 +775,10 @@ export default function GroceryPos({
                                         <button
                                             type="button"
                                             onClick={() => setSaleData('payment_method', 'room_folio')}
-                                            className={`p-3 rounded-xl border flex items-center gap-2 text-xs font-bold transition cursor-pointer ${
-                                                saleData.payment_method === 'room_folio'
-                                                    ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-xs'
-                                                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                                            }`}
+                                            className={`p-3 rounded-xl border flex items-center gap-2 text-xs font-bold transition cursor-pointer ${saleData.payment_method === 'room_folio'
+                                                ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-xs'
+                                                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                                }`}
                                         >
                                             <Bed className="w-4 h-4 text-blue-600" />
                                             <span>Room Folio</span>
@@ -759,11 +787,10 @@ export default function GroceryPos({
                                         <button
                                             type="button"
                                             onClick={() => setSaleData('payment_method', 'cash')}
-                                            className={`p-3 rounded-xl border flex items-center gap-2 text-xs font-bold transition cursor-pointer ${
-                                                saleData.payment_method === 'cash'
-                                                    ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-xs'
-                                                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                                            }`}
+                                            className={`p-3 rounded-xl border flex items-center gap-2 text-xs font-bold transition cursor-pointer ${saleData.payment_method === 'cash'
+                                                ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-xs'
+                                                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                                }`}
                                         >
                                             <DollarSign className="w-4 h-4 text-emerald-600" />
                                             <span>Cash</span>
@@ -772,11 +799,10 @@ export default function GroceryPos({
                                         <button
                                             type="button"
                                             onClick={() => setSaleData('payment_method', 'mpesa')}
-                                            className={`p-3 rounded-xl border flex items-center gap-2 text-xs font-bold transition cursor-pointer ${
-                                                saleData.payment_method === 'mpesa'
-                                                    ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-xs'
-                                                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                                            }`}
+                                            className={`p-3 rounded-xl border flex items-center gap-2 text-xs font-bold transition cursor-pointer ${saleData.payment_method === 'mpesa'
+                                                ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-xs'
+                                                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                                }`}
                                         >
                                             <Smartphone className="w-4 h-4 text-emerald-600" />
                                             <span>M-Pesa</span>
@@ -785,11 +811,10 @@ export default function GroceryPos({
                                         <button
                                             type="button"
                                             onClick={() => setSaleData('payment_method', 'card')}
-                                            className={`p-3 rounded-xl border flex items-center gap-2 text-xs font-bold transition cursor-pointer ${
-                                                saleData.payment_method === 'card'
-                                                    ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-xs'
-                                                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                                            }`}
+                                            className={`p-3 rounded-xl border flex items-center gap-2 text-xs font-bold transition cursor-pointer ${saleData.payment_method === 'card'
+                                                ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-xs'
+                                                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                                }`}
                                         >
                                             <CreditCard className="w-4 h-4 text-indigo-600" />
                                             <span>Card</span>
@@ -833,6 +858,67 @@ export default function GroceryPos({
             </div>
 
             {/* Quick Add SKU Modal */}
+            {/* MODAL: ADD PRODUCT CATEGORY */}
+            {isAddCategoryModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+                    <div className="bg-white rounded-3xl max-w-sm w-full shadow-2xl border border-slate-200 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                                    <Tag className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-extrabold text-slate-900">New Product Category</h3>
+                                    <p className="text-xs text-slate-500">Group products for faster POS filtering</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsAddCategoryModalOpen(false)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleQuickAddCategory} className="p-6 space-y-4 text-xs">
+                            <div>
+                                <label className="block font-bold text-slate-700 mb-1">Category Name *</label>
+                                <input
+                                    type="text"
+                                    required
+                                    autoFocus
+                                    value={categoryForm.data.name}
+                                    onChange={(e) => categoryForm.setData('name', e.target.value)}
+                                    placeholder="e.g. Fresh Produce, Dairy, Bakery"
+                                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                                />
+                                {categoryForm.errors.name && (
+                                    <p className="mt-1 text-rose-600 font-semibold">{categoryForm.errors.name}</p>
+                                )}
+                            </div>
+                            <div className="pt-2 flex items-center justify-end gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAddCategoryModalOpen(false)}
+                                    className="px-4 py-2 border border-slate-200 rounded-xl font-bold text-slate-600 cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={categoryForm.processing}
+                                    className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-60"
+                                >
+                                    <Check className="w-3.5 h-3.5" />
+                                    <span>{categoryForm.processing ? 'Saving...' : 'Create Category'}</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             {isAddProductModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
                     <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col">

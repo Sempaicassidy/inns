@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Middleware\EnsureModuleAccess;
 use App\Models\BusinessDate;
 use App\Models\Expense;
 use App\Models\Folio;
@@ -41,6 +42,33 @@ class DashboardController extends Controller
 
         if ($user && in_array($user->active_role, ['accountant', 'senior_accountant', 'finance_officer'], true)) {
             return app(AccountingController::class)->index($request);
+        }
+
+        // Operational roles land on their dedicated workspace instead of the
+        // front-desk style dashboard. Only redirect when the role can actually
+        // pass the target route's module + plan gates (avoids redirect loops).
+        if ($user && $user->active_role) {
+            $dedicated = match ($user->active_role) {
+                'housekeeper', 'housekeeping_supervisor' => ['housekeeping.index', 'housekeeping', 'housekeeping'],
+                'pos_cashier', 'cashier', 'waiter', 'bartender', 'chef',
+                'restaurant_cashier', 'restaurant_staff' => ['pos.index', 'restaurant_pos', 'restaurant_pos'],
+                'grocery_cashier', 'supermarket_cashier' => ['grocery.pos', 'grocery_pos', 'grocery_pos'],
+                'storekeeper', 'procurement_manager' => ['inventory.index', 'inventory', 'inventory'],
+                'night_auditor' => ['night-audit.index', null, null],
+                'hr_manager' => ['hr.index', 'hr_payroll', 'hr_payroll'],
+                default => null,
+            };
+
+            if ($dedicated !== null) {
+                [$dedicatedRoute, $moduleKey, $featureKey] = $dedicated;
+                $tenant = $user->tenant;
+                $featureOk = $featureKey === null || ! $tenant || $tenant->hasFeature($featureKey);
+                $moduleOk = $moduleKey === null || EnsureModuleAccess::roleCanAccessModule($moduleKey, $user->active_role);
+
+                if ($featureOk && $moduleOk) {
+                    return redirect()->route($dedicatedRoute);
+                }
+            }
         }
 
         $property = $user->property ?? Property::first();

@@ -4,6 +4,7 @@ import { HousekeepingTask, PageProps, RatePlan, Room, RoomType, User } from '@/t
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     AlertCircle,
+    AlertTriangle,
     BedDouble,
     Calendar,
     Check,
@@ -363,6 +364,7 @@ export default function HousekeepingIndex({
         post: postRoom,
         processing: addingRoom,
         reset: resetRoomForm,
+        errors: roomErrors,
     } = useForm({
         room_number: '',
         room_type_id: roomTypes[0]?.id || '',
@@ -1262,8 +1264,18 @@ export default function HousekeepingIndex({
                                         value={roomFormData.room_number}
                                         onChange={(e) => setRoomFormData('room_number', e.target.value)}
                                         placeholder="e.g. 101, 204, Suite 1..."
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold focus:bg-white focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                                        className={`w-full rounded-xl px-3 py-2 font-bold focus:ring-1 ${
+                                            roomErrors.room_number
+                                                ? 'border-2 border-rose-500 bg-rose-50/40 text-rose-900 focus:border-rose-500 focus:ring-rose-500'
+                                                : 'bg-slate-50 border border-slate-200 text-slate-900 focus:bg-white focus:border-sky-500 focus:ring-sky-500'
+                                        }`}
                                     />
+                                    {roomErrors.room_number && (
+                                        <p className="text-rose-600 font-bold text-[11px] mt-1.5 flex items-center gap-1">
+                                            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                                            <span>{roomErrors.room_number}</span>
+                                        </p>
+                                    )}
                                 </div>
 
                                 {/* Room Type */}
@@ -1281,7 +1293,11 @@ export default function HousekeepingIndex({
                                     <select
                                         value={roomFormData.room_type_id}
                                         onChange={(e) => setRoomFormData('room_type_id', e.target.value)}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-medium focus:bg-white focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                                        className={`w-full rounded-xl px-3 py-2 font-medium focus:ring-1 ${
+                                            roomErrors.room_type_id
+                                                ? 'border-2 border-rose-500 bg-rose-50/40 text-rose-900 focus:border-rose-500 focus:ring-rose-500'
+                                                : 'bg-slate-50 border border-slate-200 text-slate-900 focus:bg-white focus:border-sky-500 focus:ring-sky-500'
+                                        }`}
                                     >
                                         {localRoomTypes.length === 0 ? (
                                             <option value="">No room types found - Click &apos;+ Add New Type&apos;</option>
@@ -1293,6 +1309,12 @@ export default function HousekeepingIndex({
                                             ))
                                         )}
                                     </select>
+                                    {roomErrors.room_type_id && (
+                                        <p className="text-rose-600 font-bold text-[11px] mt-1.5 flex items-center gap-1">
+                                            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                                            <span>{roomErrors.room_type_id}</span>
+                                        </p>
+                                    )}
                                 </div>
 
                                 {/* Floor */}

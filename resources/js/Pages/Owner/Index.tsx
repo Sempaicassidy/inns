@@ -385,31 +385,31 @@ export default function OwnerPortalIndex({
                             </div>
 
                             {/* Action Toolbar */}
-                            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                                 <Link
                                     href={route('dashboard')}
-                                    className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 border border-slate-200 font-bold text-xs transition flex items-center gap-1.5 shadow-2xs shrink-0"
+                                    className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 border border-slate-200 font-bold text-xs transition flex items-center gap-1.5 shadow-2xs shrink-0"
                                     title="Switch to General Manager Operations View"
                                 >
-                                    <Building2 className="w-4 h-4 text-slate-500" />
-                                    <span>Manager View</span>
+                                    <Building2 className="w-3.5 h-3.5 text-slate-500" />
+                                    <span>Manager</span>
                                 </Link>
 
                                 <button
                                     type="button"
                                     onClick={() => setShowDrawingModal(true)}
-                                    className="px-3 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 font-bold text-xs transition flex items-center gap-1.5 shadow-2xs cursor-pointer shrink-0"
+                                    className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 font-bold text-xs transition flex items-center gap-1.5 shadow-2xs cursor-pointer shrink-0"
                                 >
-                                    <Coins className="w-4 h-4 text-emerald-600" />
-                                    <span>Dividend / Capital</span>
+                                    <Coins className="w-3.5 h-3.5 text-emerald-600" />
+                                    <span>Equity / Capital</span>
                                 </button>
 
                                 <button
                                     type="button"
                                     onClick={() => setShowDirectiveModal(true)}
-                                    className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-[#D4AF37] hover:from-amber-600 hover:to-amber-500 text-slate-950 font-black text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer shrink-0"
+                                    className="px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-amber-500 to-[#D4AF37] hover:from-amber-600 hover:to-amber-500 text-slate-950 font-black text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer shrink-0"
                                 >
-                                    <Megaphone className="w-4 h-4 text-slate-950" />
+                                    <Megaphone className="w-3.5 h-3.5 text-slate-950" />
                                     <span>Issue Directive</span>
                                 </button>
                             </div>
@@ -417,24 +417,24 @@ export default function OwnerPortalIndex({
 
                         {/* Executive Navigation Tabs (Clean, Modern, Zero Horizontal Scrollbar) */}
                         <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 border-t border-slate-100">
-                            <nav className="flex items-center gap-1.5 sm:gap-2 flex-wrap" aria-label="Executive Navigation">
+                            <nav className="flex items-center gap-1 sm:gap-2 flex-wrap" aria-label="Executive Navigation">
                                 {[
                                     { id: 'overview', label: 'Overview', icon: Activity },
-                                    { id: 'branches', label: 'Branch Portfolio', icon: Building2 },
+                                    { id: 'branches', label: 'Branches', icon: Building2 },
                                     {
                                         id: 'approvals',
-                                        label: 'Expenditure Approvals',
+                                        label: 'Approvals',
                                         icon: CheckSquare,
                                         count: metrics.pending_approvals_count,
                                     },
                                     {
                                         id: 'directives',
-                                        label: 'Owner Directives',
+                                        label: 'Directives',
                                         icon: Send,
                                         count: metrics.active_directives_count,
                                     },
-                                    { id: 'financials', label: 'Profit & Equity', icon: DollarSign },
-                                    { id: 'audit', label: 'Audit & Loss Prevention', icon: ShieldAlert },
+                                    { id: 'financials', label: 'Financials', icon: DollarSign },
+                                    { id: 'audit', label: 'Audit & Risk', icon: ShieldAlert },
                                 ].map(tabItem => {
                                     const Icon = tabItem.icon;
                                     const isActive = currentTab === tabItem.id;
@@ -598,88 +598,200 @@ export default function OwnerPortalIndex({
                                 </div>
                             </section>
 
-                            {/* Branch Performance Overview Grid */}
-                            <section className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h3 className="text-base font-black text-slate-950 flex items-center gap-2">
-                                            <Building2 className="w-4 h-4 text-[#D4AF37]" />
-                                            <span>Branch Network Performance</span>
-                                        </h3>
-                                        <p className="text-xs text-slate-500">Live operational and revenue status across active properties</p>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setCurrentTab('branches')}
-                                        className="text-xs font-bold text-[#D4AF37] hover:text-amber-600 transition flex items-center gap-1 cursor-pointer"
-                                    >
-                                        <span>View Full Portfolio ({multiBranchData.length})</span>
-                                        <ChevronRight className="w-4 h-4" />
-                                    </button>
-                                </div>
+                            {/* ─── EXECUTIVE BUSINESS ANALYTICS & REVENUE TRAJECTORY ─── */}
+                            {analytics && (
+                                <section className="space-y-6">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <BarChart3 className="w-5 h-5 text-[#D4AF37]" />
+                                                <h3 className="text-base sm:text-lg font-black text-slate-950">
+                                                    Executive Business Intelligence & Revenue Pacing
+                                                </h3>
+                                            </div>
+                                            <p className="text-xs text-slate-500 mt-0.5">
+                                                Financial trajectory, departmental yield, and cycle comparison ({analytics.range?.start || 'Current'} → {analytics.range?.end || 'Now'})
+                                            </p>
+                                        </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                                    {multiBranchData.map(branch => (
-                                        <div
-                                            key={branch.id}
-                                            className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs hover:border-[#D4AF37] transition flex flex-col justify-between"
-                                        >
+                                        {/* Period Selector Chips */}
+                                        <div className="flex items-center gap-1 bg-white border border-slate-200/80 rounded-2xl p-1 shadow-2xs self-start sm:self-auto">
+                                            {[
+                                                { id: 'today', label: 'Today' },
+                                                { id: '7d', label: '7D' },
+                                                { id: '30d', label: '30D' },
+                                                { id: 'month', label: 'This Month' },
+                                                { id: 'year', label: 'This Year' },
+                                            ].map((p) => (
+                                                <button
+                                                    key={p.id}
+                                                    type="button"
+                                                    onClick={() => router.get(route('owner.index'), { period: p.id, tab: 'overview' }, { preserveScroll: true })}
+                                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${period === p.id
+                                                        ? 'bg-slate-950 text-[#D4AF37] font-extrabold shadow-2xs'
+                                                        : 'text-slate-600 hover:bg-slate-100'
+                                                        }`}
+                                                >
+                                                    {p.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Analytics Grid: 2 Columns */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                        {/* Left 2 Cols: Revenue Trajectory Bar Chart */}
+                                        <div className="lg:col-span-2 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
                                             <div>
-                                                <div className="flex items-start justify-between gap-2">
+                                                <div className="flex items-center justify-between mb-4">
                                                     <div>
-                                                        <h4 className="font-black text-slate-950 text-base">{branch.name}</h4>
-                                                        <p className="text-xs text-slate-500">{branch.city} · Code: {branch.code || 'N/A'}</p>
+                                                        <h4 className="text-sm font-black text-slate-950 flex items-center gap-2">
+                                                            <Activity className="w-4 h-4 text-emerald-600" />
+                                                            <span>Revenue Trajectory & Daily Pacing</span>
+                                                        </h4>
+                                                        <p className="text-xs text-slate-400 mt-0.5">Cash flow pace across accommodation & POS outlets</p>
                                                     </div>
-                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${branch.is_active ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800'}`}>
-                                                        {branch.is_active ? 'Active' : 'Inactive'}
+                                                    <span className="text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">
+                                                        Total: {formatTzs(analytics.comparison?.revenue_minor ?? metrics.group_month_revenue_minor)}
                                                     </span>
                                                 </div>
 
-                                                <div className="grid grid-cols-2 gap-3 mt-4 pt-3 border-t border-slate-100 text-xs">
-                                                    <div>
-                                                        <span className="text-[10px] uppercase font-bold text-slate-400 block">Month Revenue</span>
-                                                        <span className="font-extrabold text-slate-900 text-sm">
-                                                            {formatTzs(branch.month_revenue_minor)}
-                                                        </span>
+                                                {(!analytics.revenue_trend || analytics.revenue_trend.length === 0) ? (
+                                                    <div className="py-16 text-center text-slate-400 text-xs font-medium">
+                                                        <BarChart3 className="w-10 h-10 mx-auto mb-2 text-slate-300 opacity-60" />
+                                                        <p>No transaction flow recorded in this timeframe.</p>
                                                     </div>
-                                                    <div>
-                                                        <span className="text-[10px] uppercase font-bold text-slate-400 block">Occupancy</span>
-                                                        <span className="font-extrabold text-slate-900 text-sm">
-                                                            {branch.occupancy_rate}% ({branch.occupied_rooms}/{branch.total_rooms})
-                                                        </span>
+                                                ) : (
+                                                    <div className="flex items-end gap-2 h-44 pt-6 pb-2">
+                                                        {analytics.revenue_trend.map((point: any, idx: number) => {
+                                                            const max = Math.max(...analytics.revenue_trend.map((p: any) => p.total_minor), 1);
+                                                            const h = Math.max(8, Math.round((point.total_minor / max) * 100));
+                                                            return (
+                                                                <div
+                                                                    key={idx}
+                                                                    className="flex-1 flex flex-col items-center gap-1.5 min-w-0 group relative"
+                                                                >
+                                                                    {/* Tooltip on hover */}
+                                                                    <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition pointer-events-none bg-slate-950 text-white text-[10px] font-bold py-1 px-2 rounded-lg shadow-lg whitespace-nowrap z-20">
+                                                                        {point.label}: {formatTzs(point.total_minor)}
+                                                                    </div>
+                                                                    <div className="w-full flex flex-col justify-end h-32">
+                                                                        <div
+                                                                            className="w-full bg-gradient-to-t from-slate-950 via-slate-800 to-[#D4AF37] rounded-t-lg transition-all duration-300 group-hover:from-amber-600 group-hover:to-amber-400"
+                                                                            style={{ height: `${h}%` }}
+                                                                        />
+                                                                    </div>
+                                                                    <span className="text-[10px] font-bold text-slate-400 truncate w-full text-center">
+                                                                        {point.label}
+                                                                    </span>
+                                                                </div>
+                                                            );
+                                                        })}
                                                     </div>
-                                                </div>
-
-                                                {/* Progress Bar */}
-                                                <div className="mt-3">
-                                                    <div className="flex justify-between text-[11px] font-bold text-slate-500 mb-1">
-                                                        <span>Target: {branch.target_progress_percent}%</span>
-                                                        <span>{branch.monthly_target_revenue_minor > 0 ? formatTzs(branch.monthly_target_revenue_minor) : 'Unset'}</span>
-                                                    </div>
-                                                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                                                        <div
-                                                            className={`h-2 rounded-full ${branch.target_progress_percent >= 100 ? 'bg-emerald-500' : branch.target_progress_percent >= 60 ? 'bg-[#D4AF37]' : 'bg-rose-500'}`}
-                                                            style={{ width: `${Math.min(100, branch.target_progress_percent)}%` }}
-                                                        />
-                                                    </div>
-                                                </div>
+                                                )}
                                             </div>
 
-                                            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                                                <span className="text-slate-500">GM: <strong className="text-slate-800">{branch.general_manager?.name || 'Unassigned'}</strong></span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setCurrentTab('branches')}
-                                                    className="font-bold text-slate-900 hover:text-[#D4AF37] transition flex items-center gap-1 cursor-pointer"
-                                                >
-                                                    <span>Details</span>
-                                                    <ChevronRight className="w-3.5 h-3.5" />
-                                                </button>
+                                            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                                                <div className="flex items-center gap-4">
+                                                    <span className="flex items-center gap-1.5">
+                                                        <span className="w-2.5 h-2.5 rounded-full bg-[#D4AF37]" />
+                                                        Total Revenue
+                                                    </span>
+                                                    <span className="flex items-center gap-1.5">
+                                                        <span className="w-2.5 h-2.5 rounded-full bg-slate-800" />
+                                                        Base Flow
+                                                    </span>
+                                                </div>
+                                                <span className="font-bold text-slate-700">Period: {period.toUpperCase()}</span>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            </section>
+
+                                        {/* Right 1 Col: Department Revenue Contribution */}
+                                        <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
+                                            <div>
+                                                <h4 className="text-sm font-black text-slate-950 flex items-center gap-2 mb-1">
+                                                    <DollarSign className="w-4 h-4 text-[#D4AF37]" />
+                                                    <span>Departmental Yield</span>
+                                                </h4>
+                                                <p className="text-xs text-slate-400 mb-4">Revenue breakdown by operating profit centers</p>
+
+                                                <div className="space-y-4">
+                                                    {/* Rooms */}
+                                                    <div>
+                                                        <div className="flex items-center justify-between text-xs mb-1">
+                                                            <span className="font-extrabold text-slate-800 flex items-center gap-1.5">
+                                                                <Bed className="w-3.5 h-3.5 text-blue-600" />
+                                                                <span>Rooms & Lodging</span>
+                                                            </span>
+                                                            <span className="font-black text-slate-900">
+                                                                {formatTzs(Math.max(0, (analytics.comparison?.revenue_minor ?? 0) - (analytics.comparison?.pos_revenue_minor ?? 0)))}
+                                                            </span>
+                                                        </div>
+                                                        <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                                            <div
+                                                                className="h-2 rounded-full bg-blue-600"
+                                                                style={{
+                                                                    width: `${analytics.comparison?.revenue_minor > 0
+                                                                        ? Math.round((Math.max(0, analytics.comparison.revenue_minor - (analytics.comparison.pos_revenue_minor ?? 0)) / analytics.comparison.revenue_minor) * 100)
+                                                                        : 100}%`
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    {/* POS & Dining / Bar */}
+                                                    <div>
+                                                        <div className="flex items-center justify-between text-xs mb-1">
+                                                            <span className="font-extrabold text-slate-800 flex items-center gap-1.5">
+                                                                <UtensilsCrossed className="w-3.5 h-3.5 text-amber-600" />
+                                                                <span>Food, Dining & Bar (POS)</span>
+                                                            </span>
+                                                            <span className="font-black text-slate-900">
+                                                                {formatTzs(analytics.comparison?.pos_revenue_minor ?? 0)}
+                                                            </span>
+                                                        </div>
+                                                        <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                                            <div
+                                                                className="h-2 rounded-full bg-amber-500"
+                                                                style={{
+                                                                    width: `${analytics.comparison?.revenue_minor > 0
+                                                                        ? Math.round(((analytics.comparison.pos_revenue_minor ?? 0) / analytics.comparison.revenue_minor) * 100)
+                                                                        : 0}%`
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Other Outlets / Departments */}
+                                                    {(analytics.departments ?? []).slice(0, 3).map((dept: any, i: number) => (
+                                                        <div key={i}>
+                                                            <div className="flex items-center justify-between text-xs mb-1">
+                                                                <span className="font-bold text-slate-700 capitalize">{dept.name} Outlet</span>
+                                                                <span className="font-black text-slate-900">{formatTzs(dept.revenue_minor)}</span>
+                                                            </div>
+                                                            <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                                                <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${Math.min(100, Math.round((dept.revenue_minor / Math.max(analytics.comparison?.revenue_minor ?? 1, 1)) * 100))}%` }} />
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Key Efficiency Ratios */}
+                                            <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 gap-3 text-xs">
+                                                <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-200/60">
+                                                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Net Conversion</span>
+                                                    <span className="font-black text-amber-800 text-sm">{metrics.group_gop_margin_percent}% GOP</span>
+                                                </div>
+                                                <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-200/60">
+                                                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Occupancy Yield</span>
+                                                    <span className="font-black text-slate-900 text-sm">{metrics.group_occupancy_rate}% Booked</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+                            )}
 
                             {/* Highlights Grid: Directives & Audit Watchlist */}
                             <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">

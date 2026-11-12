@@ -9,6 +9,7 @@ import {
     AlertTriangle,
     ArrowDownRight,
     ArrowUpRight,
+    Banknote,
     Bed,
     BedDouble,
     Calendar,
@@ -18,6 +19,8 @@ import {
     CheckSquare,
     ChevronRight,
     Clock,
+    Coins,
+    CreditCard,
     Crown,
     DollarSign,
     DoorClosed,
@@ -26,6 +29,7 @@ import {
     FileText,
     Filter,
     Info,
+    Landmark,
     LogOut,
     Luggage,
     Megaphone,
@@ -36,11 +40,13 @@ import {
     RefreshCw,
     Search,
     Send,
+    Smartphone,
     Sparkles,
     User,
     UserCheck,
     Users,
     Utensils,
+    Wallet,
     Wrench,
     X,
 } from 'lucide-react';
@@ -229,6 +235,110 @@ export default function Dashboard({
             room_folio: 'Room Folio',
         };
         return names[method] ?? method.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    };
+
+    const getPaymentMethodDetails = (method: string) => {
+        switch (method.toLowerCase()) {
+            case 'cash':
+                return {
+                    name: 'Cash (Taslimu)',
+                    category: 'Cash On Hand',
+                    icon: Banknote,
+                    badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                    dotClass: 'bg-emerald-500',
+                    barClass: 'bg-emerald-500',
+                    accentColor: 'text-emerald-700',
+                    borderHover: 'hover:border-emerald-300',
+                };
+            case 'mpesa':
+                return {
+                    name: 'M-Pesa (Vodacom)',
+                    category: 'Mobile Money',
+                    icon: Smartphone,
+                    badgeClass: 'bg-red-50 text-red-700 border-red-200',
+                    dotClass: 'bg-red-500',
+                    barClass: 'bg-red-500',
+                    accentColor: 'text-red-700',
+                    borderHover: 'hover:border-red-300',
+                };
+            case 'tigopesa':
+                return {
+                    name: 'Tigo Pesa (Mixx)',
+                    category: 'Mobile Money',
+                    icon: Smartphone,
+                    badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
+                    dotClass: 'bg-blue-500',
+                    barClass: 'bg-blue-500',
+                    accentColor: 'text-blue-700',
+                    borderHover: 'hover:border-blue-300',
+                };
+            case 'airtelmoney':
+                return {
+                    name: 'Airtel Money',
+                    category: 'Mobile Money',
+                    icon: Smartphone,
+                    badgeClass: 'bg-rose-50 text-rose-700 border-rose-200',
+                    dotClass: 'bg-rose-500',
+                    barClass: 'bg-rose-500',
+                    accentColor: 'text-rose-700',
+                    borderHover: 'hover:border-rose-300',
+                };
+            case 'halopesa':
+                return {
+                    name: 'Halo Pesa',
+                    category: 'Mobile Money',
+                    icon: Smartphone,
+                    badgeClass: 'bg-orange-50 text-orange-700 border-orange-200',
+                    dotClass: 'bg-orange-500',
+                    barClass: 'bg-orange-500',
+                    accentColor: 'text-orange-700',
+                    borderHover: 'hover:border-orange-300',
+                };
+            case 'bank_transfer':
+                return {
+                    name: 'Bank Transfer (Benki)',
+                    category: 'Direct Deposit',
+                    icon: Landmark,
+                    badgeClass: 'bg-purple-50 text-purple-700 border-purple-200',
+                    dotClass: 'bg-purple-500',
+                    barClass: 'bg-purple-500',
+                    accentColor: 'text-purple-700',
+                    borderHover: 'hover:border-purple-300',
+                };
+            case 'card':
+                return {
+                    name: 'Credit / Debit Card',
+                    category: 'POS Terminal',
+                    icon: CreditCard,
+                    badgeClass: 'bg-sky-50 text-sky-700 border-sky-200',
+                    dotClass: 'bg-sky-500',
+                    barClass: 'bg-sky-500',
+                    accentColor: 'text-sky-700',
+                    borderHover: 'hover:border-sky-300',
+                };
+            case 'room_folio':
+                return {
+                    name: 'Room Folio',
+                    category: 'Room Charge',
+                    icon: Bed,
+                    badgeClass: 'bg-amber-50 text-amber-700 border-amber-200',
+                    dotClass: 'bg-amber-500',
+                    barClass: 'bg-amber-500',
+                    accentColor: 'text-amber-700',
+                    borderHover: 'hover:border-amber-300',
+                };
+            default:
+                return {
+                    name: formatPaymentMethod(method),
+                    category: 'Payment Channel',
+                    icon: Wallet,
+                    badgeClass: 'bg-slate-50 text-slate-700 border-slate-200',
+                    dotClass: 'bg-slate-500',
+                    barClass: 'bg-slate-500',
+                    accentColor: 'text-slate-800',
+                    borderHover: 'hover:border-slate-300',
+                };
+        }
     };
     const safeArrivals = arrivals || [];
     const safeDepartures = departures || [];
@@ -852,6 +962,110 @@ export default function Dashboard({
                         </Link>
                     </div>
 
+                    {/* 2.5 Collections by Payment Mode (Manager Live Cashier & Bank Monitoring) */}
+                    <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-2xs space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+                                        <Wallet className="w-4 h-4" />
+                                    </div>
+                                    <h2 className="text-base sm:text-lg font-extrabold text-slate-900">Collections by Payment Mode</h2>
+                                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        {paymentsByMethod.reduce((acc, p) => acc + (p.count || 0), 0)} Transactions
+                                    </span>
+                                </div>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                    Live cash-on-hand, Mobile Money (M-Pesa, Tigo, Airtel) and bank deposits for {selectedRange === 'today' ? 'Today' : selectedRange === '7days' ? 'Last 7 Days' : 'Last 30 Days'}
+                                </p>
+                            </div>
+
+                            <div className="flex items-center gap-2.5 bg-slate-50 px-3.5 py-1.5 rounded-xl border border-slate-200 text-xs self-start sm:self-auto">
+                                <span className="text-slate-500 font-semibold">Total Realized Tender:</span>
+                                <span className="font-extrabold text-emerald-700 text-sm sm:text-base">
+                                    {formatCurrency(paymentsByMethod.reduce((acc, p) => acc + (p.total_minor || 0), 0))}
+                                </span>
+                            </div>
+                        </div>
+
+                        {paymentsByMethod.length === 0 ? (
+                            <div className="py-6 text-center text-slate-400 text-xs">
+                                <Coins className="w-8 h-8 mx-auto mb-1.5 text-slate-300 opacity-60" />
+                                <p>No collections recorded in the selected period ({selectedRange}).</p>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Proportion Share Bar */}
+                                {(() => {
+                                    const total = paymentsByMethod.reduce((acc, p) => acc + (p.total_minor || 0), 0);
+                                    if (total <= 0) return null;
+                                    return (
+                                        <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
+                                            {paymentsByMethod.map((p) => {
+                                                const pct = (p.total_minor / total) * 100;
+                                                if (pct <= 0) return null;
+                                                const details = getPaymentMethodDetails(p.method);
+                                                return (
+                                                    <div
+                                                        key={p.method}
+                                                        className={`${details.barClass} h-full transition-all duration-500 hover:opacity-85`}
+                                                        style={{ width: `${pct}%` }}
+                                                        title={`${details.name}: ${formatCurrency(p.total_minor)} (${Math.round(pct)}%)`}
+                                                    />
+                                                );
+                                            })}
+                                        </div>
+                                    );
+                                })()}
+
+                                {/* Grid of Payment Channels */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                    {paymentsByMethod.map((p) => {
+                                        const details = getPaymentMethodDetails(p.method);
+                                        const total = paymentsByMethod.reduce((acc, item) => acc + (item.total_minor || 0), 0);
+                                        const sharePct = total > 0 ? Math.round((p.total_minor / total) * 100) : 0;
+                                        const IconComp = details.icon;
+
+                                        return (
+                                            <div
+                                                key={p.method}
+                                                className={`p-3.5 rounded-xl bg-slate-50/80 border border-slate-200/80 hover:bg-white transition hover:shadow-xs ${details.borderHover} flex flex-col justify-between`}
+                                            >
+                                                <div className="flex items-start justify-between gap-1.5">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${details.badgeClass}`}>
+                                                            <IconComp className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <span className="text-xs font-bold text-slate-900 block truncate" title={details.name}>
+                                                                {details.name}
+                                                            </span>
+                                                            <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">
+                                                                {details.category}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700">
+                                                        {sharePct}%
+                                                    </span>
+                                                </div>
+
+                                                <div className="mt-3 pt-2 border-t border-slate-100 flex items-baseline justify-between">
+                                                    <span className="text-xs sm:text-sm font-black text-slate-900">
+                                                        {formatCurrency(p.total_minor)}
+                                                    </span>
+                                                    <span className="text-[10px] text-slate-400 font-bold">
+                                                        {p.count} txn{p.count === 1 ? '' : 's'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </>
+                        )}
+                    </div>
+
                     {/* 3. Room Status Overview Card */}
                     <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-2xs space-y-4">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-100 pb-3">
@@ -1049,24 +1263,33 @@ export default function Dashboard({
                                 {paymentsByMethod.length === 0 ? (
                                     <p className="text-[11px] text-slate-400">No collections recorded in the selected period.</p>
                                 ) : (
-                                    paymentsByMethod.map((p) => (
-                                        <div
-                                            key={p.method}
-                                            className="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-50/80 border border-slate-100"
-                                        >
-                                            <div className="min-w-0">
-                                                <span className="text-[11px] font-bold text-slate-800 block truncate">
-                                                    {formatPaymentMethod(p.method)}
-                                                </span>
-                                                <span className="text-[10px] text-slate-400 font-semibold">
-                                                    {p.count} transaction{p.count === 1 ? '' : 's'}
+                                    paymentsByMethod.map((p) => {
+                                        const details = getPaymentMethodDetails(p.method);
+                                        const IconComp = details.icon;
+                                        return (
+                                            <div
+                                                key={p.method}
+                                                className="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-50/80 border border-slate-100"
+                                            >
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border ${details.badgeClass}`}>
+                                                        <IconComp className="w-3.5 h-3.5" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <span className="text-[11px] font-bold text-slate-800 block truncate">
+                                                            {details.name}
+                                                        </span>
+                                                        <span className="text-[10px] text-slate-400 font-semibold">
+                                                            {p.count} transaction{p.count === 1 ? '' : 's'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <span className="text-xs sm:text-sm font-extrabold text-slate-900 whitespace-nowrap">
+                                                    {formatCurrency(p.total_minor)}
                                                 </span>
                                             </div>
-                                            <span className="text-xs sm:text-sm font-extrabold text-slate-900 whitespace-nowrap">
-                                                {formatCurrency(p.total_minor)}
-                                            </span>
-                                        </div>
-                                    ))
+                                        );
+                                    })
                                 )}
                             </div>
                         </div>

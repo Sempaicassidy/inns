@@ -9,6 +9,7 @@ import {
     ArrowRightLeft,
     ArrowUpRight,
     BarChart3,
+    Banknote,
     Bed,
     Building2,
     Calendar,
@@ -25,6 +26,7 @@ import {
     FileSpreadsheet,
     FileText,
     Filter,
+    Landmark,
     Layers,
     Megaphone,
     MessageSquare,
@@ -36,6 +38,7 @@ import {
     Send,
     ShieldAlert,
     ShieldCheck,
+    Smartphone,
     Sparkles,
     Target,
     Trash2,
@@ -294,6 +297,110 @@ export default function OwnerPortalIndex({
             room_folio: 'Room Folio',
         };
         return names[method] ?? method.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    };
+
+    const getPaymentMethodDetails = (method: string) => {
+        switch (method.toLowerCase()) {
+            case 'cash':
+                return {
+                    name: 'Cash (Taslimu)',
+                    category: 'Cash On Hand',
+                    icon: Banknote,
+                    badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                    dotClass: 'bg-emerald-500',
+                    barClass: 'bg-emerald-500',
+                    accentColor: 'text-emerald-700',
+                    borderHover: 'hover:border-emerald-300',
+                };
+            case 'mpesa':
+                return {
+                    name: 'M-Pesa (Vodacom)',
+                    category: 'Mobile Money',
+                    icon: Smartphone,
+                    badgeClass: 'bg-red-50 text-red-700 border-red-200',
+                    dotClass: 'bg-red-500',
+                    barClass: 'bg-red-500',
+                    accentColor: 'text-red-700',
+                    borderHover: 'hover:border-red-300',
+                };
+            case 'tigopesa':
+                return {
+                    name: 'Tigo Pesa (Mixx)',
+                    category: 'Mobile Money',
+                    icon: Smartphone,
+                    badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
+                    dotClass: 'bg-blue-500',
+                    barClass: 'bg-blue-500',
+                    accentColor: 'text-blue-700',
+                    borderHover: 'hover:border-blue-300',
+                };
+            case 'airtelmoney':
+                return {
+                    name: 'Airtel Money',
+                    category: 'Mobile Money',
+                    icon: Smartphone,
+                    badgeClass: 'bg-rose-50 text-rose-700 border-rose-200',
+                    dotClass: 'bg-rose-500',
+                    barClass: 'bg-rose-500',
+                    accentColor: 'text-rose-700',
+                    borderHover: 'hover:border-rose-300',
+                };
+            case 'halopesa':
+                return {
+                    name: 'Halo Pesa',
+                    category: 'Mobile Money',
+                    icon: Smartphone,
+                    badgeClass: 'bg-orange-50 text-orange-700 border-orange-200',
+                    dotClass: 'bg-orange-500',
+                    barClass: 'bg-orange-500',
+                    accentColor: 'text-orange-700',
+                    borderHover: 'hover:border-orange-300',
+                };
+            case 'bank_transfer':
+                return {
+                    name: 'Bank Transfer (Benki)',
+                    category: 'Direct Deposit',
+                    icon: Landmark,
+                    badgeClass: 'bg-purple-50 text-purple-700 border-purple-200',
+                    dotClass: 'bg-purple-500',
+                    barClass: 'bg-purple-500',
+                    accentColor: 'text-purple-700',
+                    borderHover: 'hover:border-purple-300',
+                };
+            case 'card':
+                return {
+                    name: 'Credit / Debit Card',
+                    category: 'POS Terminal',
+                    icon: CreditCard,
+                    badgeClass: 'bg-sky-50 text-sky-700 border-sky-200',
+                    dotClass: 'bg-sky-500',
+                    barClass: 'bg-sky-500',
+                    accentColor: 'text-sky-700',
+                    borderHover: 'hover:border-sky-300',
+                };
+            case 'room_folio':
+                return {
+                    name: 'Room Folio',
+                    category: 'Room Charge',
+                    icon: Bed,
+                    badgeClass: 'bg-amber-50 text-amber-700 border-amber-200',
+                    dotClass: 'bg-amber-500',
+                    barClass: 'bg-amber-500',
+                    accentColor: 'text-amber-700',
+                    borderHover: 'hover:border-amber-300',
+                };
+            default:
+                return {
+                    name: formatPaymentMethod(method),
+                    category: 'Payment Channel',
+                    icon: Wallet,
+                    badgeClass: 'bg-slate-50 text-slate-700 border-slate-200',
+                    dotClass: 'bg-slate-500',
+                    barClass: 'bg-slate-500',
+                    accentColor: 'text-slate-800',
+                    borderHover: 'hover:border-slate-300',
+                };
+        }
     };
 
     const handleCreateDirective = (e: React.FormEvent) => {
@@ -783,6 +890,141 @@ export default function OwnerPortalIndex({
                                     </div>
                                 </section>
                             )}
+
+                            {/* ─── EXECUTIVE PAYMENT CHANNELS & COLLECTIONS BREAKDOWN ─── */}
+                            <section className="space-y-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <Wallet className="w-5 h-5 text-emerald-600" />
+                                            <h3 className="text-base sm:text-lg font-black text-slate-950">
+                                                Collections by Payment Mode & Channel
+                                            </h3>
+                                        </div>
+                                        <p className="text-xs text-slate-500 mt-0.5">
+                                            Real-time tender breakdown across Cash-on-hand, M-Pesa, Tigo Pesa, Airtel Money, and Bank Deposits
+                                        </p>
+                                    </div>
+
+                                    {/* Aggregate Total Badge */}
+                                    <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-slate-200/80 shadow-2xs self-start sm:self-auto">
+                                        <div className="text-right">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                                                Total Tender ({period.toUpperCase()})
+                                            </span>
+                                            <span className="text-sm sm:text-base font-black text-emerald-700">
+                                                {formatTzs((analytics?.payments_by_method ?? []).reduce((acc, p) => acc + (p.total_minor || 0), 0))}
+                                            </span>
+                                        </div>
+                                        <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 font-bold flex items-center justify-center">
+                                            <Coins className="w-4 h-4" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {(!analytics?.payments_by_method || analytics.payments_by_method.length === 0) ? (
+                                    <div className="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-xs text-center text-slate-400">
+                                        <Wallet className="w-10 h-10 mx-auto mb-2 text-slate-300 opacity-60" />
+                                        <p className="text-xs font-semibold">No payment collections recorded in the selected period ({period.toUpperCase()}).</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        {/* Multi-channel proportion visual bar */}
+                                        {(() => {
+                                            const totalMinor = (analytics.payments_by_method ?? []).reduce((acc, p) => acc + (p.total_minor || 0), 0);
+                                            if (totalMinor <= 0) return null;
+                                            return (
+                                                <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2">
+                                                    <div className="flex items-center justify-between text-xs">
+                                                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                                                            Channel Revenue Share
+                                                        </span>
+                                                        <span className="text-[11px] font-bold text-slate-600">
+                                                            {(analytics.payments_by_method ?? []).reduce((acc, p) => acc + (p.count || 0), 0)} Total Transactions
+                                                        </span>
+                                                    </div>
+                                                    <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
+                                                        {analytics.payments_by_method.map((p) => {
+                                                            const pct = totalMinor > 0 ? (p.total_minor / totalMinor) * 100 : 0;
+                                                            if (pct <= 0) return null;
+                                                            const details = getPaymentMethodDetails(p.method);
+                                                            return (
+                                                                <div
+                                                                    key={p.method}
+                                                                    className={`${details.barClass} h-full transition-all duration-500 hover:opacity-85`}
+                                                                    style={{ width: `${pct}%` }}
+                                                                    title={`${details.name}: ${formatTzs(p.total_minor)} (${Math.round(pct)}%)`}
+                                                                />
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+
+                                        {/* Grid of payment method cards */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                            {analytics.payments_by_method.map((p) => {
+                                                const details = getPaymentMethodDetails(p.method);
+                                                const totalMinor = (analytics.payments_by_method ?? []).reduce((acc, item) => acc + (item.total_minor || 0), 0);
+                                                const sharePct = totalMinor > 0 ? Math.round((p.total_minor / totalMinor) * 100) : 0;
+                                                const IconComponent = details.icon;
+
+                                                return (
+                                                    <div
+                                                        key={p.method}
+                                                        className={`bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs transition hover:shadow-md ${details.borderHover} flex flex-col justify-between`}
+                                                    >
+                                                        <div>
+                                                            <div className="flex items-start justify-between gap-2">
+                                                                <div className="flex items-center gap-2.5">
+                                                                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${details.badgeClass}`}>
+                                                                        <IconComponent className="w-5 h-5" />
+                                                                    </div>
+                                                                    <div className="min-w-0">
+                                                                        <h4 className="text-xs font-black text-slate-900 truncate" title={details.name}>
+                                                                            {details.name}
+                                                                        </h4>
+                                                                        <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">
+                                                                            {details.category}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+
+                                                                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 shrink-0">
+                                                                    {sharePct}%
+                                                                </span>
+                                                            </div>
+
+                                                            <div className="mt-4">
+                                                                <div className={`text-xl sm:text-2xl font-black ${details.accentColor} tracking-tight`}>
+                                                                    {formatTzs(p.total_minor)}
+                                                                </div>
+                                                                <div className="flex items-center justify-between text-xs text-slate-500 mt-1">
+                                                                    <span>Transactions:</span>
+                                                                    <span className="font-extrabold text-slate-800">
+                                                                        {p.count} txn{p.count === 1 ? '' : 's'}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Progress bar indicating share */}
+                                                        <div className="mt-4 pt-3 border-t border-slate-100">
+                                                            <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                                                <div
+                                                                    className={`h-1.5 rounded-full ${details.barClass}`}
+                                                                    style={{ width: `${Math.min(100, Math.max(4, sharePct))}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </>
+                                )}
+                            </section>
 
                             {/* Highlights Grid: Directives & Audit Watchlist */}
                             <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1575,6 +1817,42 @@ export default function OwnerPortalIndex({
                                     </div>
                                 )}
                             </div>
+
+                            {/* Collections by Payment Method in Financials tab */}
+                            {analytics.payments_by_method && analytics.payments_by_method.length > 0 && (
+                                <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                        <div>
+                                            <h3 className="text-base font-black text-slate-950 flex items-center gap-2">
+                                                <Wallet className="w-4 h-4 text-emerald-600" />
+                                                <span>Collections by Tender Channel ({period.toUpperCase()})</span>
+                                            </h3>
+                                            <p className="text-xs text-slate-400 mt-0.5">Realized cash and electronic collections in this accounting cycle</p>
+                                        </div>
+                                        <span className="text-xs font-black px-3 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 self-start sm:self-auto">
+                                            Total: {formatTzs(analytics.payments_by_method.reduce((acc, p) => acc + (p.total_minor || 0), 0))}
+                                        </span>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                        {analytics.payments_by_method.map((p) => {
+                                            const details = getPaymentMethodDetails(p.method);
+                                            const IconComponent = details.icon;
+                                            return (
+                                                <div key={p.method} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-center gap-3">
+                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${details.badgeClass}`}>
+                                                        <IconComponent className="w-5 h-5" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <span className="text-[11px] font-bold text-slate-800 block truncate">{details.name}</span>
+                                                        <span className="text-sm font-black text-slate-900 block">{formatTzs(p.total_minor)}</span>
+                                                        <span className="text-[10px] text-slate-400 font-semibold">{p.count} transaction{p.count === 1 ? '' : 's'}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
                         </section>
                     )}
                     </div>

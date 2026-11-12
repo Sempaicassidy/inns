@@ -45,19 +45,6 @@
     justify-content: space-between;
 }
 
-/* Universal scrollbar hide */
-.no-scrollbar::-webkit-scrollbar,
-.scrollbar-none::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-}
-.no-scrollbar,
-.scrollbar-none {
-    -ms-overflow-style: none !important;
-    scrollbar-width: none !important;
-}
-
 /* Bulletproof Isolated Receipt & Invoice Print Engine */
 @media print {
     /* When printing a receipt or invoice, hide ALL application UI elements */

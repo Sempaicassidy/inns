@@ -476,15 +476,9 @@ export default function OwnerPortalIndex({
                                     {(tenant?.name || 'P').charAt(0).toUpperCase()}
                                 </div>
                                 <div>
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight capitalize leading-tight">
-                                            {tenant?.name || 'Executive Holdings'}
-                                        </h1>
-                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                            Executive Suite
-                                        </span>
-                                    </div>
+                                    <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight capitalize leading-tight">
+                                        {tenant?.name || 'Executive Holdings'}
+                                    </h1>
                                     <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5">
                                         Consolidated Board Oversight, Chain of Command & Capital Performance
                                     </p>

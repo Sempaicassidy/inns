@@ -536,14 +536,8 @@ export default function AuthenticatedLayout({
                             </div>
                         </div>
 
-                        {/* Right: Offline status, Sync Indicator, Clock, SMS balance, Profile */}
+                        {/* Right: Clock, SMS balance, Profile */}
                         <div className="flex items-center space-x-2 sm:space-x-3">
-                            {/* Offline Status Badge */}
-                            <OfflineStatus className="hidden sm:inline-flex" />
-
-                            {/* Sync Indicator */}
-                            <SyncIndicator />
-
                             {/* Live Clock */}
                             <div className="hidden sm:flex items-center space-x-1.5 text-xs font-semibold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
                                 <Clock className="w-3.5 h-3.5 text-slate-400" />

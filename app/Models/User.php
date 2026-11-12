@@ -19,6 +19,16 @@ class User extends Authenticatable implements MustVerifyEmail
     use HasFactory, Notifiable, SoftDeletes;
 
     /**
+     * Role aliases that resolve to a canonical system role.
+     *
+     * @var array<string, string>
+     */
+    public const ROLE_ALIASES = [
+        'md' => 'owner',
+        'managing_director' => 'owner',
+    ];
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
@@ -132,10 +142,18 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         $sessionRole = session('active_role');
         if ($sessionRole && (in_array($sessionRole, $this->roles_list) || $this->role === 'super_admin')) {
-            return $sessionRole;
+            return self::canonicalRole($sessionRole);
         }
 
-        return $this->roles_list[0] ?? $this->role ?? 'staff';
+        return self::canonicalRole($this->roles_list[0] ?? $this->role ?? 'staff');
+    }
+
+    /**
+     * Resolve a role slug (including aliases) to its canonical system role.
+     */
+    public static function canonicalRole(string $role): string
+    {
+        return self::ROLE_ALIASES[strtolower(trim($role))] ?? $role;
     }
 
     /**
@@ -168,7 +186,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public static function getRoleDashboardRoute(string $role): string
     {
-        return match ($role) {
+        return match (self::canonicalRole($role)) {
             'super_admin' => 'saas-admin.index',
             'owner' => 'owner.index',
             'housekeeper', 'housekeeping_supervisor' => 'housekeeping.index',
@@ -191,6 +209,17 @@ class User extends Authenticatable implements MustVerifyEmail
     public static function getRoleMetadata(string $role): array
     {
         return match ($role) {
+            'md', 'managing_director' => [
+                'role' => $role,
+                'title' => 'Managing Director',
+                'title_sw' => 'Managing Director',
+                'description' => 'Executive oversight, financial governance, approvals & multi-branch management.',
+                'description_sw' => 'Executive oversight, financial governance, approvals & multi-branch management.',
+                'badge' => 'Director',
+                'color' => 'amber',
+                'route' => 'owner.index',
+                'icon' => 'Crown',
+            ],
             'owner' => [
                 'role' => 'owner',
                 'title' => 'Property Owner / Director',
@@ -335,10 +364,13 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function isOwner(): bool
     {
-        return $this->role === 'owner'
-            || $this->active_role === 'owner'
-            || (is_array($this->roles) && in_array('owner', $this->roles))
-            || in_array('owner', $this->roles_list);
+        $assignedRoles = array_map(
+            fn (string $assignedRole): string => self::canonicalRole($assignedRole),
+            $this->roles_list
+        );
+
+        return $this->active_role === 'owner'
+            || in_array('owner', $assignedRoles, true);
     }
 
     public function isManager(): bool

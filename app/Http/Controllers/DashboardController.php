@@ -135,6 +135,40 @@ class DashboardController extends Controller
             ->whereDate('created_at', '>=', $startDate)
             ->sum('total_minor');
 
+        // ─── 4b. Collections grouped by payment method ─────────────────────────
+        $paymentsByMethod = Payment::whereHas('folio', function ($q) use ($property) {
+            if ($property) {
+                $q->where('property_id', $property->id);
+            }
+        })
+            ->whereDate('created_at', '>=', $startDate)
+            ->where('status', 'confirmed')
+            ->selectRaw('payment_method, sum(amount_minor) as total_amount, count(*) as tx_count')
+            ->groupBy('payment_method')
+            ->get()
+            ->mapWithKeys(fn ($row) => [$row->payment_method ?: 'cash' => [
+                'method' => $row->payment_method ?: 'cash',
+                'total_minor' => (int) $row->total_amount,
+                'count' => (int) $row->tx_count,
+            ]])
+            ->all();
+
+        // Settled POS collections (cash / card / mpesa received at the till).
+        // 'posted_to_room' orders are excluded — they settle later via folio payments.
+        PosOrder::where('payment_status', 'paid')
+            ->whereDate('created_at', '>=', $startDate)
+            ->selectRaw('payment_method, sum(total_minor) as total_amount, count(*) as tx_count')
+            ->groupBy('payment_method')
+            ->get()
+            ->each(function ($row) use (&$paymentsByMethod) {
+                $method = $row->payment_method ?: 'cash';
+                $paymentsByMethod[$method] ??= ['method' => $method, 'total_minor' => 0, 'count' => 0];
+                $paymentsByMethod[$method]['total_minor'] += (int) $row->total_amount;
+                $paymentsByMethod[$method]['count'] += (int) $row->tx_count;
+            });
+
+        uasort($paymentsByMethod, fn ($a, $b) => $b['total_minor'] <=> $a['total_minor']);
+
         // ─── 5. Expenses ──────────────────────────────────────────────────────
         $expensesTotal = Expense::whereDate('expense_date', '>=', $startDate)
             ->sum('amount_minor');
@@ -249,6 +283,7 @@ class DashboardController extends Controller
                 'reserved_count' => $pendingCount,
                 'revenue_change_pct' => $isReceptionist ? 0 : $revenueChangePct,
             ],
+            'paymentsByMethod' => $isReceptionist ? [] : array_values($paymentsByMethod),
             'revenueTrend' => $isReceptionist ? [] : $revenueTrend,
             'arrivals' => $arrivals,
             'departures' => $departures,

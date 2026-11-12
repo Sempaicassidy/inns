@@ -16,6 +16,7 @@ import {
     ChevronRight,
     Clock,
     Coins,
+    CreditCard,
     Crown,
     DollarSign,
     Eye,
@@ -171,6 +172,7 @@ interface OwnerAnalytics {
         occupancy_rate: number;
     };
     departments: Array<{ name: string; orders: number; revenue_minor: number }>;
+    payments_by_method: Array<{ method: string; total_minor: number; count: number }>;
     staff: { total_active: number; by_role: Record<string, number> };
     alerts: Array<{ type: string; severity: 'info' | 'warning'; message: string; route: string }>;
 }
@@ -275,6 +277,21 @@ export default function OwnerPortalIndex({
         );
     };
 
+    const formatPaymentMethod = (method: string) => {
+        const names: Record<string, string> = {
+            cash: 'Cash',
+            mpesa: 'M-Pesa',
+            tigopesa: 'Tigo Pesa',
+            airtelmoney: 'Airtel Money',
+            halopesa: 'Halo Pesa',
+            card: 'Card',
+            bank_transfer: 'Bank Transfer',
+            city_ledger: 'City Ledger',
+            room_folio: 'Room Folio',
+        };
+        return names[method] ?? method.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    };
+
     const handleCreateDirective = (e: React.FormEvent) => {
         e.preventDefault();
         directiveForm.post(route('owner.directives.store'), {
@@ -339,105 +356,107 @@ export default function OwnerPortalIndex({
 
             <div className="min-h-screen bg-slate-50 text-slate-800 font-sans pb-16">
                 {/* ─── TOP EXECUTIVE BANNER ────────────────────────────────────────── */}
-                <div className="bg-white border-b border-slate-200/90 px-4 sm:px-6 lg:px-8 py-6 shadow-xs">
-                    <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                        <div className="flex items-start sm:items-center gap-3.5">
-                            <div className="w-12 h-12 rounded-2xl bg-[#D4AF37] text-white flex items-center justify-center shrink-0 shadow-md shadow-amber-500/20 ring-2 ring-[#D4AF37]/40">
-                                <Crown className="w-6 h-6 text-white" />
+                <div className="bg-white border-b border-slate-200/90 px-4 sm:px-6 lg:px-8 pt-6 pb-2 shadow-xs">
+                    <div className="max-w-7xl mx-auto flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 text-white flex items-center justify-center shrink-0 shadow-md ring-1 ring-amber-400/30">
+                                <Crown className="w-6 h-6 text-[#D4AF37]" />
                             </div>
                             <div>
                                 <div className="flex items-center gap-2.5 flex-wrap">
-                                    <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                                    <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight capitalize">
                                         {tenant?.name || 'Hotel Group & Lodges'}
                                     </h1>
-                                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-300">
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-slate-900 text-amber-300 border border-slate-700 shadow-2xs">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
                                         Executive Owner Portal
                                     </span>
                                 </div>
                                 <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
-                                    Executive Group Hospitality Management, Manager Approvals & Chain of Command
+                                    Group Executive Oversight, Chain of Command & Capital Performance
                                 </p>
                             </div>
                         </div>
 
-                        {/* Top Action Pills */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <button
-                                type="button"
-                                onClick={() => setShowDirectiveModal(true)}
-                                className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                        {/* Top Action Toolbar */}
+                        <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+                            <Link
+                                href={route('dashboard')}
+                                className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 border border-slate-200 font-bold text-xs transition flex items-center gap-2 shadow-2xs shrink-0"
+                                title="Switch to Manager Operational Dashboard"
                             >
-                                <Megaphone className="w-4 h-4" />
-                                <span>Issue Owner Directive</span>
-                            </button>
+                                <Building2 className="w-4 h-4 text-slate-500" />
+                                <span>View as Manager</span>
+                            </Link>
 
                             <button
                                 type="button"
                                 onClick={() => setShowDrawingModal(true)}
-                                className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold text-xs transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                                className="px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 font-bold text-xs transition flex items-center gap-2 shadow-2xs cursor-pointer shrink-0"
                             >
                                 <Coins className="w-4 h-4 text-emerald-600" />
                                 <span>Record Dividend / Capital</span>
                             </button>
 
-                            <Link
-                                href={route('dashboard')}
-                                className="px-3.5 py-2 rounded-xl bg-[#1E3A5F] hover:bg-[#152a45] text-white border border-[#1E3A5F] font-bold text-xs transition flex items-center gap-1.5 shadow-xs"
+                            <button
+                                type="button"
+                                onClick={() => setShowDirectiveModal(true)}
+                                className="px-4 py-2.5 rounded-xl bg-[#D4AF37] hover:bg-[#c29f2f] text-slate-950 font-black text-xs shadow-xs transition flex items-center gap-2 cursor-pointer shrink-0"
                             >
-                                <Building2 className="w-4 h-4 text-[#D4AF37]" />
-                                <span>View as Manager</span>
-                            </Link>
+                                <Megaphone className="w-4 h-4 text-slate-950" />
+                                <span>Issue Owner Directive</span>
+                            </button>
                         </div>
                     </div>
 
                     {/* Navigation Tabs */}
-                    <div className="max-w-7xl mx-auto mt-6 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none border-t border-slate-200 pt-4">
-                        {[
-                            { id: 'overview', label: 'Executive Overview', icon: Activity },
-                            { id: 'branches', label: 'Branch Portfolio', icon: Building2 },
-                            {
-                                id: 'approvals',
-                                label: 'Expenditure Approvals',
-                                icon: CheckSquare,
-                                count: metrics.pending_approvals_count,
-                            },
-                            {
-                                id: 'directives',
-                                label: 'Owner Directives',
-                                icon: Send,
-                                count: metrics.active_directives_count,
-                            },
-                            { id: 'audit', label: 'Audit & Loss Prevention', icon: ShieldAlert },
-                            { id: 'financials', label: 'Profit & Equity', icon: DollarSign },
-                            { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-                        ].map(t => {
-                            const Icon = t.icon;
-                            const isActive = currentTab === t.id;
-                            return (
-                                <button
-                                    key={t.id}
-                                    type="button"
-                                    onClick={() => setCurrentTab(t.id)}
-                                    className={`px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition flex items-center gap-2 cursor-pointer ${
-                                        isActive
-                                            ? 'bg-[#1E3A5F] text-white font-black shadow-xs'
-                                            : 'bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200'
-                                    }`}
-                                >
-                                    <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#D4AF37]' : 'text-slate-500'}`} />
-                                    <span>{t.label}</span>
-                                    {t.count !== undefined && t.count > 0 && (
-                                        <span
-                                            className={`px-1.5 py-0.5 rounded-full text-[10px] font-black leading-none ${
-                                                isActive ? 'bg-[#D4AF37] text-slate-950' : 'bg-rose-500 text-white'
+                    <div className="max-w-7xl mx-auto mt-6 border-t border-slate-100 pt-3">
+                        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scrollbar-none py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                            {[
+                                { id: 'overview', label: 'Executive Overview', icon: Activity },
+                                { id: 'branches', label: 'Branch Portfolio', icon: Building2 },
+                                {
+                                    id: 'approvals',
+                                    label: 'Expenditure Approvals',
+                                    icon: CheckSquare,
+                                    count: metrics.pending_approvals_count,
+                                },
+                                {
+                                    id: 'directives',
+                                    label: 'Owner Directives',
+                                    icon: Send,
+                                    count: metrics.active_directives_count,
+                                },
+                                { id: 'audit', label: 'Audit & Loss Prevention', icon: ShieldAlert },
+                                { id: 'financials', label: 'Profit & Equity', icon: DollarSign },
+                                { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+                            ].map(t => {
+                                const Icon = t.icon;
+                                const isActive = currentTab === t.id;
+                                return (
+                                    <button
+                                        key={t.id}
+                                        type="button"
+                                        onClick={() => setCurrentTab(t.id)}
+                                        className={`px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition flex items-center gap-2 cursor-pointer ${isActive
+                                            ? 'bg-slate-900 text-white font-black shadow-xs'
+                                            : 'bg-transparent hover:bg-slate-100 text-slate-600 hover:text-slate-900'
                                             }`}
-                                        >
-                                            {t.count}
-                                        </span>
-                                    )}
-                                </button>
-                            );
-                        })}
+                                    >
+                                        <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#D4AF37]' : 'text-slate-400'}`} />
+                                        <span>{t.label}</span>
+                                        {t.count !== undefined && t.count > 0 && (
+                                            <span
+                                                className={`px-1.5 py-0.5 rounded-full text-[10px] font-black leading-none ${isActive ? 'bg-[#D4AF37] text-slate-950' : 'bg-rose-500 text-white'
+                                                    }`}
+                                            >
+                                                {t.count}
+                                            </span>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
 
@@ -562,11 +581,10 @@ export default function OwnerPortalIndex({
                                                     </p>
                                                 </div>
                                                 <span
-                                                    className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                                                        branch.is_active
-                                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                                            : 'bg-rose-50 text-rose-700 border border-rose-200'
-                                                    }`}
+                                                    className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${branch.is_active
+                                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                        : 'bg-rose-50 text-rose-700 border border-rose-200'
+                                                        }`}
                                                 >
                                                     {branch.is_active ? 'Active' : 'Inactive'}
                                                 </span>
@@ -689,13 +707,12 @@ export default function OwnerPortalIndex({
                                                                 {req.requisition_no}
                                                             </span>
                                                             <span
-                                                                className={`px-1.5 py-0.5 rounded text-[10px] font-black uppercase ${
-                                                                    req.urgency === 'emergency'
-                                                                        ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                                                                        : req.urgency === 'priority'
+                                                                className={`px-1.5 py-0.5 rounded text-[10px] font-black uppercase ${req.urgency === 'emergency'
+                                                                    ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                                                                    : req.urgency === 'priority'
                                                                         ? 'bg-amber-50 text-amber-700 border border-amber-200'
                                                                         : 'bg-blue-50 text-blue-700 border border-blue-200'
-                                                                }`}
+                                                                    }`}
                                                             >
                                                                 {req.urgency}
                                                             </span>
@@ -753,13 +770,12 @@ export default function OwnerPortalIndex({
                                                 <div className="flex items-center justify-between">
                                                     <span className="font-bold text-slate-900 text-sm">{dir.title}</span>
                                                     <span
-                                                        className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                                                            dir.status === 'acknowledged'
-                                                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                                                : dir.status === 'completed'
+                                                        className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${dir.status === 'acknowledged'
+                                                            ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                                            : dir.status === 'completed'
                                                                 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                                                                 : 'bg-amber-50 text-amber-700 border border-amber-200'
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {dir.status === 'acknowledged'
                                                             ? 'Acknowledged by GM'
@@ -936,11 +952,10 @@ export default function OwnerPortalIndex({
                                         key={f.id}
                                         type="button"
                                         onClick={() => setFilterRequisitionStatus(f.id as any)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                            filterRequisitionStatus === f.id
-                                                ? 'bg-[#1E3A5F] text-white font-black shadow-xs'
-                                                : 'text-slate-600 hover:text-slate-900'
-                                        }`}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${filterRequisitionStatus === f.id
+                                            ? 'bg-[#1E3A5F] text-white font-black shadow-xs'
+                                            : 'text-slate-600 hover:text-slate-900'
+                                            }`}
                                     >
                                         {f.label}
                                     </button>
@@ -974,13 +989,12 @@ export default function OwnerPortalIndex({
                                                     </h3>
                                                 </div>
                                                 <span
-                                                    className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase shrink-0 ${
-                                                        req.status === 'approved'
-                                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                                            : req.status === 'rejected'
+                                                    className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase shrink-0 ${req.status === 'approved'
+                                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                        : req.status === 'rejected'
                                                             ? 'bg-rose-50 text-rose-700 border border-rose-200'
                                                             : 'bg-amber-50 text-amber-700 border border-amber-200 animate-pulse'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {req.status === 'pending_owner' ? 'Pending Review' : req.status}
                                                 </span>
@@ -1109,13 +1123,12 @@ export default function OwnerPortalIndex({
                                                     </h3>
                                                 </div>
                                                 <span
-                                                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                                                        dir.priority === 'urgent'
-                                                            ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                                                            : dir.priority === 'high'
+                                                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${dir.priority === 'urgent'
+                                                        ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                                                        : dir.priority === 'high'
                                                             ? 'bg-amber-50 text-amber-700 border border-amber-200'
                                                             : 'bg-blue-50 text-blue-700 border border-blue-200'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {dir.priority}
                                                 </span>
@@ -1347,17 +1360,16 @@ export default function OwnerPortalIndex({
                                                     <td className="py-3 px-4 font-mono font-bold text-slate-800">{d.reference_no}</td>
                                                     <td className="py-3 px-4 font-bold">
                                                         <span
-                                                            className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                                                                d.drawing_type === 'dividend'
-                                                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                                                    : 'bg-purple-50 text-purple-700 border border-purple-200'
-                                                            }`}
+                                                            className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${d.drawing_type === 'dividend'
+                                                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                                : 'bg-purple-50 text-purple-700 border border-purple-200'
+                                                                }`}
                                                         >
                                                             {d.drawing_type === 'dividend'
                                                                 ? 'Dividend'
                                                                 : d.drawing_type === 'capital_injection'
-                                                                ? 'Capital'
-                                                                : 'Owner Draw'}
+                                                                    ? 'Capital'
+                                                                    : 'Owner Draw'}
                                                         </span>
                                                     </td>
                                                     <td className="py-3 px-4 text-slate-800">{d.property?.name || 'All Properties'}</td>
@@ -1408,26 +1420,25 @@ export default function OwnerPortalIndex({
                                     </select>
                                 )}
                                 <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
-                                {[
-                                    { id: 'today', label: 'Today' },
-                                    { id: '7d', label: '7 Days' },
-                                    { id: '30d', label: '30 Days' },
-                                    { id: 'month', label: 'This Month' },
-                                    { id: 'year', label: 'This Year' },
-                                ].map((p) => (
-                                    <button
-                                        key={p.id}
-                                        type="button"
-                                        onClick={() => router.get(route('owner.index'), { tab: 'analytics', period: p.id, property_id: analytics.selected_property_id ?? undefined }, { preserveScroll: true })}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                                            period === p.id
+                                    {[
+                                        { id: 'today', label: 'Today' },
+                                        { id: '7d', label: '7 Days' },
+                                        { id: '30d', label: '30 Days' },
+                                        { id: 'month', label: 'This Month' },
+                                        { id: 'year', label: 'This Year' },
+                                    ].map((p) => (
+                                        <button
+                                            key={p.id}
+                                            type="button"
+                                            onClick={() => router.get(route('owner.index'), { tab: 'analytics', period: p.id, property_id: analytics.selected_property_id ?? undefined }, { preserveScroll: true })}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${period === p.id
                                                 ? 'bg-[#D4AF37] text-slate-950'
                                                 : 'text-slate-600 hover:bg-slate-100'
-                                        }`}
-                                    >
-                                        {p.label}
-                                    </button>
-                                ))}
+                                                }`}
+                                        >
+                                            {p.label}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
                         </div>
@@ -1529,6 +1540,26 @@ export default function OwnerPortalIndex({
                             </div>
                         </div>
 
+                        {/* Mode of Payments — collections per tender method */}
+                        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                            <h3 className="text-sm font-black text-slate-900 mb-4 flex items-center gap-2"><CreditCard className="w-4 h-4 text-emerald-600" /> Mode of Payments</h3>
+                            {!analytics.payments_by_method || analytics.payments_by_method.length === 0 ? (
+                                <p className="text-xs text-slate-500">No collections recorded for this period.</p>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                                    {analytics.payments_by_method.map((p) => (
+                                        <div key={p.method} className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="text-xs font-bold text-slate-800 truncate">{formatPaymentMethod(p.method)}</span>
+                                                <span className="text-[10px] font-semibold text-slate-400 whitespace-nowrap">{p.count} tx</span>
+                                            </div>
+                                            <div className="text-sm font-extrabold text-slate-900 mt-1">{formatTzs(p.total_minor)}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
                             {/* Staff */}
                             <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
@@ -1555,11 +1586,10 @@ export default function OwnerPortalIndex({
                                             <Link
                                                 key={i}
                                                 href={alert.route}
-                                                className={`flex items-center gap-3 p-3 rounded-xl border text-xs transition ${
-                                                    alert.severity === 'warning'
-                                                        ? 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100'
-                                                        : 'bg-blue-50 border-blue-200 text-blue-800 hover:bg-blue-100'
-                                                }`}
+                                                className={`flex items-center gap-3 p-3 rounded-xl border text-xs transition ${alert.severity === 'warning'
+                                                    ? 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100'
+                                                    : 'bg-blue-50 border-blue-200 text-blue-800 hover:bg-blue-100'
+                                                    }`}
                                             >
                                                 <AlertCircle className="w-4 h-4 shrink-0" />
                                                 <span className="flex-1">{alert.message}</span>

@@ -734,6 +734,41 @@ class OwnerPortalController extends Controller
             ->values()
             ->all();
 
+        // Collections per payment method — confirmed folio receipts plus
+        // settled POS tenders (posted_to_room orders settle later via folio).
+        $paymentsByMethod = Payment::whereHas('folio', function ($q) use ($tenantId, $selectedPropertyId) {
+            $q->where('tenant_id', $tenantId);
+            if ($selectedPropertyId) {
+                $q->where('property_id', $selectedPropertyId);
+            }
+        })
+            ->where('status', 'confirmed')
+            ->whereBetween('created_at', [$start, $end])
+            ->selectRaw('payment_method, sum(amount_minor) as total_amount, count(*) as tx_count')
+            ->groupBy('payment_method')
+            ->get()
+            ->mapWithKeys(fn ($row) => [$row->payment_method ?: 'cash' => [
+                'method' => $row->payment_method ?: 'cash',
+                'total_minor' => (int) $row->total_amount,
+                'count' => (int) $row->tx_count,
+            ]])
+            ->all();
+
+        PosOrder::where($posOrderScope)
+            ->where('payment_status', 'paid')
+            ->whereBetween('created_at', [$start, $end])
+            ->selectRaw('payment_method, sum(total_minor) as total_amount, count(*) as tx_count')
+            ->groupBy('payment_method')
+            ->get()
+            ->each(function ($row) use (&$paymentsByMethod) {
+                $method = $row->payment_method ?: 'cash';
+                $paymentsByMethod[$method] ??= ['method' => $method, 'total_minor' => 0, 'count' => 0];
+                $paymentsByMethod[$method]['total_minor'] += (int) $row->total_amount;
+                $paymentsByMethod[$method]['count'] += (int) $row->tx_count;
+            });
+
+        uasort($paymentsByMethod, fn ($a, $b) => $b['total_minor'] <=> $a['total_minor']);
+
         // Staff overview (tenant-wide; property filter applies only when a property is selected)
         $staffQuery = User::where('tenant_id', $tenantId)->where('status', 'active');
         if ($selectedPropertyId) {
@@ -812,6 +847,7 @@ class OwnerPortalController extends Controller
                 'occupancy_rate' => $totalRooms > 0 ? round(($occupiedRooms / $totalRooms) * 100, 1) : 0,
             ],
             'departments' => $departments,
+            'payments_by_method' => array_values($paymentsByMethod),
             'staff' => [
                 'total_active' => array_sum($staffByRole),
                 'by_role' => $staffByRole,

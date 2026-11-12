@@ -315,6 +315,8 @@ export const roleNavigation: Record<string, RoleNavigationDef> = {
             { name: 'Consolidated Financials', route: 'owner.index', params: { tab: 'financials' }, icon: 'DollarSign', active: ['owner.*'], tab: 'financials' },
             { name: 'Properties & Branches', route: 'branches.index', icon: 'Layers', active: ['branches.*'] },
             { name: 'Hotel Reports & Analytics', route: 'reports.index', icon: 'BarChart3', active: ['reports.*'], feature: 'hotel_reports' },
+            { name: 'Restaurant & POS Sales', route: 'pos.index', icon: 'Utensils', active: ['pos.*'] },
+            { name: 'Grocery & Supermarket', route: 'grocery.dashboard', icon: 'ShoppingBag', active: ['grocery.*'] },
             { name: 'Night Audit Ledger', route: 'night-audit.index', icon: 'Moon', active: ['night-audit.*'] },
             { name: 'Branding & Profile', route: 'tenant.settings', icon: 'Settings', active: ['tenant.settings*'] },
             { name: 'Sign Out', icon: 'LogOut', isLogout: true },
@@ -603,6 +605,8 @@ export const roleNavigation: Record<string, RoleNavigationDef> = {
 export const ROLE_NAV_KEY_MAP: Record<string, string> = {
     super_admin: 'super_admin',
     owner: 'owner',
+    md: 'owner',
+    managing_director: 'owner',
     general_manager: 'manager',
     manager: 'manager',
     admin: 'manager',

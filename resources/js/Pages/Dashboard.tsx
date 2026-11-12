@@ -114,6 +114,7 @@ interface DashboardProps extends PageProps {
     departures?: GuestMovement[];
     inHouseStays?: GuestMovement[];
     revenueTrend?: Array<{ date: string; amount: number }>;
+    paymentsByMethod?: Array<{ method: string; total_minor: number; count: number }>;
     ownerDirectives?: Array<any>;
     myRequisitions?: Array<any>;
     isOwnerInspecting?: boolean;
@@ -131,6 +132,7 @@ export default function Dashboard({
     pendingFoliosCount = 0,
     allRooms = [],
     calendarData,
+    paymentsByMethod = [],
     ownerDirectives = [],
     myRequisitions = [],
     isOwnerInspecting = false,
@@ -213,6 +215,21 @@ export default function Dashboard({
     };
 
     const revenueChangePct = safeStats.revenue_change_pct ?? 0;
+
+    const formatPaymentMethod = (method: string) => {
+        const names: Record<string, string> = {
+            cash: 'Cash',
+            mpesa: 'M-Pesa',
+            tigopesa: 'Tigo Pesa',
+            airtelmoney: 'Airtel Money',
+            halopesa: 'Halo Pesa',
+            card: 'Card',
+            bank_transfer: 'Bank Transfer',
+            city_ledger: 'City Ledger',
+            room_folio: 'Room Folio',
+        };
+        return names[method] ?? method.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    };
     const safeArrivals = arrivals || [];
     const safeDepartures = departures || [];
     const safeInHouse = inHouseStays || [];
@@ -274,11 +291,11 @@ export default function Dashboard({
                     {/* 1. Reception Header & Fast Action Console */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs">
                         <div>
-                            
+
                             <h1 className="text-lg sm:text-2xl font-black text-slate-900 mt-1">
                                 Receptionist Operational Console
                             </h1>
-                            
+
                         </div>
 
                         {/* Fast Action Buttons */}
@@ -392,11 +409,10 @@ export default function Dashboard({
                                 <button
                                     type="button"
                                     onClick={() => setWorkstationView('calendar')}
-                                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                        workstationView === 'calendar'
-                                            ? 'bg-[#1E3A5F] text-white shadow-2xs'
-                                            : 'text-slate-600 hover:text-slate-900'
-                                    }`}
+                                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${workstationView === 'calendar'
+                                        ? 'bg-[#1E3A5F] text-white shadow-2xs'
+                                        : 'text-slate-600 hover:text-slate-900'
+                                        }`}
                                 >
                                     <Calendar className="w-3.5 h-3.5" />
                                     <span>Room Availability Calendar (Gantt Matrix)</span>
@@ -405,11 +421,10 @@ export default function Dashboard({
                                 <button
                                     type="button"
                                     onClick={() => setWorkstationView('movement')}
-                                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                        workstationView === 'movement'
-                                            ? 'bg-[#1E3A5F] text-white shadow-2xs'
-                                            : 'text-slate-600 hover:text-slate-900'
-                                    }`}
+                                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${workstationView === 'movement'
+                                        ? 'bg-[#1E3A5F] text-white shadow-2xs'
+                                        : 'text-slate-600 hover:text-slate-900'
+                                        }`}
                                 >
                                     <Luggage className="w-3.5 h-3.5" />
                                     <span>Arrivals & Departures ({safeArrivals.length + safeDepartures.length})</span>
@@ -425,247 +440,242 @@ export default function Dashboard({
                             <RoomAvailabilityCalendar {...(calendarData || {})} />
                         ) : (
                             <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden p-4 sm:p-5 space-y-4">
-                        {/* Header & Search */}
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-                            {/* Tab Switcher */}
-                            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
-                                <button
-                                    type="button"
-                                    onClick={() => setMovementTab('arrivals')}
-                                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                        movementTab === 'arrivals'
-                                            ? 'bg-white text-blue-700 shadow-2xs'
-                                            : 'text-slate-600 hover:text-slate-900'
-                                    }`}
-                                >
-                                    <Luggage className="w-3.5 h-3.5" />
-                                    <span>Arrivals Today ({safeArrivals.length})</span>
-                                </button>
+                                {/* Header & Search */}
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                                    {/* Tab Switcher */}
+                                    <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+                                        <button
+                                            type="button"
+                                            onClick={() => setMovementTab('arrivals')}
+                                            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${movementTab === 'arrivals'
+                                                ? 'bg-white text-blue-700 shadow-2xs'
+                                                : 'text-slate-600 hover:text-slate-900'
+                                                }`}
+                                        >
+                                            <Luggage className="w-3.5 h-3.5" />
+                                            <span>Arrivals Today ({safeArrivals.length})</span>
+                                        </button>
 
-                                <button
-                                    type="button"
-                                    onClick={() => setMovementTab('departures')}
-                                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                        movementTab === 'departures'
-                                            ? 'bg-white text-amber-700 shadow-2xs'
-                                            : 'text-slate-600 hover:text-slate-900'
-                                    }`}
-                                >
-                                    <DoorOpen className="w-3.5 h-3.5" />
-                                    <span>Departures Today ({safeDepartures.length})</span>
-                                </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setMovementTab('departures')}
+                                            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${movementTab === 'departures'
+                                                ? 'bg-white text-amber-700 shadow-2xs'
+                                                : 'text-slate-600 hover:text-slate-900'
+                                                }`}
+                                        >
+                                            <DoorOpen className="w-3.5 h-3.5" />
+                                            <span>Departures Today ({safeDepartures.length})</span>
+                                        </button>
 
-                                <button
-                                    type="button"
-                                    onClick={() => setMovementTab('in_house')}
-                                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                        movementTab === 'in_house'
-                                            ? 'bg-white text-indigo-700 shadow-2xs'
-                                            : 'text-slate-600 hover:text-slate-900'
-                                    }`}
-                                >
-                                    <span>In-House Guests ({safeInHouse.length})</span>
-                                </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setMovementTab('in_house')}
+                                            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${movementTab === 'in_house'
+                                                ? 'bg-white text-indigo-700 shadow-2xs'
+                                                : 'text-slate-600 hover:text-slate-900'
+                                                }`}
+                                        >
+                                            <span>In-House Guests ({safeInHouse.length})</span>
+                                        </button>
+                                    </div>
+
+                                    {/* Search Filter */}
+                                    <div className="relative w-full md:w-72">
+                                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                                        <input
+                                            type="text"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            placeholder="Search guest, room, or phone..."
+                                            className="w-full pl-9 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-1 focus:ring-blue-500"
+                                        />
+                                        {searchQuery && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setSearchQuery('')}
+                                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Movement Table */}
+                                <div className="overflow-x-auto">
+                                    {movementTab === 'arrivals' && (
+                                        <table className="w-full text-left text-xs">
+                                            <thead>
+                                                <tr className="bg-slate-50/80 text-slate-500 uppercase tracking-wider font-bold text-[10px] border-b border-slate-100">
+                                                    <th className="py-2.5 px-3">Guest Name</th>
+                                                    <th className="py-2.5 px-3">Phone</th>
+                                                    <th className="py-2.5 px-3">Assigned Room</th>
+                                                    <th className="py-2.5 px-3">Room Type</th>
+                                                    <th className="py-2.5 px-3">Stay Dates</th>
+                                                    <th className="py-2.5 px-3 text-right">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100">
+                                                {filteredArrivals.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan={6} className="py-6 text-center text-slate-400">
+                                                            No expected arrivals found for today.
+                                                        </td>
+                                                    </tr>
+                                                ) : (
+                                                    filteredArrivals.map((arr) => {
+                                                        const guestName = arr.guest?.full_name || `${arr.guest?.first_name || ''} ${arr.guest?.last_name || ''}`.trim() || 'Guest';
+                                                        const phone = arr.guest?.phone || '—';
+                                                        const roomNum = arr.reservation_rooms?.[0]?.room?.room_number || arr.room?.room_number || 'Unassigned';
+                                                        const roomType = arr.reservation_rooms?.[0]?.room_type?.name || arr.reservation_rooms?.[0]?.roomType?.name || arr.room?.room_type?.name || 'Standard';
+
+                                                        return (
+                                                            <tr key={arr.id} className="hover:bg-slate-50/70 transition">
+                                                                <td className="py-2.5 px-3 font-bold text-slate-900">{guestName}</td>
+                                                                <td className="py-2.5 px-3 text-slate-500">{phone}</td>
+                                                                <td className="py-2.5 px-3">
+                                                                    <span className={`px-2 py-0.5 rounded font-bold text-[11px] ${roomNum === 'Unassigned'
+                                                                        ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                                                                        : 'bg-blue-50 text-blue-700 font-mono font-black'
+                                                                        }`}>
+                                                                        {roomNum}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="py-2.5 px-3 text-slate-600">{roomType}</td>
+                                                                <td className="py-2.5 px-3 text-slate-500">
+                                                                    {arr.check_in} → {arr.check_out}
+                                                                </td>
+                                                                <td className="py-2.5 px-3 text-right">
+                                                                    <Link
+                                                                        href={route('reservations.index')}
+                                                                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow-2xs transition"
+                                                                    >
+                                                                        <UserCheck className="w-3 h-3" />
+                                                                        <span>Check-In</span>
+                                                                    </Link>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    )}
+
+                                    {movementTab === 'departures' && (
+                                        <table className="w-full text-left text-xs">
+                                            <thead>
+                                                <tr className="bg-slate-50/80 text-slate-500 uppercase tracking-wider font-bold text-[10px] border-b border-slate-100">
+                                                    <th className="py-2.5 px-3">Guest Name</th>
+                                                    <th className="py-2.5 px-3">Room #</th>
+                                                    <th className="py-2.5 px-3">Check-In Date</th>
+                                                    <th className="py-2.5 px-3">Folio Balance</th>
+                                                    <th className="py-2.5 px-3">Folio Status</th>
+                                                    <th className="py-2.5 px-3 text-right">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100">
+                                                {filteredDepartures.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan={6} className="py-6 text-center text-slate-400">
+                                                            No departures scheduled for today.
+                                                        </td>
+                                                    </tr>
+                                                ) : (
+                                                    filteredDepartures.map((dep) => {
+                                                        const guestName = dep.guest?.full_name || `${dep.guest?.first_name || ''} ${dep.guest?.last_name || ''}`.trim() || 'Guest';
+                                                        const roomNum = dep.reservation_rooms?.[0]?.room?.room_number || dep.room?.room_number || '—';
+                                                        const balanceMinor = dep.folio?.balance_minor ?? 0;
+
+                                                        return (
+                                                            <tr key={dep.id} className="hover:bg-slate-50/70 transition">
+                                                                <td className="py-2.5 px-3 font-bold text-slate-900">{guestName}</td>
+                                                                <td className="py-2.5 px-3 font-mono font-bold text-slate-800">{roomNum}</td>
+                                                                <td className="py-2.5 px-3 text-slate-500">{dep.check_in ?? '—'}</td>
+                                                                <td className="py-2.5 px-3 font-bold text-slate-900">
+                                                                    {formatCurrency(balanceMinor)}
+                                                                </td>
+                                                                <td className="py-2.5 px-3">
+                                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${balanceMinor > 0
+                                                                        ? 'bg-rose-100 text-rose-800'
+                                                                        : 'bg-emerald-100 text-emerald-800'
+                                                                        }`}>
+                                                                        {balanceMinor > 0 ? 'Balance Due' : 'Settled'}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="py-2.5 px-3 text-right">
+                                                                    <Link
+                                                                        href={dep.folio?.id ? route('folios.show', dep.folio.id) : route('reservations.index')}
+                                                                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-xs shadow-2xs transition"
+                                                                    >
+                                                                        <DoorOpen className="w-3 h-3" />
+                                                                        <span>Check-Out</span>
+                                                                    </Link>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    )}
+
+                                    {movementTab === 'in_house' && (
+                                        <table className="w-full text-left text-xs">
+                                            <thead>
+                                                <tr className="bg-slate-50/80 text-slate-500 uppercase tracking-wider font-bold text-[10px] border-b border-slate-100">
+                                                    <th className="py-2.5 px-3">Room #</th>
+                                                    <th className="py-2.5 px-3">Guest Name</th>
+                                                    <th className="py-2.5 px-3">Phone</th>
+                                                    <th className="py-2.5 px-3">Check-In</th>
+                                                    <th className="py-2.5 px-3">Expected Departure</th>
+                                                    <th className="py-2.5 px-3 text-right">Folio</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100">
+                                                {filteredInHouse.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan={6} className="py-6 text-center text-slate-400">
+                                                            No in-house guests currently registered.
+                                                        </td>
+                                                    </tr>
+                                                ) : (
+                                                    filteredInHouse.map((stay) => {
+                                                        const guestName = stay.guest?.full_name || `${stay.guest?.first_name || ''} ${stay.guest?.last_name || ''}`.trim() || 'Guest';
+                                                        const roomNum = stay.room?.room_number || '—';
+
+                                                        return (
+                                                            <tr key={stay.id} className="hover:bg-slate-50/70 transition">
+                                                                <td className="py-2.5 px-3 font-mono font-bold text-blue-700">{roomNum}</td>
+                                                                <td className="py-2.5 px-3 font-bold text-slate-900">{guestName}</td>
+                                                                <td className="py-2.5 px-3 text-slate-500">{stay.guest?.phone || '—'}</td>
+                                                                <td className="py-2.5 px-3 text-slate-500">{stay.checked_in_at ? stay.checked_in_at.substring(0, 10) : '—'}</td>
+                                                                <td className="py-2.5 px-3 text-slate-500">{stay.check_out ?? '—'}</td>
+                                                                <td className="py-2.5 px-3 text-right">
+                                                                    {stay.folio?.id ? (
+                                                                        <Link
+                                                                            href={route('folios.show', stay.folio.id)}
+                                                                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-lg text-xs transition"
+                                                                        >
+                                                                            <FileText className="w-3 h-3 text-slate-500" />
+                                                                            <span>Folio</span>
+                                                                        </Link>
+                                                                    ) : (
+                                                                        <span className="text-slate-400 text-xs">—</span>
+                                                                    )}
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    )}
+                                </div>
                             </div>
-
-                            {/* Search Filter */}
-                            <div className="relative w-full md:w-72">
-                                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                                <input
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="Search guest, room, or phone..."
-                                    className="w-full pl-9 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-1 focus:ring-blue-500"
-                                />
-                                {searchQuery && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setSearchQuery('')}
-                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                                    >
-                                        <X className="w-3 h-3" />
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Movement Table */}
-                        <div className="overflow-x-auto">
-                            {movementTab === 'arrivals' && (
-                                <table className="w-full text-left text-xs">
-                                    <thead>
-                                        <tr className="bg-slate-50/80 text-slate-500 uppercase tracking-wider font-bold text-[10px] border-b border-slate-100">
-                                            <th className="py-2.5 px-3">Guest Name</th>
-                                            <th className="py-2.5 px-3">Phone</th>
-                                            <th className="py-2.5 px-3">Assigned Room</th>
-                                            <th className="py-2.5 px-3">Room Type</th>
-                                            <th className="py-2.5 px-3">Stay Dates</th>
-                                            <th className="py-2.5 px-3 text-right">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100">
-                                        {filteredArrivals.length === 0 ? (
-                                            <tr>
-                                                <td colSpan={6} className="py-6 text-center text-slate-400">
-                                                    No expected arrivals found for today.
-                                                </td>
-                                            </tr>
-                                        ) : (
-                                            filteredArrivals.map((arr) => {
-                                                const guestName = arr.guest?.full_name || `${arr.guest?.first_name || ''} ${arr.guest?.last_name || ''}`.trim() || 'Guest';
-                                                const phone = arr.guest?.phone || '—';
-                                                const roomNum = arr.reservation_rooms?.[0]?.room?.room_number || arr.room?.room_number || 'Unassigned';
-                                                const roomType = arr.reservation_rooms?.[0]?.room_type?.name || arr.reservation_rooms?.[0]?.roomType?.name || arr.room?.room_type?.name || 'Standard';
-
-                                                return (
-                                                    <tr key={arr.id} className="hover:bg-slate-50/70 transition">
-                                                        <td className="py-2.5 px-3 font-bold text-slate-900">{guestName}</td>
-                                                        <td className="py-2.5 px-3 text-slate-500">{phone}</td>
-                                                        <td className="py-2.5 px-3">
-                                                            <span className={`px-2 py-0.5 rounded font-bold text-[11px] ${
-                                                                roomNum === 'Unassigned'
-                                                                    ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                                                                    : 'bg-blue-50 text-blue-700 font-mono font-black'
-                                                            }`}>
-                                                                {roomNum}
-                                                            </span>
-                                                        </td>
-                                                        <td className="py-2.5 px-3 text-slate-600">{roomType}</td>
-                                                        <td className="py-2.5 px-3 text-slate-500">
-                                                            {arr.check_in} → {arr.check_out}
-                                                        </td>
-                                                        <td className="py-2.5 px-3 text-right">
-                                                            <Link
-                                                                href={route('reservations.index')}
-                                                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow-2xs transition"
-                                                            >
-                                                                <UserCheck className="w-3 h-3" />
-                                                                <span>Check-In</span>
-                                                            </Link>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })
-                                        )}
-                                    </tbody>
-                                </table>
-                            )}
-
-                            {movementTab === 'departures' && (
-                                <table className="w-full text-left text-xs">
-                                    <thead>
-                                        <tr className="bg-slate-50/80 text-slate-500 uppercase tracking-wider font-bold text-[10px] border-b border-slate-100">
-                                            <th className="py-2.5 px-3">Guest Name</th>
-                                            <th className="py-2.5 px-3">Room #</th>
-                                            <th className="py-2.5 px-3">Check-In Date</th>
-                                            <th className="py-2.5 px-3">Folio Balance</th>
-                                            <th className="py-2.5 px-3">Folio Status</th>
-                                            <th className="py-2.5 px-3 text-right">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100">
-                                        {filteredDepartures.length === 0 ? (
-                                            <tr>
-                                                <td colSpan={6} className="py-6 text-center text-slate-400">
-                                                    No departures scheduled for today.
-                                                </td>
-                                            </tr>
-                                        ) : (
-                                            filteredDepartures.map((dep) => {
-                                                const guestName = dep.guest?.full_name || `${dep.guest?.first_name || ''} ${dep.guest?.last_name || ''}`.trim() || 'Guest';
-                                                const roomNum = dep.reservation_rooms?.[0]?.room?.room_number || dep.room?.room_number || '—';
-                                                const balanceMinor = dep.folio?.balance_minor ?? 0;
-
-                                                return (
-                                                    <tr key={dep.id} className="hover:bg-slate-50/70 transition">
-                                                        <td className="py-2.5 px-3 font-bold text-slate-900">{guestName}</td>
-                                                        <td className="py-2.5 px-3 font-mono font-bold text-slate-800">{roomNum}</td>
-                                                        <td className="py-2.5 px-3 text-slate-500">{dep.check_in ?? '—'}</td>
-                                                        <td className="py-2.5 px-3 font-bold text-slate-900">
-                                                            {formatCurrency(balanceMinor)}
-                                                        </td>
-                                                        <td className="py-2.5 px-3">
-                                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                                                balanceMinor > 0
-                                                                    ? 'bg-rose-100 text-rose-800'
-                                                                    : 'bg-emerald-100 text-emerald-800'
-                                                            }`}>
-                                                                {balanceMinor > 0 ? 'Balance Due' : 'Settled'}
-                                                            </span>
-                                                        </td>
-                                                        <td className="py-2.5 px-3 text-right">
-                                                            <Link
-                                                                href={dep.folio?.id ? route('folios.show', dep.folio.id) : route('reservations.index')}
-                                                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-xs shadow-2xs transition"
-                                                            >
-                                                                <DoorOpen className="w-3 h-3" />
-                                                                <span>Check-Out</span>
-                                                            </Link>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })
-                                        )}
-                                    </tbody>
-                                </table>
-                            )}
-
-                            {movementTab === 'in_house' && (
-                                <table className="w-full text-left text-xs">
-                                    <thead>
-                                        <tr className="bg-slate-50/80 text-slate-500 uppercase tracking-wider font-bold text-[10px] border-b border-slate-100">
-                                            <th className="py-2.5 px-3">Room #</th>
-                                            <th className="py-2.5 px-3">Guest Name</th>
-                                            <th className="py-2.5 px-3">Phone</th>
-                                            <th className="py-2.5 px-3">Check-In</th>
-                                            <th className="py-2.5 px-3">Expected Departure</th>
-                                            <th className="py-2.5 px-3 text-right">Folio</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100">
-                                        {filteredInHouse.length === 0 ? (
-                                            <tr>
-                                                <td colSpan={6} className="py-6 text-center text-slate-400">
-                                                    No in-house guests currently registered.
-                                                </td>
-                                            </tr>
-                                        ) : (
-                                            filteredInHouse.map((stay) => {
-                                                const guestName = stay.guest?.full_name || `${stay.guest?.first_name || ''} ${stay.guest?.last_name || ''}`.trim() || 'Guest';
-                                                const roomNum = stay.room?.room_number || '—';
-
-                                                return (
-                                                    <tr key={stay.id} className="hover:bg-slate-50/70 transition">
-                                                        <td className="py-2.5 px-3 font-mono font-bold text-blue-700">{roomNum}</td>
-                                                        <td className="py-2.5 px-3 font-bold text-slate-900">{guestName}</td>
-                                                        <td className="py-2.5 px-3 text-slate-500">{stay.guest?.phone || '—'}</td>
-                                                        <td className="py-2.5 px-3 text-slate-500">{stay.checked_in_at ? stay.checked_in_at.substring(0, 10) : '—'}</td>
-                                                        <td className="py-2.5 px-3 text-slate-500">{stay.check_out ?? '—'}</td>
-                                                        <td className="py-2.5 px-3 text-right">
-                                                            {stay.folio?.id ? (
-                                                                <Link
-                                                                    href={route('folios.show', stay.folio.id)}
-                                                                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-lg text-xs transition"
-                                                                >
-                                                                    <FileText className="w-3 h-3 text-slate-500" />
-                                                                    <span>Folio</span>
-                                                                </Link>
-                                                            ) : (
-                                                                <span className="text-slate-400 text-xs">—</span>
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })
-                                        )}
-                                    </tbody>
-                                </table>
-                            )}
-                        </div>
+                        )}
                     </div>
-                )}
-            </div>
 
                     {/* 4. Live Front Desk Room Arrangement (Interactive Popover Grid matching Image 2) */}
                     <RoomArrangementGrid
@@ -852,7 +862,7 @@ export default function Dashboard({
                                         {safeStats.total_rooms} Rooms Total
                                     </span>
                                 </div>
-                                
+
                             </div>
 
                             <Link
@@ -917,7 +927,7 @@ export default function Dashboard({
                             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                                 <div>
                                     <h3 className="text-sm sm:text-base font-bold text-slate-900">Guest Movements</h3>
-                                    
+
                                 </div>
                                 <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-xs font-semibold">
                                     <button
@@ -1029,6 +1039,35 @@ export default function Dashboard({
                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">RevPAR</span>
                                     <div className="text-sm sm:text-base font-extrabold text-slate-900 mt-0.5">{formatCurrency(safeStats.revpar)}</div>
                                 </div>
+                            </div>
+
+                            {/* Mode of Payments — collections per tender method */}
+                            <div className="pt-3 border-t border-slate-100 space-y-2">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                                    Mode of Payments
+                                </span>
+                                {paymentsByMethod.length === 0 ? (
+                                    <p className="text-[11px] text-slate-400">No collections recorded in the selected period.</p>
+                                ) : (
+                                    paymentsByMethod.map((p) => (
+                                        <div
+                                            key={p.method}
+                                            className="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-50/80 border border-slate-100"
+                                        >
+                                            <div className="min-w-0">
+                                                <span className="text-[11px] font-bold text-slate-800 block truncate">
+                                                    {formatPaymentMethod(p.method)}
+                                                </span>
+                                                <span className="text-[10px] text-slate-400 font-semibold">
+                                                    {p.count} transaction{p.count === 1 ? '' : 's'}
+                                                </span>
+                                            </div>
+                                            <span className="text-xs sm:text-sm font-extrabold text-slate-900 whitespace-nowrap">
+                                                {formatCurrency(p.total_minor)}
+                                            </span>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         </div>
                     </div>

@@ -9,7 +9,7 @@ export default function OfflineBanner() {
     if (!isOffline || dismissed) return null;
 
     return (
-        <div className="bg-slate-900 text-white px-4 py-2.5 text-xs shadow-md border-b border-amber-500/40 sticky top-0 z-40 animate-in slide-in-from-top-2 duration-200">
+        <div className="bg-slate-900 text-white px-4 py-2.5 text-xs shadow-md border-b border-amber-500/40 sticky top-14 lg:top-0 z-40 animate-in slide-in-from-top-2 duration-200">
             <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
                 <div className="flex items-center gap-2.5">
                     <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">

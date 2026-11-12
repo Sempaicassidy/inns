@@ -3302,7 +3302,7 @@ export default function SaasAdminDashboard({
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="font-bold text-slate-700 block mb-1">Subdomain Slug *</label>
                                     <input
@@ -3328,7 +3328,7 @@ export default function SaasAdminDashboard({
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="font-bold text-slate-700 block mb-1">First Property / Lodge *</label>
                                     <input
@@ -3462,7 +3462,7 @@ export default function SaasAdminDashboard({
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="font-bold text-slate-700 block mb-1">Plan</label>
                                     <select
@@ -3488,7 +3488,7 @@ export default function SaasAdminDashboard({
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="font-bold text-slate-700 block mb-1">Price / Month (TZS)</label>
                                     <input
@@ -3810,7 +3810,7 @@ export default function SaasAdminDashboard({
                                 </select>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="font-bold text-slate-700 block mb-1">SMS Credits to Add *</label>
                                     <input
@@ -3840,7 +3840,7 @@ export default function SaasAdminDashboard({
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="font-bold text-slate-700 block mb-1">Payment Method</label>
                                     <select
@@ -4264,7 +4264,7 @@ export default function SaasAdminDashboard({
                         </div>
 
                         <form onSubmit={submitQuotation} className="space-y-4 pt-4 text-xs">
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="font-bold text-slate-700 block mb-1">Company / Hotel Name *</label>
                                     <input
@@ -4300,7 +4300,7 @@ export default function SaasAdminDashboard({
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="font-bold text-slate-700 block mb-1">Contact Person *</label>
                                     <input
@@ -4325,7 +4325,7 @@ export default function SaasAdminDashboard({
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="font-bold text-slate-700 block mb-1">Plan Tier *</label>
                                     <select
@@ -4417,7 +4417,7 @@ export default function SaasAdminDashboard({
                                 </select>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="font-bold text-slate-700 block mb-1">Billing Reason</label>
                                     <select
@@ -4444,7 +4444,7 @@ export default function SaasAdminDashboard({
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="font-bold text-slate-700 block mb-1">Due Date *</label>
                                     <input
@@ -4517,7 +4517,7 @@ export default function SaasAdminDashboard({
                         </div>
 
                         <form onSubmit={submitPayment} className="space-y-4 pt-4 text-xs">
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="font-bold text-slate-700 block mb-1">Amount to Pay (TZS) *</label>
                                     <input
@@ -4631,7 +4631,7 @@ export default function SaasAdminDashboard({
                                 </select>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="font-bold text-slate-700 block mb-1">Plan Specification</label>
                                     <input
@@ -4726,7 +4726,7 @@ export default function SaasAdminDashboard({
                                 </div>
                             ) : (
                                 <form onSubmit={submitSignContract} className="space-y-3">
-                                    <div className="grid grid-cols-3 gap-2 text-xs">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                                         <input
                                             type="text"
                                             required
@@ -4894,7 +4894,7 @@ export default function SaasAdminDashboard({
                                     className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
                                 />
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="font-bold text-slate-700 block mb-1">Platform Role *</label>
                                     <select
@@ -4983,7 +4983,7 @@ export default function SaasAdminDashboard({
                                     className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
                                 />
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="font-bold text-slate-700 block mb-1">Platform Role *</label>
                                     <select

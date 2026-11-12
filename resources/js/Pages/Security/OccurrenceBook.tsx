@@ -266,7 +266,7 @@ export default function OccurrenceBook({ entries, stats, categories, filters, ca
 
             {/* Create Modal */}
             {showCreate && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+                <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs overflow-y-auto">
                     <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
                         <button type="button" onClick={() => setShowCreate(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
                             <X className="w-5 h-5" />
@@ -330,7 +330,7 @@ export default function OccurrenceBook({ entries, stats, categories, filters, ca
 
             {/* View Modal */}
             {viewEntry && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+                <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs overflow-y-auto">
                     <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
                         <button type="button" onClick={() => setViewEntry(null)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
                             <X className="w-5 h-5" />
@@ -360,7 +360,7 @@ export default function OccurrenceBook({ entries, stats, categories, filters, ca
 
             {/* Amend Modal */}
             {amendEntry && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+                <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs overflow-y-auto">
                     <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
                         <button type="button" onClick={() => setAmendEntry(null)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
                             <X className="w-5 h-5" />

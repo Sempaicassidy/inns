@@ -64,7 +64,7 @@ class FolioController extends Controller
     public function addCharge(Request $request, Folio $folio): RedirectResponse
     {
         $validated = $request->validate([
-            'line_type' => 'required|in:room,restaurant,bar,laundry,tour,minibar,miscellaneous,adjustment',
+            'line_type' => 'required|in:room,restaurant,bar,laundry,tour,minibar,miscellaneous,adjustment,grocery',
             'description' => 'required|string|max:255',
             'amount' => 'required|numeric|min:0.01',
         ]);

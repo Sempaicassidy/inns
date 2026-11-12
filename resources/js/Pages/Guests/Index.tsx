@@ -1075,7 +1075,7 @@ export default function GuestsIndex({
 
                 {/* 7. CREATE GUEST MODAL */}
                 {isCreateModalOpen && (
-                    <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/40 backdrop-blur-2xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
+                    <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/40 backdrop-blur-2xs flex items-start sm:items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150 overflow-y-auto">
                         <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
                             <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                                 <div className="flex items-center gap-2">
@@ -1094,7 +1094,7 @@ export default function GuestsIndex({
                             </div>
 
                             <form onSubmit={submitCreateGuest} className="p-4 sm:p-5 overflow-y-auto space-y-3.5 text-xs flex-1">
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
                                             First Name *
@@ -1123,7 +1123,7 @@ export default function GuestsIndex({
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
                                             Phone Number
@@ -1150,7 +1150,7 @@ export default function GuestsIndex({
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
                                             Nationality
@@ -1179,7 +1179,7 @@ export default function GuestsIndex({
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
                                             ID Document Type
@@ -1246,7 +1246,7 @@ export default function GuestsIndex({
 
                 {/* 8. EDIT GUEST MODAL */}
                 {isEditModalOpen && (
-                    <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/40 backdrop-blur-2xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
+                    <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/40 backdrop-blur-2xs flex items-start sm:items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150 overflow-y-auto">
                         <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
                             <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                                 <h3 className="text-base font-black text-slate-900">Edit Guest Profile</h3>
@@ -1260,7 +1260,7 @@ export default function GuestsIndex({
                             </div>
 
                             <form onSubmit={submitEditGuest} className="p-4 sm:p-5 overflow-y-auto space-y-3.5 text-xs flex-1">
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
                                             First Name *
@@ -1287,7 +1287,7 @@ export default function GuestsIndex({
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
                                             Phone Number
@@ -1312,7 +1312,7 @@ export default function GuestsIndex({
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
                                             Nationality

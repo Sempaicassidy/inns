@@ -985,7 +985,7 @@ export default function GroceryIndex({
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1">SKU / Barcode</label>
                                     <input
@@ -1014,7 +1014,7 @@ export default function GroceryIndex({
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1">
                                         Selling Price (TZS) <span className="text-red-500">*</span>
@@ -1042,7 +1042,7 @@ export default function GroceryIndex({
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1">Initial Stock</label>
                                     <input
@@ -1122,7 +1122,7 @@ export default function GroceryIndex({
                                 </span>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1">
                                         Quantity to Add <span className="text-red-500">*</span>
@@ -1220,7 +1220,7 @@ export default function GroceryIndex({
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1">Selling Price (TZS)</label>
                                     <input
@@ -1244,7 +1244,7 @@ export default function GroceryIndex({
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1">Reorder Threshold</label>
                                     <input
@@ -1289,7 +1289,7 @@ export default function GroceryIndex({
 
             {/* MODAL: NEW RETAIL COUNTER SALE */}
             {isSaleModalOpen && (
-                <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-start sm:items-center justify-center p-4 overflow-y-auto">
                     <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 space-y-4">
                         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
@@ -1327,7 +1327,7 @@ export default function GroceryIndex({
                                 </select>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
                                         Quantity

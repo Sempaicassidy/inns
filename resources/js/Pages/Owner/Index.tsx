@@ -1575,7 +1575,7 @@ export default function OwnerPortalIndex({
 
                 {/* ─── MODAL 1: CREATE DIRECTIVE ──────────────────────────────────── */}
                 {showDirectiveModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+                    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs overflow-y-auto">
                         <div className="bg-white border border-slate-200 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative text-slate-800">
                             <button
                                 type="button"
@@ -1608,7 +1608,7 @@ export default function OwnerPortalIndex({
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="block text-slate-700 font-bold mb-1">Target Property:</label>
                                         <select
@@ -1638,7 +1638,7 @@ export default function OwnerPortalIndex({
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="block text-slate-700 font-bold mb-1">Kategoria:</label>
                                         <select
@@ -1699,7 +1699,7 @@ export default function OwnerPortalIndex({
 
                 {/* ─── MODAL 2: APPROVE REQUISITION ───────────────────────────────── */}
                 {showApprovalModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+                    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs overflow-y-auto">
                         <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 shadow-2xl relative text-slate-800">
                             <button
                                 type="button"
@@ -1772,7 +1772,7 @@ export default function OwnerPortalIndex({
 
                 {/* ─── MODAL 3: REJECT REQUISITION ────────────────────────────────── */}
                 {showRejectModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+                    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs overflow-y-auto">
                         <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 shadow-2xl relative text-slate-800">
                             <button
                                 type="button"
@@ -1828,7 +1828,7 @@ export default function OwnerPortalIndex({
 
                 {/* ─── MODAL 4: SET BRANCH TARGET ─────────────────────────────────── */}
                 {showTargetModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+                    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs overflow-y-auto">
                         <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 shadow-2xl relative text-slate-800">
                             <button
                                 type="button"
@@ -1889,7 +1889,7 @@ export default function OwnerPortalIndex({
 
                 {/* ─── MODAL 5: RECORD DRAWING / CAPITAL INJECTION ─────────────────── */}
                 {showDrawingModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+                    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs overflow-y-auto">
                         <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 shadow-2xl relative text-slate-800">
                             <button
                                 type="button"
@@ -1936,7 +1936,7 @@ export default function OwnerPortalIndex({
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="block text-slate-700 font-bold mb-1">Payment Method:</label>
                                         <select

@@ -74,7 +74,7 @@ export default function PwaInstallButton({ className = '' }: { className?: strin
 
             {/* Help / Manual Install Guide Modal */}
             {showHelpModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto">
                     <div className="bg-white rounded-3xl max-w-sm w-full p-6 text-left shadow-2xl border border-slate-200 relative">
                         <button
                             type="button"

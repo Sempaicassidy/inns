@@ -712,7 +712,7 @@ export default function InventoryIndex({
                         </div>
 
                         <form onSubmit={handleAddSkuSubmit} className="space-y-4 mt-4 text-xs sm:text-sm">
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1">
                                         SKU Code <span className="text-red-500">*</span>
@@ -759,7 +759,7 @@ export default function InventoryIndex({
                                 />
                             </div>
 
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1">Unit Cost (TZS)</label>
                                     <input
@@ -794,7 +794,7 @@ export default function InventoryIndex({
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1">Unit of Measure</label>
                                     <input
@@ -879,7 +879,7 @@ export default function InventoryIndex({
                                 </select>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1">
                                         Quantity Received <span className="text-red-500">*</span>
@@ -988,7 +988,7 @@ export default function InventoryIndex({
                                 </select>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1">
                                         Quantity to Issue <span className="text-red-500">*</span>
@@ -1100,7 +1100,7 @@ export default function InventoryIndex({
                                 </select>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1">Adjustment Type</label>
                                     <select

@@ -1037,7 +1037,7 @@ export default function Dashboard({
 
             {/* Requisition Submission Modal for Managers */}
             {showRequisitionModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+                <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto">
                     <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 relative">
                         <button
                             type="button"
@@ -1070,7 +1070,7 @@ export default function Dashboard({
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-slate-700 font-bold mb-1">Category:</label>
                                     <select
@@ -1101,7 +1101,7 @@ export default function Dashboard({
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-slate-700 font-bold mb-1">Requested Amount (TZS):</label>
                                     <input

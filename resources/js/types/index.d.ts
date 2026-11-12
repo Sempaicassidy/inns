@@ -213,7 +213,7 @@ export interface FolioLine {
     id: string;
     folio_id: string;
     business_date: string;
-    line_type: 'room' | 'restaurant' | 'bar' | 'laundry' | 'tour' | 'minibar' | 'miscellaneous' | 'adjustment';
+    line_type: 'room' | 'restaurant' | 'bar' | 'laundry' | 'tour' | 'minibar' | 'miscellaneous' | 'adjustment' | 'grocery';
     description: string;
     amount_minor: number;
     tax_minor: number;

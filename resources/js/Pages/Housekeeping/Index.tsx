@@ -1107,7 +1107,7 @@ export default function HousekeepingIndex({
 
             {/* MODAL: ASSIGN HOUSEKEEPING TASK */}
             {isAssignTaskModalOpen && (
-                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-start sm:items-center justify-center p-4 overflow-y-auto">
                     <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-150">
                         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                             <div>
@@ -1239,7 +1239,7 @@ export default function HousekeepingIndex({
 
             {/* MODAL: ADD NEW ROOM */}
             {isAddRoomModalOpen && (
-                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-start sm:items-center justify-center p-4 overflow-y-auto">
                     <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-150 overflow-hidden">
                         {/* Header */}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-[#1E3A5F]/5">
@@ -1330,7 +1330,7 @@ export default function HousekeepingIndex({
                                 </div>
 
                                 {/* Status */}
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="block font-bold text-slate-700 mb-1">Occupancy</label>
                                         <select
@@ -1526,7 +1526,7 @@ export default function HousekeepingIndex({
             )}
             {/* Rate Plans & Meal Basis Management Modal */}
             {isRatePlansModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
+                <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150 overflow-y-auto">
                     <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
                         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 shrink-0">
                             <div className="flex items-center gap-2.5">
@@ -1581,7 +1581,7 @@ export default function HousekeepingIndex({
                                             className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                                         />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div>
                                             <label className="block font-semibold text-slate-700 mb-1">Meal Basis *</label>
                                             <select
@@ -1700,7 +1700,7 @@ export default function HousekeepingIndex({
 
             {/* Room Types Management Modal */}
             {isRoomTypesModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
+                <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150 overflow-y-auto">
                     <div className="bg-white rounded-3xl max-w-3xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
                         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 shrink-0">
                             <div className="flex items-center gap-3">
@@ -1835,7 +1835,7 @@ export default function HousekeepingIndex({
                                             />
                                         </div>
 
-                                        <div className="grid grid-cols-3 gap-2">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                             <div>
                                                 <label className="block font-semibold text-slate-700 mb-1 text-[11px]">
                                                     Base Occ.

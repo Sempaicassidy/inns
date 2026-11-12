@@ -11,6 +11,7 @@ import ToastHost from '@/Components/ToastHost';
 import RoleSwitcher from '@/Components/RoleSwitcher';
 import { ActiveRoleProvider } from '@/contexts/ActiveRoleContext';
 import { getRoleNavigation, NAV_ICONS, NavItemDef } from '@/config/role-navigation';
+import { logout } from '@/Utils/auth';
 import {
     Bell,
     BellRing,
@@ -276,17 +277,18 @@ export default function AuthenticatedLayout({
 
         if (item.isLogout) {
             return (
-                <Link
+                <button
                     key={item.name}
-                    href={route('logout')}
-                    method="post"
-                    as="button"
-                    onClick={() => setSidebarOpen(false)}
+                    type="button"
+                    onClick={() => {
+                        setSidebarOpen(false);
+                        logout();
+                    }}
                     className="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition text-rose-600 hover:text-rose-700 hover:bg-rose-50 text-left cursor-pointer"
                 >
                     <Icon className="w-4 h-4 text-rose-500" />
                     <span className="flex-1">{item.name}</span>
-                </Link>
+                </button>
             );
         }
 
@@ -345,12 +347,12 @@ export default function AuthenticatedLayout({
 
     return (
         <ActiveRoleProvider>
-            <div className="min-h-screen bg-slate-50/70 text-slate-900 flex flex-col md:flex-row font-sans antialiased">
+            <div className="min-h-screen bg-slate-50/70 text-slate-900 flex flex-col lg:flex-row font-sans antialiased">
                 <PwaNotificationManager />
                 <OfflineSyncManager />
                 <ToastHost />
                 {/* MOBILE TOP BAR */}
-                <div className="md:hidden sticky top-0 z-50 bg-[#1E3A5F] border-b border-[#D4AF37]/30 px-4 h-14 flex items-center justify-between shadow-xs">
+                <div className="lg:hidden sticky top-0 z-50 bg-[#1E3A5F] border-b border-[#D4AF37]/30 px-4 h-14 flex items-center justify-between shadow-xs">
                     <button
                         onClick={() => setSidebarOpen(true)}
                         className="p-2 rounded-lg text-[#D4AF37] hover:bg-white/10 transition"
@@ -379,13 +381,13 @@ export default function AuthenticatedLayout({
                 {sidebarOpen && (
                     <div
                         onClick={() => setSidebarOpen(false)}
-                        className="md:hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-xs"
+                        className="lg:hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-xs"
                     />
                 )}
 
                 {/* SIDEBAR */}
                 <aside
-                    className={`fixed md:sticky top-0 bottom-0 left-0 z-50 w-64 bg-[#1E3A5F] border-r border-[#D4AF37]/20 flex flex-col shrink-0 transition-transform duration-300 ease-in-out md:translate-x-0 shadow-xl md:shadow-none ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                    className={`fixed lg:sticky top-0 bottom-0 left-0 z-50 w-64 bg-[#1E3A5F] border-r border-[#D4AF37]/20 flex flex-col shrink-0 transition-transform duration-300 ease-in-out lg:translate-x-0 shadow-xl lg:shadow-none ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
                         }`}
                 >
                     {/* Logo Header */}
@@ -397,7 +399,7 @@ export default function AuthenticatedLayout({
 
                         <button
                             onClick={() => setSidebarOpen(false)}
-                            className="md:hidden p-2 rounded-lg text-white/60 hover:bg-white/10 transition"
+                            className="lg:hidden p-2 rounded-lg text-white/60 hover:bg-white/10 transition"
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -456,7 +458,7 @@ export default function AuthenticatedLayout({
                 <div className="flex-1 flex flex-col min-w-0">
                     {/* Super Admin Impersonation Workspace Banner */}
                     {(auth as any)?.is_impersonating && (
-                        <div className="bg-amber-400 text-slate-950 px-4 sm:px-6 py-2.5 font-bold text-xs sm:text-sm flex items-center justify-between sticky top-0 z-50 shadow-md border-b border-amber-500">
+                        <div className="bg-amber-400 text-slate-950 px-4 sm:px-6 py-2.5 font-bold text-xs sm:text-sm flex items-center justify-between sticky top-14 lg:top-0 z-50 shadow-md border-b border-amber-500">
                             <div className="flex items-center gap-2.5">
                                 <span className="relative flex h-3 w-3">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-900 opacity-75"></span>
@@ -478,7 +480,7 @@ export default function AuthenticatedLayout({
                     )}
                     {/* Hotel Owner Branch Inspection Banner */}
                     {((auth as any)?.is_owner_inspecting || (auth as any)?.owner_inspecting_property_name) && (
-                        <div className="bg-amber-500 text-slate-950 px-4 sm:px-6 py-2.5 font-bold text-xs sm:text-sm flex items-center justify-between sticky top-0 z-50 shadow-md border-b border-amber-600">
+                        <div className="bg-amber-500 text-slate-950 px-4 sm:px-6 py-2.5 font-bold text-xs sm:text-sm flex items-center justify-between sticky top-14 lg:top-0 z-50 shadow-md border-b border-amber-600">
                             <div className="flex items-center gap-2.5">
                                 <span className="relative flex h-3 w-3">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-900 opacity-75"></span>
@@ -622,7 +624,7 @@ export default function AuthenticatedLayout({
                                             onClick={() => setNotificationsOpen(false)}
                                             className="fixed inset-0 z-40"
                                         />
-                                        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-slate-200/90 rounded-2xl shadow-2xl z-50 text-xs overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+                                        <div className="absolute right-0 mt-2 w-80 sm:w-96 max-w-[calc(100vw-2rem)] bg-white border border-slate-200/90 rounded-2xl shadow-2xl z-50 text-xs overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
                                             {/* Dropdown Header */}
                                             <div className="p-3.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
@@ -735,7 +737,7 @@ export default function AuthenticatedLayout({
                             <div className="relative">
                                 <button
                                     onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                                    className="hidden md:flex items-center space-x-2 p-1 rounded-lg hover:bg-gray-100 transition text-left cursor-pointer"
+                                    className="hidden lg:flex items-center space-x-2 p-1 rounded-lg hover:bg-gray-100 transition text-left cursor-pointer"
                                 >
                                     <div className="w-9 h-9 rounded-lg bg-[#D4AF37] text-[#1E3A5F] font-bold flex items-center justify-center text-sm">
                                         {user?.name?.charAt(0) || 'U'}
@@ -774,15 +776,14 @@ export default function AuthenticatedLayout({
                                             >
                                                 Profile Settings
                                             </Link>
-                                            <Link
-                                                href={route('logout')}
-                                                method="post"
-                                                as="button"
-                                                className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 font-semibold flex items-center space-x-2"
+                                            <button
+                                                type="button"
+                                                onClick={logout}
+                                                className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 font-semibold flex items-center space-x-2 cursor-pointer"
                                             >
                                                 <LogOut className="w-4 h-4" />
                                                 <span>Log Out</span>
-                                            </Link>
+                                            </button>
                                         </div>
                                     </>
                                 )}

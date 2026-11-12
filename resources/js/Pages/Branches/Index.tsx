@@ -370,7 +370,7 @@ export default function BranchesIndex({
 
             {/* CREATE BRANCH MODAL */}
             {createModalOpen && (
-                <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-start sm:items-center justify-center p-4 overflow-y-auto">
                     <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 shadow-2xl">
                         <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
                             <div className="flex items-center space-x-2.5">
@@ -537,7 +537,7 @@ export default function BranchesIndex({
 
             {/* EDIT BRANCH MODAL */}
             {editingBranch && (
-                <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-start sm:items-center justify-center p-4 overflow-y-auto">
                     <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 shadow-2xl">
                         <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
                             <div className="flex items-center space-x-2.5">

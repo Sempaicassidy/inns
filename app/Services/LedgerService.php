@@ -80,6 +80,7 @@ class LedgerService
         return match ($lineType) {
             'room' => '4001',
             'restaurant', 'bar' => '4002',
+            'grocery' => '4003',
             default => '4004',
         };
     }

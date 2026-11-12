@@ -421,7 +421,7 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
 
             {/* Modal: Post Charge (White) */}
             {isAddChargeModalOpen && (
-                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-start sm:items-center justify-center p-4 animate-in fade-in duration-150 overflow-y-auto">
                     <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl">
                         <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
                             <h3 className="font-bold text-slate-900 text-sm">Post Charge to Folio {folio.folio_number}</h3>
@@ -439,6 +439,7 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
                                     className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 shadow-xs"
                                 >
                                     <option value="restaurant">Restaurant / Dining</option>
+                                    <option value="grocery">Grocery / Minimart</option>
                                     <option value="bar">Bar & Beverages</option>
                                     <option value="room">Room Night Charge</option>
                                     <option value="tour">Safari Tour / Excursion</option>
@@ -501,7 +502,7 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
 
             {/* Modal: Record Payment (White) */}
             {isPaymentModalOpen && (
-                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-start sm:items-center justify-center p-4 animate-in fade-in duration-150 overflow-y-auto">
                     <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl">
                         <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
                             <h3 className="font-bold text-slate-900 text-sm">Record Payment for Folio {folio.folio_number}</h3>
@@ -590,7 +591,7 @@ export default function FolioShow({ folio, auth }: FolioShowProps) {
 
             {/* Modal: 80mm ESC/POS Thermal Receipt Live Preview */}
             {isThermalReceiptOpen && (
-                <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+                <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-start sm:items-center justify-center p-4 animate-in fade-in duration-150 overflow-y-auto">
                     <div className="bg-white border border-slate-200 rounded-3xl max-w-sm w-full p-6 shadow-2xl flex flex-col items-center">
                         <div className="flex items-center justify-between w-full pb-3 border-b border-slate-100 mb-4">
                             <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center space-x-1.5">

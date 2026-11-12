@@ -2627,7 +2627,7 @@ export default function AccountingIndex({
 
                 {/* MODAL 1: NEW EXPENSE VOUCHER */}
                 {isExpenseModalOpen && (
-                    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+                    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-start sm:items-center justify-center p-4 overflow-y-auto">
                         <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4">
                             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                                 <h3 className="text-base font-extrabold text-slate-900">Record New Expense Voucher</h3>
@@ -2653,7 +2653,7 @@ export default function AccountingIndex({
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="block font-bold text-slate-700 mb-1">Category *</label>
                                         <select
@@ -2684,7 +2684,7 @@ export default function AccountingIndex({
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="block font-bold text-slate-700 mb-1">Amount (TZS) *</label>
                                         <input
@@ -2711,7 +2711,7 @@ export default function AccountingIndex({
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="block font-bold text-slate-700 mb-1">Vendor / Beneficiary</label>
                                         <input
@@ -2757,7 +2757,7 @@ export default function AccountingIndex({
 
                 {/* MODAL 2: QUICK JOURNAL ENTRY */}
                 {isJournalModalOpen && (
-                    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+                    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-start sm:items-center justify-center p-4 overflow-y-auto">
                         <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4">
                             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                                 <h3 className="text-base font-extrabold text-slate-900">Post General Ledger Journal Entry</h3>

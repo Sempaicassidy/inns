@@ -228,7 +228,7 @@ export default function PosIndex({
                             amount: c.item.price_minor * c.quantity,
                         })),
                     },
-                }).catch(() => {});
+                }).catch(() => { });
             }
 
             import('@/Services/offlineSync').then(({ default: offlineSync }) => {
@@ -276,7 +276,7 @@ export default function PosIndex({
                                     amount: c.item.price_minor * c.quantity,
                                 })),
                             },
-                        }).catch(() => {});
+                        }).catch(() => { });
                     }
 
                     import('@/Services/offlineSync').then(({ default: offlineSync }) => {
@@ -371,12 +371,12 @@ export default function PosIndex({
 
             <div className="space-y-6">
                 {/* Page Header */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                         <h1 className="text-2xl font-bold text-[#1E293B]">Restaurant POS</h1>
-                        
+
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                         <button
                             type="button"
                             onClick={() => setIsRecentOrdersOpen(true)}
@@ -404,11 +404,10 @@ export default function PosIndex({
                         <div className="flex items-center gap-2 overflow-x-auto pb-2">
                             <button
                                 onClick={() => setSelectedCategoryId('all')}
-                                className={`px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap ${
-                                    selectedCategoryId === 'all'
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap ${selectedCategoryId === 'all'
                                         ? 'bg-[#2563EB] text-white'
                                         : 'bg-white border border-[#E2E8F0] text-[#1E293B] hover:bg-[#F8FAFC]'
-                                }`}
+                                    }`}
                             >
                                 All Items
                             </button>
@@ -416,11 +415,10 @@ export default function PosIndex({
                                 <button
                                     key={cat.id}
                                     onClick={() => setSelectedCategoryId(cat.id)}
-                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 whitespace-nowrap ${
-                                        selectedCategoryId === cat.id
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 whitespace-nowrap ${selectedCategoryId === cat.id
                                             ? 'bg-[#2563EB] text-white'
                                             : 'bg-white border border-[#E2E8F0] text-[#1E293B] hover:bg-[#F8FAFC]'
-                                    }`}
+                                        }`}
                                 >
                                     {getCategoryIcon(cat.name)}
                                     <span>{cat.name}</span>
@@ -449,11 +447,10 @@ export default function PosIndex({
                                     <div
                                         key={item.id}
                                         onClick={() => addToCart(item)}
-                                        className={`relative bg-white border rounded-2xl p-4 text-left transition-all duration-200 flex flex-col justify-between select-none ${
-                                            inCartItem
+                                        className={`relative bg-white border rounded-2xl p-4 text-left transition-all duration-200 flex flex-col justify-between select-none ${inCartItem
                                                 ? 'border-blue-500 shadow-md ring-2 ring-blue-500/20 bg-blue-50/20 cursor-pointer active:scale-98'
                                                 : 'border-slate-200/90 hover:border-blue-400 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer active:scale-98'
-                                        }`}
+                                            }`}
                                     >
                                         {inCartItem && (
                                             <span className="absolute -top-2.5 -right-2 px-2.5 py-0.5 rounded-full bg-blue-600 text-white font-black text-xs shadow-md border-2 border-white flex items-center gap-1 z-10 animate-in zoom-in-75 duration-150">
@@ -496,11 +493,10 @@ export default function PosIndex({
                                                     e.stopPropagation();
                                                     addToCart(item);
                                                 }}
-                                                className={`px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1 ${
-                                                    inCartItem
+                                                className={`px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1 ${inCartItem
                                                         ? 'bg-blue-600 text-white shadow-xs'
                                                         : 'bg-blue-50 hover:bg-blue-100 text-blue-700 cursor-pointer'
-                                                }`}
+                                                    }`}
                                             >
                                                 <Plus className="w-3.5 h-3.5" />
                                                 <span>Add</span>
@@ -539,11 +535,10 @@ export default function PosIndex({
                                             key={type.key}
                                             type="button"
                                             onClick={() => setOrderData('order_type', type.key as any)}
-                                            className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
-                                                orderData.order_type === type.key
+                                            className={`px-3 py-2 rounded-lg text-sm font-medium transition ${orderData.order_type === type.key
                                                     ? 'bg-[#2563EB] text-white'
                                                     : 'bg-[#F8FAFC] text-[#64748B] hover:bg-[#E2E8F0]'
-                                            }`}
+                                                }`}
                                         >
                                             {type.label}
                                         </button>
@@ -653,11 +648,10 @@ export default function PosIndex({
                                                     key={method.key}
                                                     type="button"
                                                     onClick={() => setOrderData('payment_method', method.key as any)}
-                                                    className={`p-3 rounded-lg border flex items-center gap-2 text-sm transition ${
-                                                        orderData.payment_method === method.key
+                                                    className={`p-3 rounded-lg border flex items-center gap-2 text-sm transition ${orderData.payment_method === method.key
                                                             ? 'border-[#2563EB] bg-[#EFF6FF] text-[#2563EB]'
                                                             : 'border-[#E2E8F0] text-[#64748B] hover:bg-[#F8FAFC]'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     <Icon className="w-4 h-4" />
                                                     <span>{method.label}</span>
@@ -710,7 +704,7 @@ export default function PosIndex({
 
             {/* Recent Orders & Receipts History Modal */}
             {isRecentOrdersOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+                <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-150 overflow-y-auto">
                     <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
                         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80 shrink-0">
                             <div className="flex items-center gap-3">

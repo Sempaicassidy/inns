@@ -1,5 +1,6 @@
 import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { logout } from '@/Utils/auth';
+import { Head, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 import { MailCheck, RefreshCw, LogOut, CheckCircle2 } from 'lucide-react';
 
@@ -55,15 +56,14 @@ export default function VerifyEmail({ status }: { status?: string }) {
                     </button>
 
                     <div className="pt-2 flex items-center justify-center border-t border-slate-100">
-                        <Link
-                            href={route('logout')}
-                            method="post"
-                            as="button"
+                        <button
+                            type="button"
+                            onClick={logout}
                             className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-[#1E3A5F] transition-colors cursor-pointer py-1.5 px-3 rounded-xl hover:bg-slate-100"
                         >
                             <LogOut className="w-3.5 h-3.5 text-slate-400" />
                             <span>Log Out</span>
-                        </Link>
+                        </button>
                     </div>
                 </form>
 

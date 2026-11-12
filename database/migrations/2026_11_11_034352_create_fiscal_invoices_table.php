@@ -8,13 +8,14 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::dropIfExists('fiscal_invoices');
         Schema::create('fiscal_invoices', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->foreignUuid('property_id')->nullable()->constrained('properties')->nullOnDelete();
-            $table->string('source_type'); // folio_payment, pos_order, expense
-            $table->string('source_id');
-            $table->string('invoice_number')->unique();
+            $table->string('source_type', 50); // folio_payment, pos_order, expense
+            $table->string('source_id', 100);
+            $table->string('invoice_number', 191)->unique();
             $table->string('environment', 20)->default('sandbox'); // sandbox, production
             $table->string('status', 30)->default('pending');
             // pending, not_configured, queued, submitted, acknowledged, failed, rejected

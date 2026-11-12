@@ -1891,7 +1891,7 @@ export default function HrIndex({
 
             {/* MODAL 3: VIEW PROFILE */}
             {isViewProfileOpen && selectedEmployee && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+                <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs overflow-y-auto">
                     <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200/80">
                         <div className="flex items-center justify-between pb-4 border-b border-slate-200">
                             <div>
@@ -1970,7 +1970,7 @@ export default function HrIndex({
 
             {/* MODAL 4: ASSIGN SHIFT */}
             {isAssignShiftOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+                <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs overflow-y-auto">
                     <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200/80">
                         <div className="flex items-center justify-between pb-4 border-b border-slate-200">
                             <div>
@@ -2003,7 +2003,7 @@ export default function HrIndex({
                                 </select>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="font-bold text-slate-700 block mb-1">Shift Date *</label>
                                     <input
@@ -2029,7 +2029,7 @@ export default function HrIndex({
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="font-bold text-slate-700 block mb-1">Start Time</label>
                                     <input
@@ -2084,7 +2084,7 @@ export default function HrIndex({
 
             {/* MODAL 5: RECORD ATTENDANCE */}
             {isAttendanceOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+                <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs overflow-y-auto">
                     <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200/80">
                         <div className="flex items-center justify-between pb-4 border-b border-slate-200">
                             <div>
@@ -2117,7 +2117,7 @@ export default function HrIndex({
                                 </select>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="font-bold text-slate-700 block mb-1">Date *</label>
                                     <input
@@ -2145,7 +2145,7 @@ export default function HrIndex({
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="font-bold text-slate-700 block mb-1">Clock-In Time</label>
                                     <input
@@ -2200,7 +2200,7 @@ export default function HrIndex({
 
             {/* MODAL 6: APPLY LEAVE */}
             {isApplyLeaveOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+                <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs overflow-y-auto">
                     <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200/80">
                         <div className="flex items-center justify-between pb-4 border-b border-slate-200">
                             <div>
@@ -2249,7 +2249,7 @@ export default function HrIndex({
                                 </select>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="font-bold text-slate-700 block mb-1">Start Date *</label>
                                     <input
@@ -2307,7 +2307,7 @@ export default function HrIndex({
 
             {/* MODAL 7: REVIEW LEAVE */}
             {isReviewLeaveOpen && selectedLeave && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+                <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs overflow-y-auto">
                     <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200/80">
                         <div className="flex items-center justify-between pb-4 border-b border-slate-200">
                             <div>
@@ -2498,7 +2498,7 @@ export default function HrIndex({
 
             {/* MODAL 9: ADD DISCIPLINARY / PERFORMANCE RECORD */}
             {isAddDisciplinaryOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+                <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs overflow-y-auto">
                     <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200/80">
                         <div className="flex items-center justify-between pb-4 border-b border-slate-200">
                             <div>
@@ -2531,7 +2531,7 @@ export default function HrIndex({
                                 </select>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="font-bold text-slate-700 block mb-1">Record Type *</label>
                                     <select

@@ -643,7 +643,7 @@ export default function RoomArrangementGrid({
             {/* 4. Specifications Pop-Up on Top (Modal Dialog Overlay - Pops On Top, 100% Matching Image 2) */}
             {activeRoom && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs animate-in fade-in duration-200"
+                    className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto"
                     onClick={() => setActiveRoom(null)}
                 >
                     <div
@@ -889,7 +889,7 @@ export default function RoomArrangementGrid({
 
                         {/* 5. Request Maintenance Modal */}
             {isMaintenanceModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 animate-in fade-in duration-150">
+                <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-slate-900/60 p-4 animate-in fade-in duration-150 overflow-y-auto">
                     <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-200">
                         {/* Header */}
                         <div className="bg-[#1E3A5F] px-6 py-4 flex items-center justify-between text-white">

@@ -97,9 +97,9 @@ export default function CalendarView({
 
     const getBookingForRoomAndDate = (roomId: string, date: Date) => {
         const dateStr = date.toISOString().split('T')[0];
-        return bookings.find(b => 
-            b.room_id === roomId && 
-            dateStr >= b.check_in && 
+        return bookings.find(b =>
+            b.room_id === roomId &&
+            dateStr >= b.check_in &&
             dateStr < b.check_out
         );
     };
@@ -114,7 +114,7 @@ export default function CalendarView({
 
             <div className="space-y-4">
                 {/* Header */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                         <h1 className="text-xl font-bold text-gray-900">Calendar View</h1>
                     </div>
@@ -129,7 +129,7 @@ export default function CalendarView({
                 </div>
 
                 {/* Stats Bar */}
-                <div className="flex items-center gap-4 bg-white border border-gray-200 rounded-lg p-4">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-white border border-gray-200 rounded-lg p-4">
                     <div className="flex items-center gap-2">
                         <span className="text-sm text-gray-600">All:</span>
                         <span className="font-bold text-gray-900">{stats.total}</span>
@@ -162,7 +162,7 @@ export default function CalendarView({
                 </div>
 
                 {/* Calendar Grid */}
-                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
                     {/* Calendar Header */}
                     <div className="flex items-center justify-between p-4 border-b border-gray-200">
                         <button
@@ -183,7 +183,7 @@ export default function CalendarView({
                     </div>
 
                     {/* Days Header */}
-                    <div className="grid grid-cols-14 border-b border-gray-200">
+                    <div className="grid border-b border-gray-200 min-w-[720px]" style={{ gridTemplateColumns: `repeat(${daysInMonth + 1}, minmax(64px, 1fr))` }}>
                         <div className="p-2 text-center text-xs font-medium text-gray-500 border-r border-gray-200 bg-gray-50">Room Type</div>
                         {days.map((day) => (
                             <div key={day} className="p-2 text-center text-xs font-medium text-gray-500 border-r border-gray-200 bg-gray-50">
@@ -199,11 +199,11 @@ export default function CalendarView({
                             <div className="bg-blue-50 p-2 text-sm font-medium text-blue-900 border-b border-blue-200">
                                 {roomType.name}
                             </div>
-                            
+
                             {/* Room Cells */}
                             {roomType.rooms.map((room) => (
-                                <div key={room.id} className="grid grid-cols-14 border-b border-gray-100">
-                                    <div 
+                                <div key={room.id} className="grid border-b border-gray-100 min-w-[720px]" style={{ gridTemplateColumns: `repeat(${daysInMonth + 1}, minmax(64px, 1fr))` }}>
+                                    <div
                                         onClick={() => setSelectedRoom(room)}
                                         className="p-2 text-xs font-medium text-gray-900 border-r border-gray-200 bg-white hover:bg-blue-50 cursor-pointer flex items-center gap-2"
                                     >
@@ -213,7 +213,7 @@ export default function CalendarView({
                                     {days.map((day) => {
                                         const date = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), day);
                                         const booking = getBookingForRoomAndDate(room.id, date);
-                                        
+
                                         return (
                                             <div
                                                 key={day}
@@ -222,9 +222,8 @@ export default function CalendarView({
                                                         setSelectedRange({ start: date, end: new Date(date.getTime() + 86400000) });
                                                     }
                                                 }}
-                                                className={`p-2 text-xs border-r border-gray-200 cursor-pointer ${
-                                                    booking ? 'bg-blue-500 text-white' : 'bg-white hover:bg-gray-50'
-                                                }`}
+                                                className={`p-2 text-xs border-r border-gray-200 cursor-pointer ${booking ? 'bg-blue-500 text-white' : 'bg-white hover:bg-gray-50'
+                                                    }`}
                                             >
                                                 {booking ? (
                                                     <div className="text-center">
@@ -258,7 +257,7 @@ export default function CalendarView({
                                         return !booking;
                                     }).length;
                                 }, 0);
-                                
+
                                 return (
                                     <div key={day} className="flex items-center justify-between text-xs">
                                         <span className="text-gray-600">{formatDate(date)}</span>
@@ -280,7 +279,7 @@ export default function CalendarView({
                                     }).length;
                                 }, 0);
                                 const occupancy = stats.total > 0 ? Math.round((occupiedCount / stats.total) * 100) : 0;
-                                
+
                                 return (
                                     <div key={day} className="flex items-center justify-between text-xs">
                                         <span className="text-gray-600">{formatDate(date)}</span>
@@ -294,7 +293,7 @@ export default function CalendarView({
 
                 {/* Date Range Selection Modal */}
                 {selectedRange.start && !isBlockModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
                         <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6">
                             <h3 className="text-lg font-bold text-gray-900 mb-4">Select Action</h3>
                             <div className="space-y-3">
@@ -330,7 +329,7 @@ export default function CalendarView({
 
                 {/* Block Room Modal */}
                 {isBlockModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
                         <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-lg font-bold text-gray-900">Block Room</h3>

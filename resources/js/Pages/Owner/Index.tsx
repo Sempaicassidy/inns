@@ -472,16 +472,16 @@ export default function OwnerPortalIndex({
                         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-4">
                             {/* Brand & Organization */}
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-[#D4AF37] flex items-center justify-center shrink-0 shadow-md ring-1 ring-amber-400/30">
-                                    <Crown className="w-5 h-5 sm:w-6 sm:h-6 drop-shadow-xs" />
+                                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-black text-lg shrink-0 shadow-xs">
+                                    {(tenant?.name || 'P').charAt(0).toUpperCase()}
                                 </div>
                                 <div>
                                     <div className="flex items-center gap-2 flex-wrap">
-                                        <h1 className="text-lg sm:text-xl font-black text-slate-950 tracking-tight capitalize leading-tight">
+                                        <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight capitalize leading-tight">
                                             {tenant?.name || 'Executive Holdings'}
                                         </h1>
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-slate-950 text-[#D4AF37] border border-amber-500/30 shadow-2xs">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                             Executive Suite
                                         </span>
                                     </div>
@@ -495,65 +495,59 @@ export default function OwnerPortalIndex({
                             <div className="flex items-center gap-2 shrink-0">
                                 <Link
                                     href={route('dashboard')}
-                                    className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 border border-slate-200 font-bold text-xs transition flex items-center gap-1.5 shadow-2xs shrink-0"
+                                    className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 font-bold text-xs transition shadow-2xs shrink-0"
                                     title="Switch to General Manager Operations View"
                                 >
-                                    <Building2 className="w-3.5 h-3.5 text-slate-500" />
-                                    <span>Manager View</span>
+                                    Manager View
                                 </Link>
 
                                 <button
                                     type="button"
                                     onClick={() => setShowDirectiveModal(true)}
-                                    className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-[#D4AF37] hover:from-amber-600 hover:to-amber-500 text-slate-950 font-black text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer shrink-0"
+                                    className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs shadow-xs transition cursor-pointer shrink-0"
                                 >
-                                    <Megaphone className="w-3.5 h-3.5 text-slate-950" />
-                                    <span>Issue Directive</span>
+                                    Issue Directive
                                 </button>
                             </div>
                         </div>
 
-                        {/* Executive Navigation Tabs (Clean, Modern, Zero Horizontal Scrollbar) */}
+                        {/* Executive Navigation Tabs (Humanic, Solid Colors, No Icons, No Dark Colors) */}
                         <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 border-t border-slate-100">
-                            <nav className="flex items-center gap-1 sm:gap-2 flex-wrap" aria-label="Executive Navigation">
+                            <nav className="flex items-center gap-1.5 sm:gap-2 flex-wrap" aria-label="Executive Navigation">
                                 {[
-                                    { id: 'overview', label: 'Overview', icon: Activity },
-                                    { id: 'branches', label: 'Branches', icon: Building2 },
+                                    { id: 'overview', label: 'Overview' },
+                                    { id: 'branches', label: 'Branches' },
                                     {
                                         id: 'approvals',
                                         label: 'Approvals',
-                                        icon: CheckSquare,
                                         count: metrics.pending_approvals_count,
                                     },
                                     {
                                         id: 'directives',
                                         label: 'Directives',
-                                        icon: Send,
                                         count: metrics.active_directives_count,
                                     },
-                                    { id: 'financials', label: 'Financials', icon: DollarSign },
-                                    { id: 'audit', label: 'Audit & Risk', icon: ShieldAlert },
+                                    { id: 'financials', label: 'Financials' },
+                                    { id: 'audit', label: 'Audit & Risk' },
                                 ].map(tabItem => {
-                                    const Icon = tabItem.icon;
                                     const isActive = currentTab === tabItem.id;
                                     return (
                                         <button
                                             key={tabItem.id}
                                             type="button"
                                             onClick={() => setCurrentTab(tabItem.id)}
-                                            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                                            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                                                 isActive
-                                                    ? 'bg-slate-950 text-white shadow-xs'
-                                                    : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100'
+                                                    ? 'bg-blue-600 text-white shadow-xs'
+                                                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                                             }`}
                                         >
-                                            <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#D4AF37]' : 'text-slate-500'}`} />
                                             <span>{tabItem.label}</span>
                                             {typeof tabItem.count === 'number' && tabItem.count > 0 && (
                                                 <span
-                                                    className={`ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                                                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
                                                         isActive
-                                                            ? 'bg-[#D4AF37] text-slate-950'
+                                                            ? 'bg-white text-blue-700'
                                                             : 'bg-rose-500 text-white'
                                                     }`}
                                                 >
@@ -592,7 +586,7 @@ export default function OwnerPortalIndex({
                                     <button
                                         type="button"
                                         onClick={() => setCurrentTab('approvals')}
-                                        className="px-4 py-2 rounded-xl bg-slate-950 text-[#D4AF37] font-bold text-xs hover:bg-slate-900 transition flex items-center gap-1.5 shrink-0 cursor-pointer self-start sm:self-auto"
+                                        className="px-4 py-2 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 transition flex items-center gap-1.5 shrink-0 cursor-pointer self-start sm:self-auto"
                                     >
                                         <span>Review Approvals</span>
                                         <ArrowRight className="w-3.5 h-3.5" />
@@ -726,7 +720,7 @@ export default function OwnerPortalIndex({
                                                     type="button"
                                                     onClick={() => router.get(route('owner.index'), { period: p.id, tab: 'overview' }, { preserveScroll: true })}
                                                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${period === p.id
-                                                        ? 'bg-slate-950 text-[#D4AF37] font-extrabold shadow-2xs'
+                                                        ? 'bg-blue-600 text-white font-extrabold shadow-2xs'
                                                         : 'text-slate-600 hover:bg-slate-100'
                                                         }`}
                                                 >
@@ -770,12 +764,12 @@ export default function OwnerPortalIndex({
                                                                     className="flex-1 flex flex-col items-center gap-1.5 min-w-0 group relative"
                                                                 >
                                                                     {/* Tooltip on hover */}
-                                                                    <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition pointer-events-none bg-slate-950 text-white text-[10px] font-bold py-1 px-2 rounded-lg shadow-lg whitespace-nowrap z-20">
+                                                                    <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition pointer-events-none bg-slate-900 text-white text-[10px] font-bold py-1 px-2 rounded-lg shadow-lg whitespace-nowrap z-20">
                                                                         {point.label}: {formatTzs(point.total_minor)}
                                                                     </div>
                                                                     <div className="w-full flex flex-col justify-end h-32">
                                                                         <div
-                                                                            className="w-full bg-gradient-to-t from-slate-950 via-slate-800 to-[#D4AF37] rounded-t-lg transition-all duration-300 group-hover:from-amber-600 group-hover:to-amber-400"
+                                                                            className="w-full bg-blue-600 hover:bg-blue-500 rounded-t-lg transition-all duration-300"
                                                                             style={{ height: `${h}%` }}
                                                                         />
                                                                     </div>
@@ -792,11 +786,11 @@ export default function OwnerPortalIndex({
                                             <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
                                                 <div className="flex items-center gap-4">
                                                     <span className="flex items-center gap-1.5">
-                                                        <span className="w-2.5 h-2.5 rounded-full bg-[#D4AF37]" />
+                                                        <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
                                                         Total Revenue
                                                     </span>
                                                     <span className="flex items-center gap-1.5">
-                                                        <span className="w-2.5 h-2.5 rounded-full bg-slate-800" />
+                                                        <span className="w-2.5 h-2.5 rounded-full bg-slate-400" />
                                                         Base Flow
                                                     </span>
                                                 </div>
@@ -1396,8 +1390,8 @@ export default function OwnerPortalIndex({
                                                     type="button"
                                                     onClick={() => setFilterRequisitionStatus(f.id as any)}
                                                     className={`px-3 py-1.5 rounded-lg font-bold transition cursor-pointer ${filterRequisitionStatus === f.id
-                                                        ? 'bg-slate-950 text-white font-extrabold shadow-2xs'
-                                                        : 'text-slate-600 hover:text-slate-950'
+                                                        ? 'bg-blue-600 text-white font-extrabold shadow-2xs'
+                                                        : 'text-slate-600 hover:text-slate-900'
                                                         }`}
                                                 >
                                                     {f.label}
@@ -1750,7 +1744,7 @@ export default function OwnerPortalIndex({
                                                 type="button"
                                                 onClick={() => router.get(route('owner.index'), { period: p.id, property_id: analytics.selected_property_id ?? undefined }, { preserveScroll: true })}
                                                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${period === p.id
-                                                    ? 'bg-slate-950 text-[#D4AF37] font-extrabold shadow-2xs'
+                                                    ? 'bg-blue-600 text-white font-extrabold shadow-2xs'
                                                     : 'text-slate-600 hover:bg-slate-100'
                                                     }`}
                                             >

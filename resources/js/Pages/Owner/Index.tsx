@@ -215,7 +215,6 @@ interface OwnerProps extends PageProps {
 export default function OwnerPortalIndex({
     auth,
     tenant,
-    tab = 'overview',
     period = 'month',
     analytics,
     metrics,
@@ -228,7 +227,6 @@ export default function OwnerPortalIndex({
     managersList = [],
     inspectingPropertyId,
 }: OwnerProps) {
-    const [currentTab, setCurrentTab] = useState(tab || 'overview');
     const [filterRequisitionStatus, setFilterRequisitionStatus] = useState<'all' | 'pending_owner' | 'approved' | 'rejected'>('all');
 
     // Modals
@@ -358,8 +356,8 @@ export default function OwnerPortalIndex({
         <AuthenticatedLayout>
             <Head title="Executive Owner Suite — Board Oversight & Capital Governance" />
 
-            <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans pb-20">
-                {/* ─── 1. ELITE EXECUTIVE HEADER ────────────────────────────────────── */}
+            <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans pb-24">
+                {/* ─── 1. ELITE EXECUTIVE HEADER (CLEAN, NO TAB BAR) ──────────────── */}
                 <header className="bg-white border-b border-slate-200/80 shadow-2xs sticky top-0 z-30">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
                         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
@@ -466,64 +464,19 @@ export default function OwnerPortalIndex({
                             </div>
                         </div>
                     </div>
-
-                    {/* ─── 2. SLEEK SEGMENTED TABS (ZERO SCROLLBAR) ────────────────────── */}
-                    <div className="bg-slate-50/90 border-t border-slate-200/70">
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-                            <nav className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                                {[
-                                    { id: 'overview', label: 'Executive Overview', icon: Activity },
-                                    { id: 'branches', label: 'Branch Portfolio', icon: Building2 },
-                                    {
-                                        id: 'approvals',
-                                        label: 'Expenditure Approvals',
-                                        icon: CheckSquare,
-                                        count: metrics.pending_approvals_count,
-                                    },
-                                    {
-                                        id: 'directives',
-                                        label: 'Owner Directives',
-                                        icon: Send,
-                                        count: metrics.active_directives_count,
-                                    },
-                                    { id: 'financials', label: 'Profit & Equity', icon: DollarSign },
-                                    { id: 'analytics', label: 'Intelligence & Analytics', icon: BarChart3 },
-                                    { id: 'audit', label: 'Audit & Loss Prevention', icon: ShieldAlert },
-                                ].map(t => {
-                                    const Icon = t.icon;
-                                    const isActive = currentTab === t.id;
-                                    return (
-                                        <button
-                                            key={t.id}
-                                            type="button"
-                                            onClick={() => setCurrentTab(t.id)}
-                                            className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition flex items-center gap-2 cursor-pointer ${isActive
-                                                ? 'bg-slate-950 text-white font-extrabold shadow-sm'
-                                                : 'text-slate-600 hover:text-slate-950 hover:bg-slate-200/60'
-                                                }`}
-                                        >
-                                            <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#D4AF37]' : 'text-slate-400'}`} />
-                                            <span>{t.label}</span>
-                                            {t.count !== undefined && t.count > 0 && (
-                                                <span
-                                                    className={`px-1.5 py-0.5 rounded-full text-[10px] font-black leading-none ${isActive ? 'bg-[#D4AF37] text-slate-950' : 'bg-rose-500 text-white'
-                                                        }`}
-                                                >
-                                                    {t.count}
-                                                </span>
-                                            )}
-                                        </button>
-                                    );
-                                })}
-                            </nav>
-                        </div>
-                    </div>
                 </header>
 
-                {/* ─── TAB 1: EXECUTIVE OVERVIEW (WAR ROOM) ────────────────────────── */}
-                {currentTab === 'overview' && (
-                    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-8">
-                        {/* Executive KPI Grid */}
+                {/* ─── MAIN EXECUTIVE CONTENT CONTAINER ───────────────────────────── */}
+                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-12">
+                    {/* ─── SECTION 1: EXECUTIVE FINANCIAL PERFORMANCE ─────────────── */}
+                    <section className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-base font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                                <Activity className="w-4 h-4 text-[#D4AF37]" />
+                                <span>Group Financial Overview</span>
+                            </h2>
+                        </div>
+
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                             {/* Card 1: Month Revenue */}
                             <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-[#D4AF37]/50 transition">
@@ -609,310 +562,140 @@ export default function OwnerPortalIndex({
                                 </div>
                             </div>
                         </div>
+                    </section>
 
-                        {/* Multi-Branch Portfolio Grid */}
-                        <section>
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
-                                <div>
-                                    <h2 className="text-xl font-black text-slate-950 flex items-center gap-2.5">
-                                        <Building2 className="w-5 h-5 text-[#D4AF37]" />
-                                        <span>Properties & Branch Portfolio</span>
-                                    </h2>
-                                    <p className="text-xs text-slate-500 mt-0.5">
-                                        Live financial scorecard, revenue pacing, and manager accountability across all properties
-                                    </p>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setCurrentTab('branches')}
-                                    className="text-xs font-bold text-[#B8941F] hover:text-amber-800 flex items-center gap-1.5 transition cursor-pointer self-start sm:self-auto"
+                    {/* ─── SECTION 2: PROPERTIES & BRANCH PORTFOLIO ──────────────── */}
+                    <section className="space-y-6">
+                        <div>
+                            <h2 className="text-xl font-black text-slate-950 flex items-center gap-2.5">
+                                <Building2 className="w-5 h-5 text-[#D4AF37]" />
+                                <span>Properties & Branch Portfolio</span>
+                            </h2>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                                Live financial scorecard, revenue pacing, and general manager accountability across all properties
+                            </p>
+                        </div>
+
+                        {/* Property Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {multiBranchData.map(branch => (
+                                <div
+                                    key={branch.id}
+                                    className="bg-white rounded-3xl p-6 border border-slate-200/80 hover:border-[#D4AF37] hover:shadow-md transition duration-200 flex flex-col justify-between"
                                 >
-                                    <span>View Comprehensive Matrix</span>
-                                    <ChevronRight className="w-4 h-4" />
-                                </button>
-                            </div>
+                                    <div>
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div>
+                                                <h3 className="text-lg font-black text-slate-950 leading-snug">
+                                                    {branch.name}
+                                                </h3>
+                                                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                                                    {branch.city} · Branch Code: {branch.code || 'N/A'}
+                                                </p>
+                                            </div>
+                                            <span
+                                                className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${branch.is_active
+                                                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                                    : 'bg-rose-50 text-rose-800 border border-rose-200'
+                                                    }`}
+                                            >
+                                                {branch.is_active ? 'Active' : 'Inactive'}
+                                            </span>
+                                        </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {multiBranchData.map(branch => (
-                                    <div
-                                        key={branch.id}
-                                        className="bg-white rounded-3xl p-6 border border-slate-200/80 hover:border-[#D4AF37] hover:shadow-md transition duration-200 flex flex-col justify-between"
-                                    >
-                                        <div>
-                                            <div className="flex items-start justify-between gap-2">
+                                        {/* General Manager Pill */}
+                                        <div className="mt-4 p-3 rounded-2xl bg-slate-50 border border-slate-200/60 flex items-center justify-between text-xs">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="w-8 h-8 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-xs">
+                                                    {branch.general_manager?.name?.charAt(0) || 'M'}
+                                                </div>
                                                 <div>
-                                                    <h3 className="text-lg font-black text-slate-950 leading-snug">
-                                                        {branch.name}
-                                                    </h3>
-                                                    <p className="text-xs text-slate-500 font-medium mt-0.5">
-                                                        {branch.city} · Branch Code: {branch.code || 'N/A'}
+                                                    <p className="font-extrabold text-slate-900 leading-tight">
+                                                        {branch.general_manager?.name || 'Unassigned GM'}
+                                                    </p>
+                                                    <p className="text-[11px] text-slate-500">
+                                                        {branch.general_manager?.phone || branch.general_manager?.email || 'No contact on file'}
                                                     </p>
                                                 </div>
-                                                <span
-                                                    className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${branch.is_active
-                                                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                                                        : 'bg-rose-50 text-rose-800 border border-rose-200'
-                                                        }`}
+                                            </div>
+                                            {branch.general_manager?.phone && (
+                                                <a
+                                                    href={`tel:${branch.general_manager.phone}`}
+                                                    className="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-600 flex items-center justify-center hover:text-slate-900"
+                                                    title="Call General Manager"
                                                 >
-                                                    {branch.is_active ? 'Active' : 'Inactive'}
+                                                    <Phone className="w-3.5 h-3.5" />
+                                                </a>
+                                            )}
+                                        </div>
+
+                                        {/* Financial Metrics */}
+                                        <div className="grid grid-cols-2 gap-3 mt-4 text-xs">
+                                            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/60">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase block">Monthly Revenue</span>
+                                                <span className="font-black text-emerald-700 text-base block mt-0.5">
+                                                    {formatTzs(branch.month_revenue_minor)}
                                                 </span>
                                             </div>
-
-                                            {/* General Manager Pill */}
-                                            <div className="mt-4 p-3 rounded-2xl bg-slate-50 border border-slate-200/60 flex items-center justify-between text-xs">
-                                                <div className="flex items-center gap-2.5">
-                                                    <div className="w-8 h-8 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-xs">
-                                                        {branch.general_manager?.name?.charAt(0) || 'M'}
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-extrabold text-slate-900 leading-tight">
-                                                            {branch.general_manager?.name || 'Unassigned GM'}
-                                                        </p>
-                                                        <p className="text-[11px] text-slate-500">
-                                                            {branch.general_manager?.phone || branch.general_manager?.email || 'No contact on file'}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                {branch.general_manager?.phone && (
-                                                    <a
-                                                        href={`tel:${branch.general_manager.phone}`}
-                                                        className="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-600 flex items-center justify-center hover:text-slate-900"
-                                                        title="Call General Manager"
-                                                    >
-                                                        <Phone className="w-3.5 h-3.5" />
-                                                    </a>
-                                                )}
-                                            </div>
-
-                                            {/* Financial Metrics */}
-                                            <div className="grid grid-cols-2 gap-3 mt-4 text-xs">
-                                                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/60">
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Monthly Revenue</span>
-                                                    <span className="font-black text-emerald-700 text-base block mt-0.5">
-                                                        {formatTzs(branch.month_revenue_minor)}
-                                                    </span>
-                                                </div>
-                                                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/60">
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Operating Profit (GOP)</span>
-                                                    <span className="font-black text-amber-800 text-base block mt-0.5">
-                                                        {formatTzs(branch.gop_minor)}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* Occupancy Indicator */}
-                                            <div className="mt-4">
-                                                <div className="flex items-center justify-between text-xs font-bold mb-1.5">
-                                                    <span className="text-slate-500">Room Occupancy</span>
-                                                    <span className="text-slate-900">
-                                                        {branch.occupancy_rate}% ({branch.occupied_rooms}/{branch.total_rooms})
-                                                    </span>
-                                                </div>
-                                                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                                                    <div
-                                                        className="bg-emerald-500 h-2 rounded-full transition-all duration-500"
-                                                        style={{ width: `${Math.min(100, branch.occupancy_rate)}%` }}
-                                                    />
-                                                </div>
+                                            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/60">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase block">Operating Profit (GOP)</span>
+                                                <span className="font-black text-amber-800 text-base block mt-0.5">
+                                                    {formatTzs(branch.gop_minor)}
+                                                </span>
                                             </div>
                                         </div>
 
-                                        {/* Action Buttons */}
-                                        <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2">
-                                            <form action={route('owner.inspect', branch.id)} method="POST" className="flex-1">
-                                                <input type="hidden" name="_token" value={(document.querySelector('meta[name="csrf-token"]') as any)?.content || ''} />
-                                                <button
-                                                    type="submit"
-                                                    className="w-full py-2.5 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs transition flex items-center justify-center gap-2 shadow-2xs cursor-pointer"
-                                                    title="Inspect branch workspace in Manager Mode"
-                                                >
-                                                    <Eye className="w-3.5 h-3.5 text-[#D4AF37]" />
-                                                    <span>Inspect Operations</span>
-                                                </button>
-                                            </form>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setShowTargetModal(branch);
-                                                    targetForm.setData('monthly_target_revenue', Math.round(branch.monthly_target_revenue_minor / 100));
-                                                }}
-                                                className="py-2.5 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold text-xs transition border border-purple-200 cursor-pointer"
-                                                title="Set Monthly Target"
-                                            >
-                                                <Target className="w-4 h-4 text-purple-600" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
-
-                        {/* Dual Executive Governance Stream */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            {/* Left: Pending Approvals */}
-                            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
-                                <div>
-                                    <div className="flex items-center justify-between mb-5">
-                                        <div className="flex items-center gap-2.5">
-                                            <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
-                                                <CheckSquare className="w-5 h-5" />
+                                        {/* Occupancy Indicator */}
+                                        <div className="mt-4">
+                                            <div className="flex items-center justify-between text-xs font-bold mb-1.5">
+                                                <span className="text-slate-500">Room Occupancy</span>
+                                                <span className="text-slate-900">
+                                                    {branch.occupancy_rate}% ({branch.occupied_rooms}/{branch.total_rooms})
+                                                </span>
                                             </div>
-                                            <div>
-                                                <h3 className="text-base font-black text-slate-950">Pending Owner Approvals</h3>
-                                                <p className="text-xs text-slate-500">Expenditure requests awaiting authorization</p>
-                                            </div>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => setCurrentTab('approvals')}
-                                            className="text-xs font-bold text-[#B8941F] hover:underline cursor-pointer"
-                                        >
-                                            View All ({requisitions.filter(r => r.status === 'pending_owner').length})
-                                        </button>
-                                    </div>
-
-                                    {requisitions.filter(r => r.status === 'pending_owner').length === 0 ? (
-                                        <div className="p-10 text-center bg-slate-50 rounded-2xl border border-slate-100 text-slate-500 text-xs">
-                                            <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2 opacity-80" />
-                                            <p className="font-bold text-slate-800 text-sm">All Clear</p>
-                                            <p className="mt-0.5">No expenditure requests are pending your signature at this time.</p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-3.5">
-                                            {requisitions
-                                                .filter(r => r.status === 'pending_owner')
-                                                .slice(0, 3)
-                                                .map(req => (
-                                                    <div
-                                                        key={req.id}
-                                                        className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs"
-                                                    >
-                                                        <div>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="font-mono font-bold text-amber-800">
-                                                                    {req.requisition_no}
-                                                                </span>
-                                                                <span
-                                                                    className={`px-1.5 py-0.5 rounded text-[10px] font-black uppercase ${req.urgency === 'emergency'
-                                                                        ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                                                                        : req.urgency === 'priority'
-                                                                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                                                            : 'bg-blue-50 text-blue-700 border border-blue-200'
-                                                                        }`}
-                                                                >
-                                                                    {req.urgency}
-                                                                </span>
-                                                            </div>
-                                                            <h4 className="font-extrabold text-slate-900 mt-1 text-sm">{req.title}</h4>
-                                                            <p className="text-slate-500 mt-0.5">
-                                                                {req.property?.name} · Requested by {req.requester?.name}
-                                                            </p>
-                                                        </div>
-                                                        <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200">
-                                                            <span className="font-black text-emerald-700 text-base">
-                                                                {formatTzs(req.amount_minor)}
-                                                            </span>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setShowApprovalModal(req)}
-                                                                className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs transition cursor-pointer"
-                                                            >
-                                                                Review & Act
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Right: Active Directives */}
-                            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
-                                <div>
-                                    <div className="flex items-center justify-between mb-5">
-                                        <div className="flex items-center gap-2.5">
-                                            <div className="w-9 h-9 rounded-xl bg-amber-50 text-[#D4AF37] flex items-center justify-center font-bold">
-                                                <Send className="w-5 h-5" />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-base font-black text-slate-950">Active Strategic Directives</h3>
-                                                <p className="text-xs text-slate-500">Direct instructions dispatched to managers</p>
-                                            </div>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => setCurrentTab('directives')}
-                                            className="text-xs font-bold text-[#B8941F] hover:underline cursor-pointer"
-                                        >
-                                            View All ({directives.length})
-                                        </button>
-                                    </div>
-
-                                    {directives.length === 0 ? (
-                                        <div className="p-10 text-center bg-slate-50 rounded-2xl border border-slate-100 text-slate-500 text-xs">
-                                            <Send className="w-10 h-10 text-slate-400 mx-auto mb-2 opacity-60" />
-                                            <p className="font-bold text-slate-800 text-sm">No Active Directives</p>
-                                            <p className="mt-0.5">Use the "Issue Owner Directive" button to issue executive instructions.</p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-3.5">
-                                            {directives.slice(0, 3).map(dir => (
+                                            <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
                                                 <div
-                                                    key={dir.id}
-                                                    className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 text-xs"
-                                                >
-                                                    <div className="flex items-start justify-between gap-2">
-                                                        <div>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="font-extrabold uppercase text-[10px] px-2 py-0.5 rounded-full bg-slate-950 text-white">
-                                                                    {dir.category}
-                                                                </span>
-                                                                <span className="text-slate-400">·</span>
-                                                                <span className="font-bold text-slate-600">
-                                                                    {dir.property?.name || 'Group-Wide (All Branches)'}
-                                                                </span>
-                                                            </div>
-                                                            <h4 className="font-black text-slate-900 text-sm mt-1.5">{dir.title}</h4>
-                                                            <p className="text-slate-600 mt-1 line-clamp-2 leading-relaxed">
-                                                                {dir.directive_text}
-                                                            </p>
-                                                        </div>
-                                                        <span
-                                                            className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase shrink-0 ${dir.status === 'completed'
-                                                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                                                : dir.status === 'acknowledged'
-                                                                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                                                    : 'bg-amber-50 text-amber-800 border border-amber-200 animate-pulse'
-                                                                }`}
-                                                        >
-                                                            {dir.status}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                    className="bg-emerald-500 h-2 rounded-full transition-all duration-500"
+                                                    style={{ width: `${Math.min(100, branch.occupancy_rate)}%` }}
+                                                />
+                                            </div>
                                         </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </main>
-                )}
+                                    </div>
 
-                {/* ─── TAB 2: MULTI-BRANCH COMPARISON MATRIX ──────────────────────── */}
-                {currentTab === 'branches' && (
-                    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-6">
-                        <div className="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-xs">
-                            <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                <div>
-                                    <h2 className="text-lg font-black text-slate-950 flex items-center gap-2.5">
-                                        <Building2 className="w-5 h-5 text-[#D4AF37]" />
-                                        <span>Comprehensive Branch Performance Matrix</span>
-                                    </h2>
-                                    <p className="text-xs text-slate-500 mt-0.5">
-                                        P&L performance, revenue targets, operating margins and GM leadership across all properties
-                                    </p>
+                                    {/* Action Buttons */}
+                                    <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2">
+                                        <form action={route('owner.inspect', branch.id)} method="POST" className="flex-1">
+                                            <input type="hidden" name="_token" value={(document.querySelector('meta[name="csrf-token"]') as any)?.content || ''} />
+                                            <button
+                                                type="submit"
+                                                className="w-full py-2.5 px-3 rounded-xl bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs transition flex items-center justify-center gap-2 shadow-2xs cursor-pointer"
+                                                title="Inspect branch workspace in Manager Mode"
+                                            >
+                                                <Eye className="w-3.5 h-3.5 text-[#D4AF37]" />
+                                                <span>Inspect Operations</span>
+                                            </button>
+                                        </form>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setShowTargetModal(branch);
+                                                targetForm.setData('monthly_target_revenue', Math.round(branch.monthly_target_revenue_minor / 100));
+                                            }}
+                                            className="py-2.5 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold text-xs transition border border-purple-200 cursor-pointer"
+                                            title="Set Monthly Target"
+                                        >
+                                            <Target className="w-4 h-4 text-purple-600" />
+                                        </button>
+                                    </div>
                                 </div>
+                            ))}
+                        </div>
+
+                        {/* Full Branch Performance Matrix Table */}
+                        <div className="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-xs">
+                            <div className="p-6 border-b border-slate-100">
+                                <h3 className="text-base font-black text-slate-950">Consolidated Property Comparison Matrix</h3>
+                                <p className="text-xs text-slate-500 mt-0.5">Comprehensive P&L overview across all operational units</p>
                             </div>
 
                             <div className="overflow-x-auto no-scrollbar scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
@@ -1024,277 +807,217 @@ export default function OwnerPortalIndex({
                                 </table>
                             </div>
                         </div>
-                    </main>
-                )}
+                    </section>
 
-                {/* ─── TAB 3: APPROVALS & REQUISITIONS ────────────────────────────── */}
-                {currentTab === 'approvals' && (
-                    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-6">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    {/* ─── SECTION 3: CHAIN OF COMMAND & GOVERNANCE ──────────────── */}
+                    <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Left: Pending Approvals with filter */}
+                        <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
                             <div>
-                                <h2 className="text-xl font-black text-slate-950 flex items-center gap-2.5">
-                                    <CheckSquare className="w-5 h-5 text-amber-600" />
-                                    <span>Manager Requisitions & Approvals (Chain of Command)</span>
-                                </h2>
-                                <p className="text-xs text-slate-500 mt-0.5">
-                                    Expenditure and maintenance requests requiring owner authorization before financial release
-                                </p>
-                            </div>
-
-                            {/* Status Filter */}
-                            <div className="flex items-center gap-1 bg-white p-1 rounded-2xl border border-slate-200/80 shadow-2xs">
-                                {[
-                                    { id: 'all', label: 'All Requests' },
-                                    { id: 'pending_owner', label: 'Pending Review' },
-                                    { id: 'approved', label: 'Approved' },
-                                    { id: 'rejected', label: 'Rejected' },
-                                ].map(f => (
-                                    <button
-                                        key={f.id}
-                                        type="button"
-                                        onClick={() => setFilterRequisitionStatus(f.id as any)}
-                                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${filterRequisitionStatus === f.id
-                                            ? 'bg-slate-950 text-white font-extrabold shadow-2xs'
-                                            : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100'
-                                            }`}
-                                    >
-                                        {f.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {filteredRequisitions.length === 0 ? (
-                            <div className="bg-white rounded-3xl p-16 text-center border border-slate-200/80 text-slate-500 shadow-xs">
-                                <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-3 opacity-80" />
-                                <h3 className="text-base font-extrabold text-slate-900">No Requisitions Found</h3>
-                                <p className="text-xs mt-1">
-                                    No expenditure approval requests match the selected status filter.
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {filteredRequisitions.map(req => (
-                                    <div
-                                        key={req.id}
-                                        className="bg-white rounded-3xl p-6 border border-slate-200/80 flex flex-col justify-between shadow-xs hover:shadow-md transition"
-                                    >
-                                        <div>
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div>
-                                                    <span className="font-mono text-xs font-bold text-amber-800 block">
-                                                        {req.requisition_no}
-                                                    </span>
-                                                    <h3 className="text-base font-black text-slate-950 mt-1 leading-snug">
-                                                        {req.title}
-                                                    </h3>
-                                                </div>
-                                                <span
-                                                    className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase shrink-0 ${req.status === 'approved'
-                                                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                                                        : req.status === 'rejected'
-                                                            ? 'bg-rose-50 text-rose-800 border border-rose-200'
-                                                            : 'bg-amber-50 text-amber-800 border border-amber-200 animate-pulse'
-                                                        }`}
-                                                >
-                                                    {req.status === 'pending_owner' ? 'Pending Action' : req.status}
-                                                </span>
-                                            </div>
-
-                                            <div className="mt-4 p-3.5 rounded-2xl bg-slate-50 border border-slate-200/60 text-xs space-y-1.5">
-                                                <div className="flex justify-between">
-                                                    <span className="text-slate-500 font-medium">Property:</span>
-                                                    <span className="font-bold text-slate-900">{req.property?.name}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-slate-500 font-medium">Requested By:</span>
-                                                    <span className="font-bold text-slate-900">{req.requester?.name}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-slate-500 font-medium">Category:</span>
-                                                    <span className="font-bold text-slate-800 uppercase text-[11px]">{req.category}</span>
-                                                </div>
-                                                {req.vendor_name && (
-                                                    <div className="flex justify-between">
-                                                        <span className="text-slate-500 font-medium">Vendor:</span>
-                                                        <span className="text-slate-800">{req.vendor_name}</span>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            <p className="mt-3.5 text-xs text-slate-700 bg-slate-50 p-3 rounded-2xl border border-slate-200/60 leading-relaxed">
-                                                <span className="font-bold text-slate-400 block text-[10px] uppercase mb-0.5">
-                                                    Justification:
-                                                </span>
-                                                {req.justification}
-                                            </p>
-
-                                            {req.owner_notes && (
-                                                <p className="mt-2.5 text-xs text-amber-900 bg-amber-50/80 p-3 rounded-2xl border border-amber-200/80 leading-relaxed">
-                                                    <span className="font-bold text-amber-800 block text-[10px] uppercase mb-0.5">
-                                                        Owner Signature Notes:
-                                                    </span>
-                                                    {req.owner_notes}
-                                                </p>
-                                            )}
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
+                                            <CheckSquare className="w-5 h-5" />
                                         </div>
-
-                                        <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
-                                            <div>
-                                                <span className="text-[10px] uppercase text-slate-400 font-bold block">Amount</span>
-                                                <span className="text-lg font-black text-emerald-700">
-                                                    {formatTzs(req.amount_minor)}
-                                                </span>
-                                            </div>
-
-                                            {req.status === 'pending_owner' && (
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setShowApprovalModal(req)}
-                                                        className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
-                                                    >
-                                                        <CheckCircle2 className="w-4 h-4" />
-                                                        <span>Approve</span>
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setShowRejectModal(req)}
-                                                        className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
-                                                    >
-                                                        <XCircle className="w-4 h-4" />
-                                                        <span>Reject</span>
-                                                    </button>
-                                                </div>
-                                            )}
+                                        <div>
+                                            <h3 className="text-base font-black text-slate-950">Expenditure Approvals</h3>
+                                            <p className="text-xs text-slate-500">Authorization queue for manager purchases</p>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        )}
-                    </main>
-                )}
 
-                {/* ─── TAB 4: DIRECTIVES ─────────────────────────────────────────── */}
-                {currentTab === 'directives' && (
-                    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-6">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                            <div>
-                                <h2 className="text-xl font-black text-slate-950 flex items-center gap-2.5">
-                                    <Send className="w-5 h-5 text-[#D4AF37]" />
-                                    <span>Executive Directives to General Managers</span>
-                                </h2>
-                                <p className="text-xs text-slate-500 mt-0.5">
-                                    Issue operational commands, policy compliance notices, and cost-control mandates directly to managers
-                                </p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setShowDirectiveModal(true)}
-                                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-[#D4AF37] hover:from-amber-600 hover:to-amber-500 text-slate-950 font-black text-xs shadow-sm transition flex items-center gap-2 cursor-pointer self-start sm:self-auto"
-                            >
-                                <Plus className="w-4 h-4" />
-                                <span>Issue New Directive</span>
-                            </button>
-                        </div>
+                                    {/* Filter Chips */}
+                                    <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/80 self-start sm:self-auto text-xs">
+                                        {[
+                                            { id: 'all', label: 'All' },
+                                            { id: 'pending_owner', label: 'Pending' },
+                                            { id: 'approved', label: 'Approved' },
+                                            { id: 'rejected', label: 'Rejected' },
+                                        ].map(f => (
+                                            <button
+                                                key={f.id}
+                                                type="button"
+                                                onClick={() => setFilterRequisitionStatus(f.id as any)}
+                                                className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${filterRequisitionStatus === f.id
+                                                    ? 'bg-slate-950 text-white font-extrabold shadow-2xs'
+                                                    : 'text-slate-600 hover:text-slate-950'
+                                                    }`}
+                                            >
+                                                {f.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
 
-                        {directives.length === 0 ? (
-                            <div className="bg-white rounded-3xl p-16 text-center border border-slate-200/80 text-slate-500 shadow-xs">
-                                <Megaphone className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                                <h3 className="text-base font-bold text-slate-900">No Directives Issued</h3>
-                                <p className="text-xs mt-1">
-                                    You have not issued any strategic orders to managers yet.
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {directives.map(dir => (
-                                    <div
-                                        key={dir.id}
-                                        className="bg-white rounded-3xl p-6 border border-slate-200/80 flex flex-col justify-between shadow-xs hover:shadow-md transition"
-                                    >
-                                        <div>
-                                            <div className="flex items-start justify-between gap-3">
+                                {filteredRequisitions.length === 0 ? (
+                                    <div className="p-10 text-center bg-slate-50 rounded-2xl border border-slate-100 text-slate-500 text-xs">
+                                        <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2 opacity-80" />
+                                        <p className="font-bold text-slate-800 text-sm">No Requisitions Found</p>
+                                        <p className="mt-0.5">No expenditure requests match the selected status.</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3.5 max-h-[500px] overflow-y-auto pr-1">
+                                        {filteredRequisitions.map(req => (
+                                            <div
+                                                key={req.id}
+                                                className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs"
+                                            >
                                                 <div>
                                                     <div className="flex items-center gap-2">
-                                                        <span className="font-extrabold uppercase text-[10px] px-2.5 py-0.5 rounded-full bg-slate-950 text-[#D4AF37]">
-                                                            {dir.category}
+                                                        <span className="font-mono font-bold text-amber-800">
+                                                            {req.requisition_no}
                                                         </span>
-                                                        <span className="text-slate-400">·</span>
-                                                        <span className="font-bold text-slate-600 text-xs">
-                                                            {dir.property?.name || 'Group-Wide (All Branches)'}
+                                                        <span
+                                                            className={`px-1.5 py-0.5 rounded text-[10px] font-black uppercase ${req.urgency === 'emergency'
+                                                                ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                                                                : req.urgency === 'priority'
+                                                                    ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                                                    : 'bg-blue-50 text-blue-700 border border-blue-200'
+                                                                }`}
+                                                        >
+                                                            {req.urgency}
+                                                        </span>
+                                                        <span
+                                                            className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${req.status === 'approved'
+                                                                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                                                : req.status === 'rejected'
+                                                                    ? 'bg-rose-50 text-rose-800 border border-rose-200'
+                                                                    : 'bg-amber-50 text-amber-800 border border-amber-200'
+                                                                }`}
+                                                        >
+                                                            {req.status === 'pending_owner' ? 'Pending' : req.status}
                                                         </span>
                                                     </div>
-                                                    <h3 className="text-base font-black text-slate-950 mt-2">
-                                                        {dir.title}
-                                                    </h3>
+                                                    <h4 className="font-extrabold text-slate-900 mt-1 text-sm">{req.title}</h4>
+                                                    <p className="text-slate-500 mt-0.5">
+                                                        {req.property?.name} · Requested by {req.requester?.name}
+                                                    </p>
                                                 </div>
-                                                <span
-                                                    className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase shrink-0 ${dir.status === 'completed'
-                                                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                                                        : dir.status === 'acknowledged'
-                                                            ? 'bg-blue-50 text-blue-800 border border-blue-200'
-                                                            : 'bg-amber-50 text-amber-800 border border-amber-200 animate-pulse'
-                                                        }`}
-                                                >
-                                                    {dir.status}
-                                                </span>
-                                            </div>
-
-                                            <p className="mt-4 text-xs text-slate-700 bg-slate-50 p-4 rounded-2xl border border-slate-200/60 leading-relaxed">
-                                                {dir.directive_text}
-                                            </p>
-
-                                            <div className="mt-4 flex flex-wrap items-center justify-between text-xs text-slate-500 gap-2">
-                                                <span>Issued: {new Date(dir.created_at).toLocaleDateString()}</span>
-                                                {dir.target_deadline && (
-                                                    <span className="font-bold text-rose-600">
-                                                        Deadline: {dir.target_deadline}
+                                                <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200">
+                                                    <span className="font-black text-emerald-700 text-base">
+                                                        {formatTzs(req.amount_minor)}
                                                     </span>
-                                                )}
-                                            </div>
-
-                                            {dir.acknowledgement_notes && (
-                                                <div className="mt-3 p-3 rounded-2xl bg-blue-50 border border-blue-200/80 text-xs text-blue-900">
-                                                    <span className="font-bold block text-[10px] uppercase mb-0.5">Manager Acknowledgement:</span>
-                                                    {dir.acknowledgement_notes}
+                                                    {req.status === 'pending_owner' ? (
+                                                        <div className="flex items-center gap-1.5">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setShowApprovalModal(req)}
+                                                                className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition cursor-pointer"
+                                                            >
+                                                                Approve
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setShowRejectModal(req)}
+                                                                className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition cursor-pointer"
+                                                            >
+                                                                Reject
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-[11px] text-slate-400 capitalize">{req.status}</span>
+                                                    )}
                                                 </div>
-                                            )}
-                                        </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
 
-                                        <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                                            <span className="text-slate-400">Priority: <strong className="capitalize text-slate-800">{dir.priority}</strong></span>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    if (confirm('Delete this executive directive?')) {
-                                                        router.delete(route('owner.directives.destroy', dir.id));
-                                                    }
-                                                }}
-                                                className="text-rose-600 hover:text-rose-800 font-bold flex items-center gap-1 cursor-pointer transition"
-                                            >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                                <span>Revoke</span>
-                                            </button>
+                        {/* Right: Active Directives */}
+                        <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-center justify-between mb-5">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="w-9 h-9 rounded-xl bg-amber-50 text-[#D4AF37] flex items-center justify-center font-bold">
+                                            <Send className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-base font-black text-slate-950">Executive Directives to Managers</h3>
+                                            <p className="text-xs text-slate-500">Active strategic instructions dispatched to branch GMs</p>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        )}
-                    </main>
-                )}
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowDirectiveModal(true)}
+                                        className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-800 text-[#D4AF37] font-bold text-xs shadow-2xs transition flex items-center gap-1.5 cursor-pointer"
+                                    >
+                                        <Plus className="w-3.5 h-3.5" />
+                                        <span>New Directive</span>
+                                    </button>
+                                </div>
 
-                {/* ─── TAB 5: FINANCIALS & DRAWINGS ───────────────────────────────── */}
-                {currentTab === 'financials' && (
-                    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-6">
+                                {directives.length === 0 ? (
+                                    <div className="p-10 text-center bg-slate-50 rounded-2xl border border-slate-100 text-slate-500 text-xs">
+                                        <Send className="w-10 h-10 text-slate-400 mx-auto mb-2 opacity-60" />
+                                        <p className="font-bold text-slate-800 text-sm">No Active Directives</p>
+                                        <p className="mt-0.5">Click "New Directive" to dispatch strategic orders to managers.</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3.5 max-h-[500px] overflow-y-auto pr-1">
+                                        {directives.map(dir => (
+                                            <div
+                                                key={dir.id}
+                                                className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 text-xs"
+                                            >
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-extrabold uppercase text-[10px] px-2 py-0.5 rounded-full bg-slate-950 text-[#D4AF37]">
+                                                                {dir.category}
+                                                            </span>
+                                                            <span className="text-slate-400">·</span>
+                                                            <span className="font-bold text-slate-600">
+                                                                {dir.property?.name || 'Group-Wide (All Branches)'}
+                                                            </span>
+                                                        </div>
+                                                        <h4 className="font-black text-slate-900 text-sm mt-1.5">{dir.title}</h4>
+                                                        <p className="text-slate-600 mt-1 line-clamp-2 leading-relaxed">
+                                                            {dir.directive_text}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                                        <span
+                                                            className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${dir.status === 'completed'
+                                                                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                                                : dir.status === 'acknowledged'
+                                                                    ? 'bg-blue-50 text-blue-800 border border-blue-200'
+                                                                    : 'bg-amber-50 text-amber-800 border border-amber-200'
+                                                                }`}
+                                                        >
+                                                            {dir.status}
+                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                if (confirm('Revoke this directive?')) {
+                                                                    router.delete(route('owner.directives.destroy', dir.id));
+                                                                }
+                                                            }}
+                                                            className="text-[11px] text-rose-600 hover:text-rose-800 font-bold"
+                                                        >
+                                                            Revoke
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* ─── SECTION 4: OWNER EQUITY & DIVIDENDS ───────────────────── */}
+                    <section className="space-y-6">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div>
                                 <h2 className="text-xl font-black text-slate-950 flex items-center gap-2.5">
                                     <DollarSign className="w-5 h-5 text-emerald-600" />
-                                    <span>Owner Equity, Dividends & Drawings</span>
+                                    <span>Owner Equity, Dividends & Capital</span>
                                 </h2>
                                 <p className="text-xs text-slate-500 mt-0.5">
-                                    Executive tracking of profit dividend distributions, owner withdrawals, and additional capital investments
+                                    Record of profit distributions, capital investments, and cumulative drawings
                                 </p>
                             </div>
                             <button
@@ -1396,126 +1119,122 @@ export default function OwnerPortalIndex({
                                 </div>
                             )}
                         </div>
-                    </main>
-                )}
+                    </section>
 
-                {/* ─── TAB 6: INTELLIGENCE & ANALYTICS ────────────────────────────── */}
-                {currentTab === 'analytics' && analytics && (
-                    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-8">
-                        {/* Period & Filter Control */}
-                        <div className="flex flex-wrap items-center justify-between gap-4">
-                            <div>
-                                <h2 className="text-xl font-black text-slate-950 flex items-center gap-2.5">
-                                    <BarChart3 className="w-5 h-5 text-[#D4AF37]" />
-                                    <span>Financial & Business Intelligence</span>
-                                </h2>
-                                <p className="text-xs text-slate-500 mt-0.5">
-                                    {analytics.range.start} → {analytics.range.end} compared to prior cycle ({analytics.range.previous_start} → {analytics.range.previous_end})
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-3">
-                                {multiBranchData.length > 1 && (
-                                    <select
-                                        value={analytics.selected_property_id ?? ''}
-                                        onChange={(e) => router.get(route('owner.index'), {
-                                            tab: 'analytics',
-                                            period,
-                                            property_id: e.target.value || undefined,
-                                        }, { preserveScroll: true })}
-                                        className="bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 shadow-2xs"
-                                    >
-                                        <option value="">All Properties (Consolidated)</option>
-                                        {multiBranchData.map((b) => (
-                                            <option key={b.id} value={b.id}>{b.name}</option>
-                                        ))}
-                                    </select>
-                                )}
-                                <div className="flex items-center gap-1 bg-white border border-slate-200/80 rounded-2xl p-1 shadow-2xs">
-                                    {[
-                                        { id: 'today', label: 'Today' },
-                                        { id: '7d', label: '7 Days' },
-                                        { id: '30d', label: '30 Days' },
-                                        { id: 'month', label: 'This Month' },
-                                        { id: 'year', label: 'This Year' },
-                                    ].map((p) => (
-                                        <button
-                                            key={p.id}
-                                            type="button"
-                                            onClick={() => router.get(route('owner.index'), { tab: 'analytics', period: p.id, property_id: analytics.selected_property_id ?? undefined }, { preserveScroll: true })}
-                                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${period === p.id
-                                                ? 'bg-slate-950 text-[#D4AF37] font-extrabold shadow-2xs'
-                                                : 'text-slate-600 hover:bg-slate-100'
-                                                }`}
+                    {/* ─── SECTION 5: INTELLIGENCE & ANALYTICS ───────────────────── */}
+                    {analytics && (
+                        <section className="space-y-6">
+                            <div className="flex flex-wrap items-center justify-between gap-4">
+                                <div>
+                                    <h2 className="text-xl font-black text-slate-950 flex items-center gap-2.5">
+                                        <BarChart3 className="w-5 h-5 text-[#D4AF37]" />
+                                        <span>Financial & Business Intelligence</span>
+                                    </h2>
+                                    <p className="text-xs text-slate-500 mt-0.5">
+                                        {analytics.range.start} → {analytics.range.end} compared to prior cycle ({analytics.range.previous_start} → {analytics.range.previous_end})
+                                    </p>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-3">
+                                    {multiBranchData.length > 1 && (
+                                        <select
+                                            value={analytics.selected_property_id ?? ''}
+                                            onChange={(e) => router.get(route('owner.index'), {
+                                                period,
+                                                property_id: e.target.value || undefined,
+                                            }, { preserveScroll: true })}
+                                            className="bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 shadow-2xs"
                                         >
-                                            {p.label}
-                                        </button>
-                                    ))}
+                                            <option value="">All Properties (Consolidated)</option>
+                                            {multiBranchData.map((b) => (
+                                                <option key={b.id} value={b.id}>{b.name}</option>
+                                            ))}
+                                        </select>
+                                    )}
+                                    <div className="flex items-center gap-1 bg-white border border-slate-200/80 rounded-2xl p-1 shadow-2xs">
+                                        {[
+                                            { id: 'today', label: 'Today' },
+                                            { id: '7d', label: '7 Days' },
+                                            { id: '30d', label: '30 Days' },
+                                            { id: 'month', label: 'This Month' },
+                                            { id: 'year', label: 'This Year' },
+                                        ].map((p) => (
+                                            <button
+                                                key={p.id}
+                                                type="button"
+                                                onClick={() => router.get(route('owner.index'), { period: p.id, property_id: analytics.selected_property_id ?? undefined }, { preserveScroll: true })}
+                                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${period === p.id
+                                                    ? 'bg-slate-950 text-[#D4AF37] font-extrabold shadow-2xs'
+                                                    : 'text-slate-600 hover:bg-slate-100'
+                                                    }`}
+                                            >
+                                                {p.label}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Comparison KPI cards */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                            {[
-                                { label: 'Revenue', value: analytics.comparison.revenue_minor, prev: analytics.comparison.previous_revenue_minor, change: analytics.comparison.revenue_change_percent, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                                { label: 'Expenses', value: analytics.comparison.expenses_minor, prev: analytics.comparison.previous_expenses_minor, change: analytics.comparison.expenses_change_percent, icon: ArrowDownRight, color: 'text-rose-600', bg: 'bg-rose-50' },
-                                { label: 'Net GOP Profit', value: analytics.comparison.gop_minor, prev: analytics.comparison.previous_gop_minor, change: analytics.comparison.gop_change_percent, icon: DollarSign, color: 'text-amber-800', bg: 'bg-amber-50' },
-                                { label: 'POS & Dining Revenue', value: analytics.comparison.pos_revenue_minor, prev: analytics.comparison.previous_pos_revenue_minor, change: null, icon: UtensilsCrossed, color: 'text-blue-600', bg: 'bg-blue-50' },
-                            ].map((kpi) => {
-                                const Icon = kpi.icon;
-                                const isUp = (kpi.change ?? 0) >= 0;
-                                return (
-                                    <div key={kpi.label} className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">{kpi.label}</span>
-                                            <div className={`w-10 h-10 rounded-2xl ${kpi.bg} ${kpi.color} flex items-center justify-center font-bold`}>
-                                                <Icon className="w-5 h-5" />
-                                            </div>
-                                        </div>
-                                        <h3 className="text-2xl font-black text-slate-950 mt-3 tracking-tight">{formatTzs(kpi.value)}</h3>
-                                        <div className="flex items-center justify-between mt-4 text-xs text-slate-500 pt-3 border-t border-slate-100">
-                                            <span>Prior: {formatTzs(kpi.prev)}</span>
-                                            {kpi.change !== null && kpi.change !== undefined ? (
-                                                <span className={`font-extrabold ${isUp ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                                    {isUp ? '▲' : '▼'} {Math.abs(kpi.change)}%
-                                                </span>
-                                            ) : (
-                                                <span className="text-slate-400">—</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        {/* Revenue Trend Visualizer */}
-                        <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs">
-                            <h3 className="text-base font-black text-slate-950 mb-4">Revenue Pacing & Trajectory</h3>
-                            {analytics.revenue_trend.length === 0 ? (
-                                <p className="text-xs text-slate-500">No revenue data for this period.</p>
-                            ) : (
-                                <div className="flex items-end gap-1.5 h-44 pt-4">
-                                    {analytics.revenue_trend.map((point, i) => {
-                                        const max = Math.max(...analytics.revenue_trend.map(p => p.total_minor), 1);
-                                        const h = Math.max(6, Math.round((point.total_minor / max) * 100));
-                                        return (
-                                            <div key={i} className="flex-1 flex flex-col items-center gap-1.5 min-w-0" title={`${point.label}: ${formatTzs(point.total_minor)}`}>
-                                                <div className="w-full flex flex-col justify-end h-32">
-                                                    <div className="w-full bg-gradient-to-t from-slate-900 to-[#D4AF37] rounded-t-lg transition-all duration-300 hover:opacity-80" style={{ height: `${h}%` }} />
+                            {/* Comparison KPI cards */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                                {[
+                                    { label: 'Revenue', value: analytics.comparison.revenue_minor, prev: analytics.comparison.previous_revenue_minor, change: analytics.comparison.revenue_change_percent, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                                    { label: 'Expenses', value: analytics.comparison.expenses_minor, prev: analytics.comparison.previous_expenses_minor, change: analytics.comparison.expenses_change_percent, icon: ArrowDownRight, color: 'text-rose-600', bg: 'bg-rose-50' },
+                                    { label: 'Net GOP Profit', value: analytics.comparison.gop_minor, prev: analytics.comparison.previous_gop_minor, change: analytics.comparison.gop_change_percent, icon: DollarSign, color: 'text-amber-800', bg: 'bg-amber-50' },
+                                    { label: 'POS & Dining Revenue', value: analytics.comparison.pos_revenue_minor, prev: analytics.comparison.previous_pos_revenue_minor, change: null, icon: UtensilsCrossed, color: 'text-blue-600', bg: 'bg-blue-50' },
+                                ].map((kpi) => {
+                                    const Icon = kpi.icon;
+                                    const isUp = (kpi.change ?? 0) >= 0;
+                                    return (
+                                        <div key={kpi.label} className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">{kpi.label}</span>
+                                                <div className={`w-10 h-10 rounded-2xl ${kpi.bg} ${kpi.color} flex items-center justify-center font-bold`}>
+                                                    <Icon className="w-5 h-5" />
                                                 </div>
-                                                <span className="text-[10px] font-bold text-slate-400 truncate w-full text-center">{point.label}</span>
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
-                    </main>
-                )}
+                                            <h3 className="text-2xl font-black text-slate-950 mt-3 tracking-tight">{formatTzs(kpi.value)}</h3>
+                                            <div className="flex items-center justify-between mt-4 text-xs text-slate-500 pt-3 border-t border-slate-100">
+                                                <span>Prior: {formatTzs(kpi.prev)}</span>
+                                                {kpi.change !== null && kpi.change !== undefined ? (
+                                                    <span className={`font-extrabold ${isUp ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                        {isUp ? '▲' : '▼'} {Math.abs(kpi.change)}%
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-slate-400">—</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
 
-                {/* ─── TAB 7: AUDIT & LOSS PREVENTION ─────────────────────────────── */}
-                {currentTab === 'audit' && (
-                    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-6">
+                            {/* Revenue Trend Visualizer */}
+                            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs">
+                                <h3 className="text-base font-black text-slate-950 mb-4">Revenue Pacing & Trajectory</h3>
+                                {analytics.revenue_trend.length === 0 ? (
+                                    <p className="text-xs text-slate-500">No revenue data for this period.</p>
+                                ) : (
+                                    <div className="flex items-end gap-1.5 h-44 pt-4">
+                                        {analytics.revenue_trend.map((point, i) => {
+                                            const max = Math.max(...analytics.revenue_trend.map(p => p.total_minor), 1);
+                                            const h = Math.max(6, Math.round((point.total_minor / max) * 100));
+                                            return (
+                                                <div key={i} className="flex-1 flex flex-col items-center gap-1.5 min-w-0" title={`${point.label}: ${formatTzs(point.total_minor)}`}>
+                                                    <div className="w-full flex flex-col justify-end h-32">
+                                                        <div className="w-full bg-gradient-to-t from-slate-900 to-[#D4AF37] rounded-t-lg transition-all duration-300 hover:opacity-80" style={{ height: `${h}%` }} />
+                                                    </div>
+                                                    <span className="text-[10px] font-bold text-slate-400 truncate w-full text-center">{point.label}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+                    )}
+
+                    {/* ─── SECTION 6: AUDIT & LOSS PREVENTION ────────────────────── */}
+                    <section className="space-y-6">
                         <div>
                             <h2 className="text-xl font-black text-slate-950 flex items-center gap-2.5">
                                 <ShieldAlert className="w-5 h-5 text-rose-600" />
@@ -1598,8 +1317,8 @@ export default function OwnerPortalIndex({
                                 )}
                             </div>
                         </div>
-                    </main>
-                )}
+                    </section>
+                </main>
 
                 {/* ─── MODAL 1: CREATE DIRECTIVE ──────────────────────────────────── */}
                 {showDirectiveModal && (

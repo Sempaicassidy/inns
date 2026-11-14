@@ -283,9 +283,12 @@ class HrController extends Controller
                 $cleanUsername = $candidate;
             }
 
-            // Check if user already exists
-            $user = User::where('email', $validated['email'])->first();
+            // Check if user already exists (include soft-deleted so we can restore instead of duplicating)
+            $user = User::withTrashed()->where('email', $validated['email'])->first();
             if ($user) {
+                if ($user->trashed()) {
+                    $user->restore();
+                }
                 $user->update([
                     'tenant_id' => $tenantId,
                     'property_id' => $property?->id,
@@ -438,8 +441,11 @@ class HrController extends Controller
                 $cleanUsername = $candidate;
             }
 
-            $user = User::where('email', $validated['email'])->first();
+            $user = User::withTrashed()->where('email', $validated['email'])->first();
             if ($user) {
+                if ($user->trashed()) {
+                    $user->restore();
+                }
                 $user->update([
                     'tenant_id' => $tenantId,
                     'property_id' => $property?->id,

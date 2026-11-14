@@ -6,6 +6,7 @@ import {
     BellRing,
     Building2,
     CheckCircle2,
+    Database,
     FileText,
     Globe,
     HelpCircle,
@@ -26,6 +27,7 @@ import {
     Zap,
 } from 'lucide-react';
 import React, { useState } from 'react';
+import TenantDataClearModal from '@/Components/TenantDataClearModal';
 
 interface TenantSettingsProps extends PageProps {
     tenant: {
@@ -59,6 +61,7 @@ interface TenantSettingsProps extends PageProps {
 
 export default function TenantSettings({ auth, tenant, property, businessDate }: TenantSettingsProps) {
     const [previewTab, setPreviewTab] = useState<'receipt' | 'message' | 'system'>('receipt');
+    const [showClearDataModal, setShowClearDataModal] = useState(false);
 
     const { data, setData, post, processing, errors, recentlySuccessful } = useForm({
         name: tenant.name || '',
@@ -453,6 +456,41 @@ export default function TenantSettings({ auth, tenant, property, businessDate }:
                                 </button>
                             </div>
                         </form>
+
+                        {/* Danger Zone: Clear Database per Module */}
+                        <div className="bg-white rounded-3xl p-6 shadow-xs border border-rose-200 space-y-4">
+                            <div className="flex items-center justify-between border-b border-rose-100 pb-3">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center font-bold shrink-0">
+                                        <Database className="w-4 h-4 text-rose-600" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-extrabold text-slate-900">
+                                            Eneo la Hatari: Safisha Database kwa Moduli
+                                        </h3>
+                                        <p className="text-[11px] text-slate-500">
+                                            Futa rekodi au miamala ya majaribio kwa moduli mahususi za hoteli hii.
+                                        </p>
+                                    </div>
+                                </div>
+                                <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-rose-100 text-rose-700">
+                                    Danger Zone
+                                </span>
+                            </div>
+
+                            <p className="text-xs text-slate-600 leading-relaxed">
+                                Unaweza kusafisha data ya moduli fulani (kama Uhifadhi wa Vyumba, Mauzo ya POS, Stoo, au Leja ya Uhasibu) ili kuanza upya. Akaunti za wafanyakazi na taarifa za msingi za hoteli hazitaguswa.
+                            </p>
+
+                            <button
+                                type="button"
+                                onClick={() => setShowClearDataModal(true)}
+                                className="w-full py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold text-xs transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+                            >
+                                <Database className="w-4 h-4" />
+                                <span>Fungua Dirisha la Kusafisha Database kwa Moduli</span>
+                            </button>
+                        </div>
                     </div>
 
                     {/* RIGHT COLUMN: Real-Time Live Preview (5 cols) */}
@@ -677,6 +715,20 @@ export default function TenantSettings({ auth, tenant, property, businessDate }:
                     </div>
                 </div>
             </div>
+
+            {/* Modal: Clear Database per Module */}
+            {showClearDataModal && (
+                <TenantDataClearModal
+                    isOpen={showClearDataModal}
+                    onClose={() => setShowClearDataModal(false)}
+                    tenant={tenant}
+                    countsEndpoint={route('tenant.settings.module-counts')}
+                    clearEndpoint={route('tenant.settings.clear-module-data')}
+                    onSuccess={() => {
+                        window.location.reload();
+                    }}
+                />
+            )}
         </AuthenticatedLayout>
     );
 }

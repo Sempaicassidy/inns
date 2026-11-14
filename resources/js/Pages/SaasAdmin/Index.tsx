@@ -21,6 +21,7 @@ import {
     Coins,
     Copy,
     CreditCard,
+    Database,
     DollarSign,
     Edit3,
     ExternalLink,
@@ -76,6 +77,7 @@ import {
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { toastError } from '@/Services/toast';
+import TenantDataClearModal from '@/Components/TenantDataClearModal';
 
 interface TenantItem {
     id: string;
@@ -594,6 +596,15 @@ export default function SaasAdminDashboard({
     const [showOnboardModal, setShowOnboardModal] = useState(false);
     const [showEditTenantModal, setShowEditTenantModal] = useState(false);
     const [selectedTenantToEdit, setSelectedTenantToEdit] = useState<TenantItem | null>(null);
+
+    // Clear Module Data modal state
+    const [showClearDataModal, setShowClearDataModal] = useState(false);
+    const [selectedTenantToClear, setSelectedTenantToClear] = useState<TenantItem | null>(null);
+
+    const handleOpenClearData = (tenant: TenantItem) => {
+        setSelectedTenantToClear(tenant);
+        setShowClearDataModal(true);
+    };
 
     // Feature Control Panel modal state
     const [showFeatureModal, setShowFeatureModal] = useState(false);
@@ -1816,6 +1827,16 @@ export default function SaasAdminDashboard({
                                                             className="p-1.5 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition cursor-pointer"
                                                         >
                                                             <Settings className="w-4 h-4" />
+                                                        </button>
+
+                                                        {/* Clear Database per Module */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleOpenClearData(tenant)}
+                                                            title="Safisha Database kwa Moduli (Clear Module Data)"
+                                                            className="p-1.5 text-rose-600 hover:text-white hover:bg-rose-600 rounded-lg transition cursor-pointer"
+                                                        >
+                                                            <Database className="w-4 h-4" />
                                                         </button>
 
                                                         {/* Suspend / Reactivate */}
@@ -3562,6 +3583,23 @@ export default function SaasAdminDashboard({
                         </form>
                     </div>
                 </div>
+            )}
+
+            {/* MODAL 2A: CLEAR DATABASE PER MODULE (SPECIFIC TENANT) */}
+            {showClearDataModal && selectedTenantToClear && (
+                <TenantDataClearModal
+                    isOpen={showClearDataModal}
+                    onClose={() => {
+                        setShowClearDataModal(false);
+                        setSelectedTenantToClear(null);
+                    }}
+                    tenant={selectedTenantToClear}
+                    countsEndpoint={route('saas-admin.tenants.module-counts', selectedTenantToClear.id)}
+                    clearEndpoint={route('saas-admin.tenants.clear-module-data', selectedTenantToClear.id)}
+                    onSuccess={() => {
+                        router.reload({ only: ['tenants'] });
+                    }}
+                />
             )}
 
             {/* MODAL 2B: TENANT FEATURE CONTROL PANEL & MODULE ENTITLEMENTS */}

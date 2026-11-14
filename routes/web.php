@@ -318,6 +318,8 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
         Route::put('/saas-admin/tenants/{tenant}', [SaasAdminController::class, 'updateTenantDetails'])->name('saas-admin.tenants.update');
         Route::put('/saas-admin/tenants/{tenant}/features', [SaasAdminController::class, 'updateTenantFeatures'])->name('saas-admin.tenants.features.update');
         Route::delete('/saas-admin/tenants/{tenant}', [SaasAdminController::class, 'destroyTenant'])->name('saas-admin.tenants.destroy');
+        Route::get('/saas-admin/tenants/{tenant}/module-counts', [SaasAdminController::class, 'getTenantModuleCounts'])->name('saas-admin.tenants.module-counts');
+        Route::post('/saas-admin/tenants/{tenant}/clear-module-data', [SaasAdminController::class, 'clearTenantModuleData'])->name('saas-admin.tenants.clear-module-data');
         Route::post('/saas-admin/tenants/{tenant}/toggle', [SaasAdminController::class, 'toggleTenantStatus'])->name('saas-admin.tenants.toggle');
         Route::post('/saas-admin/tenants/{tenant}/impersonate', [SaasAdminController::class, 'impersonateTenant'])->name('saas-admin.tenants.impersonate');
         Route::post('/saas-admin/impersonate/leave', [SaasAdminController::class, 'leaveImpersonation'])->name('saas-admin.impersonate.leave');
@@ -373,6 +375,8 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     Route::middleware('tenant.feature:branding_settings')->group(function () {
         Route::get('/settings/tenant', [TenantSettingsController::class, 'edit'])->name('tenant.settings');
         Route::post('/settings/tenant', [TenantSettingsController::class, 'update'])->name('tenant.settings.update');
+        Route::get('/settings/tenant/module-counts', [TenantSettingsController::class, 'getModuleCounts'])->name('tenant.settings.module-counts');
+        Route::post('/settings/tenant/clear-module-data', [TenantSettingsController::class, 'clearModuleData'])->name('tenant.settings.clear-module-data');
     });
 
     // 15. Universal Spreadsheet CSV Data Entry (Importer & Exporter)

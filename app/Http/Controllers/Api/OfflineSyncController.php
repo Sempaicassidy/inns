@@ -7,6 +7,7 @@ use App\Services\Offline\OfflineSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class OfflineSyncController extends Controller
 {
@@ -51,7 +52,8 @@ class OfflineSyncController extends Controller
 
             return response()->json($result);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('[OfflineSyncController@sync] Error: ' . $e->getMessage());
+            Log::error('[OfflineSyncController@sync] Error: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'error' => $e->getMessage(),
@@ -75,7 +77,8 @@ class OfflineSyncController extends Controller
                 'data' => $data,
             ]);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('[OfflineSyncController@bootstrap] Error: ' . $e->getMessage());
+            Log::error('[OfflineSyncController@bootstrap] Error: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'error' => $e->getMessage(),
@@ -99,7 +102,8 @@ class OfflineSyncController extends Controller
                 'data' => $changes,
             ]);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('[OfflineSyncController@changes] Error: ' . $e->getMessage());
+            Log::error('[OfflineSyncController@changes] Error: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'error' => $e->getMessage(),
@@ -108,4 +112,3 @@ class OfflineSyncController extends Controller
         }
     }
 }
-

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Property;
+use App\Models\Tenant;
 use Illuminate\Http\Request;
 
 abstract class Controller
@@ -45,7 +46,7 @@ abstract class Controller
 
         // 3. Fall back to active branch of user's tenant
         $tenantId = $user?->tenant_id ?? session('current_tenant_id');
-        $tenant = $user?->tenant ?? ($tenantId ? \App\Models\Tenant::withoutGlobalScopes()->find($tenantId) : null) ?? \App\Models\Tenant::withoutGlobalScopes()->first();
+        $tenant = $user?->tenant ?? ($tenantId ? Tenant::withoutGlobalScopes()->find($tenantId) : null) ?? Tenant::withoutGlobalScopes()->first();
 
         if (! $property && $tenant) {
             $property = Property::withoutGlobalScopes()
@@ -70,7 +71,7 @@ abstract class Controller
         // 5. If ZERO properties exist anywhere, auto-provision main property (guaranteed self-healing)
         if (! $property) {
             if (! $tenant) {
-                $tenant = \App\Models\Tenant::withoutGlobalScopes()->create([
+                $tenant = Tenant::withoutGlobalScopes()->create([
                     'name' => 'Main Hotel & Suites',
                     'domain' => 'hotel.local',
                     'is_active' => true,
@@ -109,4 +110,3 @@ abstract class Controller
         return $property;
     }
 }
-

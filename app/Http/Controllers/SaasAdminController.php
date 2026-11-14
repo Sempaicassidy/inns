@@ -30,7 +30,9 @@ use App\Services\SaasPaymentService;
 use App\Services\SaasQuotationService;
 use App\Services\SaasSubscriptionService;
 use App\Services\SwalaSmsService;
+use App\Services\TenantDataPurgeService;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -47,7 +49,8 @@ class SaasAdminController extends Controller
         protected SaasSubscriptionService $subscriptionService,
         protected SaasQuotationService $quotationService,
         protected SaasPaymentService $paymentService,
-        protected SaasContractService $contractService
+        protected SaasContractService $contractService,
+        protected TenantDataPurgeService $purgeService
     ) {}
 
     public function index(Request $request): Response
@@ -808,6 +811,72 @@ class SaasAdminController extends Controller
         });
 
         return redirect()->back()->with('success', "Hotel Tenant '{$tenantName}' and all associated user accounts have been deleted successfully.");
+    }
+
+    /**
+     * Fetch real-time record counts for all purgeable modules for a specific tenant.
+     */
+    public function getTenantModuleCounts(Tenant $tenant): JsonResponse
+    {
+        $modules = $this->purgeService->getModules();
+        $counts = $this->purgeService->getModuleCounts($tenant);
+
+        return response()->json([
+            'success' => true,
+            'modules' => $modules,
+            'counts' => $counts,
+        ]);
+    }
+
+    /**
+     * Purge selected modules for a specific tenant with safety confirmation.
+     */
+    public function clearTenantModuleData(Request $request, Tenant $tenant): RedirectResponse|JsonResponse
+    {
+        $validated = $request->validate([
+            'modules' => 'required|array|min:1',
+            'modules.*' => 'string',
+            'confirmation' => 'required|string',
+        ]);
+
+        $confirmation = trim(strtoupper($validated['confirmation']));
+        $tenantNameUpper = trim(strtoupper($tenant->name));
+        $tenantSlugUpper = trim(strtoupper($tenant->slug));
+
+        // Accept 'CLEAR', or hotel name/slug as confirmation
+        if ($confirmation !== 'CLEAR' && $confirmation !== $tenantNameUpper && $confirmation !== $tenantSlugUpper) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Neno la uthibitisho si sahihi. Andika CLEAR au jina la hoteli kuthibitisha.',
+                ], 422);
+            }
+
+            return redirect()->back()->with('error', 'Neno la uthibitisho si sahihi. Andika CLEAR au jina la hoteli kuthibitisha.');
+        }
+
+        try {
+            $result = $this->purgeService->purgeModules($tenant, $validated['modules'], $request->user());
+
+            $msg = "Database kwa moduli zilizochaguliwa za hoteli '{$tenant->name}' imesafishwa kikamilifu. Jumla ya rekodi {$result['total_deleted']} zimefutwa.";
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $msg,
+                    'result' => $result,
+                ]);
+            }
+
+            return redirect()->back()->with('success', $msg);
+        } catch (\Throwable $e) {
+            $err = 'Hitilafu imetokea wakati wa kusafisha database: '.$e->getMessage();
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $err], 500);
+            }
+
+            return redirect()->back()->with('error', $err);
+        }
     }
 
     /**

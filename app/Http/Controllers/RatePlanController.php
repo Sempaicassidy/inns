@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Property;
 use App\Models\RatePlan;
+use App\Models\Tenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -61,7 +62,7 @@ class RatePlanController extends Controller
         $tenantId = $property?->tenant_id ?? $user?->tenant_id;
 
         if (! $property) {
-            $tenant = $user?->tenant ?? ($tenantId ? \App\Models\Tenant::withoutGlobalScopes()->find($tenantId) : null) ?? \App\Models\Tenant::withoutGlobalScopes()->first();
+            $tenant = $user?->tenant ?? ($tenantId ? Tenant::withoutGlobalScopes()->find($tenantId) : null) ?? Tenant::withoutGlobalScopes()->first();
             if ($tenant) {
                 $property = Property::withoutGlobalScopes()->where('tenant_id', $tenant->id)->first();
                 if (! $property) {
@@ -88,12 +89,13 @@ class RatePlanController extends Controller
                     'message' => 'No active property found. Please configure a branch or property first.',
                 ], 422);
             }
+
             return back()->withErrors(['property' => 'No active property found.']);
         }
 
         $code = ! empty($validated['code'])
             ? Str::upper(Str::slug($validated['code']))
-            : Str::upper(Str::slug($validated['name'])) . '-' . $validated['meal_plan'];
+            : Str::upper(Str::slug($validated['name'])).'-'.$validated['meal_plan'];
 
         // Ensure unique code for this property
         $existingCount = RatePlan::withoutGlobalScopes()
@@ -102,7 +104,7 @@ class RatePlanController extends Controller
             ->count();
 
         if ($existingCount > 0) {
-            $code .= '-' . rand(10, 99);
+            $code .= '-'.rand(10, 99);
         }
 
         $ratePlan = RatePlan::withoutGlobalScopes()->create([
@@ -169,4 +171,3 @@ class RatePlanController extends Controller
         return redirect()->back()->with('success', 'Rate plan removed successfully.');
     }
 }
-

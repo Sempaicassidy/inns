@@ -32,7 +32,7 @@ class DeviceController extends Controller
                 return response()->json([
                     'success' => false,
                     'error' => 'DEVICE_REVOKED',
-                    'message' => 'This device was previously revoked. Please contact your tenant administrator.'
+                    'message' => 'This device was previously revoked. Please contact your tenant administrator.',
                 ], 403);
             }
 
@@ -103,4 +103,3 @@ class DeviceController extends Controller
         ]);
     }
 }
-

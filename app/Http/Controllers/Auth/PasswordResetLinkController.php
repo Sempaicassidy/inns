@@ -85,11 +85,11 @@ class PasswordResetLinkController extends Controller
 
         $len = strlen($name);
         if ($len <= 2) {
-            $maskedName = substr($name, 0, 1) . '*';
+            $maskedName = substr($name, 0, 1).'*';
         } else {
-            $maskedName = substr($name, 0, 2) . str_repeat('*', max(1, $len - 3)) . substr($name, -1);
+            $maskedName = substr($name, 0, 2).str_repeat('*', max(1, $len - 3)).substr($name, -1);
         }
 
-        return $maskedName . '@' . $domain;
+        return $maskedName.'@'.$domain;
     }
 }

@@ -48,6 +48,7 @@ class SendManagerDailyReportsCommand extends Command
 
         if ($settings->isEmpty()) {
             $this->comment('No active manager notification settings found.');
+
             return Command::SUCCESS;
         }
 
@@ -75,19 +76,25 @@ class SendManagerDailyReportsCommand extends Command
 
             if ($shouldSend) {
                 $this->info("Sending daily summary report to Manager [{$setting->manager_name}] (Scheduled: {$scheduledTime}, Current: {$currentTime})...");
-                
+
                 $res = $notificationService->sendDailySummaryReport($setting, isTest: false);
 
                 $channels = [];
-                if ($res['whatsapp']) $channels[] = 'WhatsApp';
-                if ($res['sms']) $channels[] = 'SMS';
-                if ($res['email']) $channels[] = 'Email';
+                if ($res['whatsapp']) {
+                    $channels[] = 'WhatsApp';
+                }
+                if ($res['sms']) {
+                    $channels[] = 'SMS';
+                }
+                if ($res['email']) {
+                    $channels[] = 'Email';
+                }
 
                 $channelStr = ! empty($channels) ? implode(', ', $channels) : 'None';
                 $this->info("Dispatched to [{$setting->manager_name}] via: {$channelStr}");
 
                 if (! empty($res['errors'])) {
-                    $this->warn("Noted warnings: " . implode('; ', $res['errors']));
+                    $this->warn('Noted warnings: '.implode('; ', $res['errors']));
                 }
 
                 $sentCount++;
@@ -99,4 +106,3 @@ class SendManagerDailyReportsCommand extends Command
         return Command::SUCCESS;
     }
 }
-

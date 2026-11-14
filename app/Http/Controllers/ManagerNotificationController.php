@@ -2,11 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ManagerNotificationSetting;
 use App\Models\Property;
 use App\Models\Reservation;
 use App\Services\ManagerNotificationService;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -88,17 +86,25 @@ class ManagerNotificationController extends Controller
         $res = $this->notificationService->sendDailySummaryReport($setting, isTest: true);
 
         $channels = [];
-        if ($res['whatsapp']) $channels[] = 'WhatsApp';
-        if ($res['sms']) $channels[] = 'SMS';
-        if ($res['email']) $channels[] = 'Email';
+        if ($res['whatsapp']) {
+            $channels[] = 'WhatsApp';
+        }
+        if ($res['sms']) {
+            $channels[] = 'SMS';
+        }
+        if ($res['email']) {
+            $channels[] = 'Email';
+        }
 
         if (! empty($channels)) {
-            $msg = 'Test daily executive flash report dispatched successfully via: ' . implode(', ', $channels) . '.';
+            $msg = 'Test daily executive flash report dispatched successfully via: '.implode(', ', $channels).'.';
+
             return redirect()->back()->with('success', $msg);
         }
 
         $errMsg = ! empty($res['errors']) ? implode(', ', $res['errors']) : 'No active delivery channel succeeded. Please verify gateway credentials.';
-        return redirect()->back()->with('error', 'Test dispatch failed: ' . $errMsg);
+
+        return redirect()->back()->with('error', 'Test dispatch failed: '.$errMsg);
     }
 
     /**
@@ -125,12 +131,18 @@ class ManagerNotificationController extends Controller
         }
 
         $channels = [];
-        if ($res['whatsapp']) $channels[] = 'WhatsApp';
-        if ($res['sms']) $channels[] = 'SMS';
-        if ($res['email']) $channels[] = 'Email';
+        if ($res['whatsapp']) {
+            $channels[] = 'WhatsApp';
+        }
+        if ($res['sms']) {
+            $channels[] = 'SMS';
+        }
+        if ($res['email']) {
+            $channels[] = 'Email';
+        }
 
         if (! empty($channels)) {
-            return redirect()->back()->with('success', 'Test room reservation alert dispatched successfully via: ' . implode(', ', $channels) . '!');
+            return redirect()->back()->with('success', 'Test room reservation alert dispatched successfully via: '.implode(', ', $channels).'!');
         }
 
         return redirect()->back()->with('error', 'Test dispatch failed. Please verify recipient phone or email.');

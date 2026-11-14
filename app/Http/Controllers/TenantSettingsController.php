@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\BusinessDate;
 use App\Models\Property;
 use App\Models\Tenant;
+use App\Services\TenantDataPurgeService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -164,7 +166,90 @@ class TenantSettingsController extends Controller
             ]);
         }
 
-        return redirect()->back()->with('success', "Hotel details, receipt branding, and system display name updated successfully. Changes are now active across all receipts, messages, and displays.");
+        return redirect()->back()->with('success', 'Hotel details, receipt branding, and system display name updated successfully. Changes are now active across all receipts, messages, and displays.');
+    }
+
+    /**
+     * Fetch real-time module record counts for active tenant.
+     */
+    public function getModuleCounts(Request $request, TenantDataPurgeService $purgeService): JsonResponse
+    {
+        $user = $request->user();
+        $allowedRoles = ['general_manager', 'manager', 'owner', 'admin', 'super_admin'];
+        if (! in_array($user->active_role, $allowedRoles) && ! in_array($user->role, $allowedRoles) && ! $user->isSuperAdmin()) {
+            abort(403, 'Unauthorized.');
+        }
+
+        $tenant = $user->tenant ?? Tenant::find($user->tenant_id);
+        if (! $tenant) {
+            abort(404, 'Tenant not found.');
+        }
+
+        return response()->json([
+            'success' => true,
+            'modules' => $purgeService->getModules(),
+            'counts' => $purgeService->getModuleCounts($tenant),
+        ]);
+    }
+
+    /**
+     * Purge selected modules for active tenant with safety confirmation.
+     */
+    public function clearModuleData(Request $request, TenantDataPurgeService $purgeService): RedirectResponse|JsonResponse
+    {
+        $user = $request->user();
+        $allowedRoles = ['general_manager', 'manager', 'owner', 'admin', 'super_admin'];
+        if (! in_array($user->active_role, $allowedRoles) && ! in_array($user->role, $allowedRoles) && ! $user->isSuperAdmin()) {
+            abort(403, 'Unauthorized. Only General Managers, Owners, or Admins can perform module data clearing.');
+        }
+
+        $tenant = $user->tenant ?? Tenant::find($user->tenant_id);
+        if (! $tenant) {
+            abort(404, 'Tenant not found.');
+        }
+
+        $validated = $request->validate([
+            'modules' => 'required|array|min:1',
+            'modules.*' => 'string',
+            'confirmation' => 'required|string',
+        ]);
+
+        $confirmation = trim(strtoupper($validated['confirmation']));
+        $tenantNameUpper = trim(strtoupper($tenant->name));
+        $tenantSlugUpper = trim(strtoupper($tenant->slug));
+
+        if ($confirmation !== 'CLEAR' && $confirmation !== $tenantNameUpper && $confirmation !== $tenantSlugUpper) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Neno la uthibitisho si sahihi. Andika CLEAR au jina la hoteli kuthibitisha.',
+                ], 422);
+            }
+
+            return redirect()->back()->with('error', 'Neno la uthibitisho si sahihi. Andika CLEAR au jina la hoteli kuthibitisha.');
+        }
+
+        try {
+            $result = $purgeService->purgeModules($tenant, $validated['modules'], $user);
+
+            $msg = "Moduli zilizochaguliwa zimesafishwa kikamilifu. Jumla ya rekodi {$result['total_deleted']} zimefutwa.";
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $msg,
+                    'result' => $result,
+                ]);
+            }
+
+            return redirect()->back()->with('success', $msg);
+        } catch (\Throwable $e) {
+            $err = 'Hitilafu imetokea wakati wa kusafisha database: '.$e->getMessage();
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $err], 500);
+            }
+
+            return redirect()->back()->with('error', $err);
+        }
     }
 }
-

@@ -11,7 +11,9 @@ use App\Models\PosOrderItem;
 use App\Models\Property;
 use App\Models\Room;
 use App\Models\Stay;
+use App\Models\Tenant;
 use App\Services\LedgerService;
+use App\Services\TraVfdService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -220,6 +222,38 @@ class PosController extends Controller
                         ['code' => '4002', 'direction' => 'credit', 'amount_minor' => $total],
                     ],
                 );
+
+                // Record fiscal document for TRA/VFD for direct POS payments
+                $tenant = Tenant::find($tenantId);
+                if ($tenant) {
+                    $linesPayload = [];
+                    foreach ($orderLines as $l) {
+                        $linesPayload[] = [
+                            'description' => $l['item']->name ?? 'POS Item',
+                            'quantity' => $l['qty'],
+                            'unit_price_minor' => $l['unit_price_minor'],
+                            'total_minor' => $l['line_total'],
+                        ];
+                    }
+
+                    app(TraVfdService::class)->recordInvoice(
+                        $tenant,
+                        'pos_order',
+                        (string) $order->id,
+                        [
+                            'tin' => $tenant->settings['tin'] ?? null,
+                            'vrn' => $tenant->settings['vrn'] ?? null,
+                            'seller_name' => $tenant->name,
+                            'buyer' => [
+                                'type' => 'walk_in',
+                                'name' => $validated['customer_name'] ?? 'Walk-in Customer',
+                            ],
+                            'lines' => $linesPayload,
+                            'totals' => ['total_minor' => $total, 'tax_minor' => $tax, 'currency' => 'TZS'],
+                        ],
+                        $property?->id,
+                    );
+                }
             }
 
             return $order;

@@ -554,13 +554,13 @@ class SaasAdminController extends Controller
             'sms_packages' => $smsPackages,
             'sms_transactions' => $smsTransactions,
             'sms_provider' => $masterProvider ? [
-                'name' => $masterProvider->provider_name === 'NextSMS' ? 'NextSMS Tanzania Cloud Gateway' : 'SwalaSMS Tanzania Gateway',
-                'provider_name' => $masterProvider->provider_name ?: 'SwalaSMS',
-                'sender_id' => $masterProvider->sender_id ?: 'SWALATECH',
+                'name' => 'Dar SMS Tanzania Gateway',
+                'provider_name' => 'DarSMS',
+                'sender_id' => $masterProvider->sender_id ?: 'DARSMS',
                 'balance' => $masterProvider->balance_credits_cached,
                 'is_active' => (bool) $masterProvider->is_active,
-                'base_url' => $masterProvider->base_url ?: 'https://api.swalasms.com',
-                'username' => $masterProvider->username,
+                'base_url' => $masterProvider->base_url ?: 'https://dev.darsms.co.tz/api/v1',
+                'username' => $masterProvider->username ?: 'DarSMS Portal',
             ] : null,
             'whatsapp_settings' => $waSetting ? [
                 'phone_number_id' => $waSetting->phone_number_id,
@@ -1238,16 +1238,37 @@ class SaasAdminController extends Controller
                 'username' => $validated['username'],
                 'is_active' => $validated['is_active'],
             ];
-            if (! empty($validated['password'])) {
-                $updateData['password'] = $validated['password'];
-            }
-            if (! empty($validated['api_token'])) {
-                $updateData['api_token'] = $validated['api_token'];
+            $submittedKey = $validated['api_token'] ?: ($validated['password'] ?: null);
+            if (! empty($submittedKey)) {
+                $updateData['api_token'] = $submittedKey;
+                $updateData['password'] = $submittedKey;
             }
 
-            // Detect if SwalaSMS is used and fetch live balance
+            // Detect provider and fetch live balance
             $activeKey = $updateData['api_token'] ?? ($updateData['password'] ?? $provider->api_token);
-            if (str_contains(strtolower($validated['base_url']), 'swalasms.com')) {
+            $baseUrl = strtolower($validated['base_url']);
+
+            if (str_contains($baseUrl, 'darsms.co.tz') || strtolower($validated['sender_id']) === 'darsms') {
+                $updateData['provider_name'] = 'DarSMS';
+                try {
+                    $http = Http::timeout(10);
+                    if (! filter_var(config('swalasms.verify_tls', true), FILTER_VALIDATE_BOOLEAN)) {
+                        $http = $http->withoutVerifying();
+                    }
+                    $balRes = $http
+                        ->withHeaders([
+                            'X-API-Key' => $activeKey,
+                            'Accept' => 'application/json',
+                        ])
+                        ->get(rtrim($validated['base_url'], '/').'/integrations/balance');
+
+                    if ($balRes->successful() && isset($balRes->json()['data']['sms_balance'])) {
+                        $updateData['balance_credits_cached'] = (int) $balRes->json()['data']['sms_balance'];
+                        $updateData['balance_checked_at'] = now();
+                    }
+                } catch (\Throwable $e) {
+                }
+            } elseif (str_contains($baseUrl, 'swalasms.com')) {
                 $updateData['provider_name'] = 'SwalaSMS';
                 try {
                     $http = Http::timeout(10);
@@ -1285,7 +1306,8 @@ class SaasAdminController extends Controller
         $result = $smsService->sendSms($validated['phone'], $validated['message']);
 
         if ($result['success']) {
-            return redirect()->back()->with('success', "SMS dispatched successfully via SwalaSMS to {$validated['phone']}! (UID: ".($result['message_id'] ?? 'OK').')');
+            $provider = $result['provider'] ?? 'SMS Gateway';
+            return redirect()->back()->with('success', "SMS dispatched successfully via {$provider} to {$validated['phone']}! (ID: ".($result['message_id'] ?? 'OK').')');
         }
 
         return redirect()->back()->with('error', 'Failed to dispatch SMS: '.($result['error'] ?? 'Gateway request failed.'));

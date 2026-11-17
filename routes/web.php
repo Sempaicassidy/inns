@@ -377,6 +377,7 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
         Route::post('/settings/tenant', [TenantSettingsController::class, 'update'])->name('tenant.settings.update');
         Route::get('/settings/tenant/module-counts', [TenantSettingsController::class, 'getModuleCounts'])->name('tenant.settings.module-counts');
         Route::post('/settings/tenant/clear-module-data', [TenantSettingsController::class, 'clearModuleData'])->name('tenant.settings.clear-module-data');
+        Route::post('/settings/tenant/test-vfd', [TenantSettingsController::class, 'testVfd'])->name('tenant.settings.test-vfd');
     });
 
     // 15. Universal Spreadsheet CSV Data Entry (Importer & Exporter)

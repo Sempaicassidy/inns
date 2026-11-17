@@ -38,7 +38,7 @@ return [
     'swalasms' => [
         'api_key' => env('SWALASMS_API_KEY', env('SWAHILIES_API_KEY', 'swl_live_3rRTD7pHVgLewdEEmDZNvk762gvfkMefkzl7ESSQ6xQi7QNL')),
         'base_url' => env('SWALASMS_BASE_URL', 'https://api.swalasms.com'),
-        'sender_id' => env('SWALASMS_SENDER_ID', 'SWALATECH'),
+        'sender_id' => env('SWALASMS_SENDER_ID', 'THE INNS'),
         'env' => env('SWALASMS_ENV', 'live'),
     ],
 

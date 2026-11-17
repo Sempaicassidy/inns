@@ -21,7 +21,7 @@ return [
 
     'base_url' => env('SWALASMS_BASE_URL', env('SWAHILIES_BASE_URL', 'https://api.swalasms.com')),
 
-    'sender_id' => env('SWALASMS_SENDER_ID', 'SWALATECH'),
+    'sender_id' => env('SWALASMS_SENDER_ID', 'THE INNS'),
 
     'environment' => env('SWALASMS_ENV', env('SWAHILIES_ENV', 'live')),
 

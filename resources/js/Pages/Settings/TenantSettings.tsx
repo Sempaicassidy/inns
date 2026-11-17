@@ -1,16 +1,20 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { PageProps } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
+import axios from 'axios';
 import {
     AlertCircle,
     BellRing,
     Building2,
     CheckCircle2,
     Database,
+    Eye,
+    EyeOff,
     FileText,
     Globe,
     HelpCircle,
     Hotel,
+    Loader2,
     Mail,
     MapPin,
     MessageSquare,
@@ -41,6 +45,11 @@ interface TenantSettingsProps extends PageProps {
         tin?: string;
         vrn?: string;
         business_license?: string;
+        vfd_device_id?: string;
+        vfd_api_key?: string;
+        vfd_base_url?: string;
+        vfd_environment?: string;
+        vfd_is_configured?: boolean;
         phone?: string;
         email?: string;
         address?: string;
@@ -62,14 +71,21 @@ interface TenantSettingsProps extends PageProps {
 export default function TenantSettings({ auth, tenant, property, businessDate }: TenantSettingsProps) {
     const [previewTab, setPreviewTab] = useState<'receipt' | 'message' | 'system'>('receipt');
     const [showClearDataModal, setShowClearDataModal] = useState(false);
+    const [isTestingVfd, setIsTestingVfd] = useState(false);
+    const [vfdTestResult, setVfdTestResult] = useState<{ success: boolean; message: string } | null>(null);
+    const [showApiKey, setShowApiKey] = useState(false);
 
     const { data, setData, post, processing, errors, recentlySuccessful } = useForm({
         name: tenant.name || '',
         system_name: tenant.system_name || tenant.name || 'THE INNS',
         tagline: tenant.tagline || 'Excellence in Luxury Hospitality & Guest Comfort',
-        tin: tenant.tin || '102-458-999',
-        vrn: tenant.vrn || '40-001234-A',
+        tin: tenant.tin || '',
+        vrn: tenant.vrn || '',
         business_license: tenant.business_license || 'BL-2026-00918',
+        vfd_device_id: tenant.vfd_device_id || '',
+        vfd_api_key: tenant.vfd_api_key || '',
+        vfd_base_url: tenant.vfd_base_url || 'https://vfd.tra.go.tz/api/v1',
+        vfd_environment: tenant.vfd_environment || 'sandbox',
         phone: tenant.phone || '+255 754 000 111',
         email: tenant.email || 'info@theinns.co.tz',
         address: tenant.address || 'Plot 42, Safari Way, P.O. Box 1042',
@@ -84,6 +100,27 @@ export default function TenantSettings({ auth, tenant, property, businessDate }:
         wifi_ssid: tenant.wifi_ssid || 'GUEST-HIGH-SPEED-WIFI',
         wifi_password: tenant.wifi_password || 'welcome2026',
     });
+
+    const handleTestVfd = async () => {
+        setIsTestingVfd(true);
+        setVfdTestResult(null);
+        try {
+            const response = await axios.post(route('tenant.settings.test-vfd'), {
+                vfd_device_id: data.vfd_device_id,
+                vfd_api_key: data.vfd_api_key,
+                vfd_base_url: data.vfd_base_url,
+                vfd_environment: data.vfd_environment,
+            });
+            setVfdTestResult(response.data);
+        } catch (err: any) {
+            setVfdTestResult({
+                success: false,
+                message: err.response?.data?.message || 'Hitilafu ya mtandao wakati wa kupima mawasiliano.',
+            });
+        } finally {
+            setIsTestingVfd(false);
+        }
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -284,22 +321,49 @@ export default function TenantSettings({ auth, tenant, property, businessDate }:
 
                             {/* Card 3: Fiscal Registration & TRA Identification */}
                             <div className="bg-white rounded-3xl p-6 shadow-xs border border-slate-200/80 space-y-5">
-                                <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
-                                    <h3 className="text-sm font-extrabold text-slate-900">3. Statutory & Fiscal Tax Numbers (TRA)</h3>
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                                    <div className="flex items-center gap-2">
+                                        <Shield className="w-4 h-4 text-[#D4AF37]" />
+                                        <h3 className="text-sm font-extrabold text-slate-900">
+                                            3. Kodi & TRA VFD Integration (Electronic Fiscal Device)
+                                        </h3>
+                                    </div>
+                                    {(tenant.vfd_is_configured || (data.vfd_device_id && data.vfd_api_key)) ? (
+                                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 w-fit">
+                                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                            VFD Tayari Imeunganishwa
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200 w-fit">
+                                            <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                                            Inasubiri Taarifa za VFD
+                                        </span>
+                                    )}
                                 </div>
 
+                                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/70 text-xs text-slate-600 space-y-1">
+                                    <p className="font-semibold text-slate-800">
+                                        💡 Maelekezo ya Kuanzisha TRA VFD (EFD Bila Mashine ya Mezani):
+                                    </p>
+                                    <p className="text-[11px] leading-relaxed">
+                                        Tenant anahitaji tu kujaza <strong>TIN</strong>, <strong>VFD Device ID</strong>, na <strong>VFD API Key</strong> zilizotolewa na TRA au VFD Provider aliyesajiliwa (mfano: WebVFD, PosCloud, SmartVFD). Ukishahifadhi, mfumo utaanza kutoa stakabadhi za kikodi zenye QR code na namba ya TRA kiotomatiki kwa kila malipo ya folio au mauzo ya POS.
+                                    </p>
+                                </div>
+
+                                {/* Statutory Identifiers */}
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                     <div>
                                         <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                                            Tax ID Number (TIN)
+                                            Tax ID Number (TIN) <span className="text-rose-500">*</span>
                                         </label>
                                         <input
                                             type="text"
                                             value={data.tin}
                                             onChange={(e) => setData('tin', e.target.value)}
-                                            placeholder="102-458-999"
+                                            placeholder="e.g. 102-458-999"
                                             className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-[#D4AF37]/30 focus:border-[#D4AF37] transition"
                                         />
+                                        {errors.tin && <p className="text-[11px] text-rose-600 mt-1">{errors.tin}</p>}
                                     </div>
 
                                     <div>
@@ -310,7 +374,7 @@ export default function TenantSettings({ auth, tenant, property, businessDate }:
                                             type="text"
                                             value={data.vrn}
                                             onChange={(e) => setData('vrn', e.target.value)}
-                                            placeholder="40-001234-A"
+                                            placeholder="40-001234-A (ikiwa upo VAT)"
                                             className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-[#D4AF37]/30 focus:border-[#D4AF37] transition"
                                         />
                                     </div>
@@ -327,6 +391,137 @@ export default function TenantSettings({ auth, tenant, property, businessDate }:
                                             className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-[#D4AF37]/30 focus:border-[#D4AF37] transition"
                                         />
                                     </div>
+                                </div>
+
+                                {/* VFD Technical Link Credentials */}
+                                <div className="pt-2 border-t border-slate-100 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
+                                            Vipengele vya Mawasiliano ya VFD Gateway
+                                        </h4>
+                                        <span className="text-[11px] text-slate-400 font-mono">TRA Fiscal Gateway</span>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                                                VFD Device ID / EFD Unit ID <span className="text-rose-500">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={data.vfd_device_id}
+                                                onChange={(e) => setData('vfd_device_id', e.target.value)}
+                                                placeholder="k.m. VFD-INNS-00129"
+                                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-[#D4AF37]/30 focus:border-[#D4AF37] transition font-mono"
+                                            />
+                                            <p className="text-[10px] text-slate-400 mt-1">
+                                                Namba ya kifaa uliyotengewa na TRA au VFD Provider.
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                                                VFD API Key / Secret Token <span className="text-rose-500">*</span>
+                                            </label>
+                                            <div className="relative">
+                                                <input
+                                                    type={showApiKey ? 'text' : 'password'}
+                                                    value={data.vfd_api_key}
+                                                    onChange={(e) => setData('vfd_api_key', e.target.value)}
+                                                    placeholder="vfd_sec_live_xxxxxxxx..."
+                                                    className="w-full px-4 py-2.5 pr-10 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-[#D4AF37]/30 focus:border-[#D4AF37] transition font-mono"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowApiKey(!showApiKey)}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer p-1"
+                                                >
+                                                    {showApiKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                                                </button>
+                                            </div>
+                                            <p className="text-[10px] text-slate-400 mt-1">
+                                                Ufunguo wa kiusalama unaothibitisha maombi yako kwa VFD gateway.
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                                                Mazingira (Environment)
+                                            </label>
+                                            <select
+                                                value={data.vfd_environment}
+                                                onChange={(e) => setData('vfd_environment', e.target.value)}
+                                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-[#D4AF37]/30 focus:border-[#D4AF37] transition"
+                                            >
+                                                <option value="sandbox">Sandbox (Majaribio / Test Mode)</option>
+                                                <option value="production">Production (Mifumo Rasmi ya TRA - Live)</option>
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                                                VFD Gateway URL (Hiari / Optional)
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={data.vfd_base_url}
+                                                onChange={(e) => setData('vfd_base_url', e.target.value)}
+                                                placeholder="https://vfd.tra.go.tz/api/v1"
+                                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-[#D4AF37]/30 focus:border-[#D4AF37] transition font-mono"
+                                            />
+                                            <p className="text-[10px] text-slate-400 mt-1">
+                                                Iache kama ilivyo isipokuwa ukitumia VFD provider binafsi.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Test VFD Connection Button & Result */}
+                                    <div className="pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                        <button
+                                            type="button"
+                                            disabled={isTestingVfd || !data.vfd_device_id || !data.vfd_api_key}
+                                            onClick={handleTestVfd}
+                                            className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center gap-2 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border border-slate-200/80"
+                                        >
+                                            {isTestingVfd ? (
+                                                <>
+                                                    <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-600" />
+                                                    <span>Inapima Mawasiliano na VFD...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Zap className="w-3.5 h-3.5 text-amber-500" />
+                                                    <span>Jaribu Mawasiliano ya VFD (Test Connection)</span>
+                                                </>
+                                            )}
+                                        </button>
+
+                                        <span className="text-[11px] text-slate-400">
+                                            Unaweza kupima mara moja hata kabla ya kuhifadhi.
+                                        </span>
+                                    </div>
+
+                                    {vfdTestResult && (
+                                        <div
+                                            className={`p-3.5 rounded-xl text-xs flex items-start gap-2.5 animate-in fade-in ${
+                                                vfdTestResult.success
+                                                    ? 'bg-emerald-50 border border-emerald-200 text-emerald-900'
+                                                    : 'bg-rose-50 border border-rose-200 text-rose-900'
+                                            }`}
+                                        >
+                                            {vfdTestResult.success ? (
+                                                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                                            ) : (
+                                                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                                            )}
+                                            <div>
+                                                <p className="font-bold">
+                                                    {vfdTestResult.success ? 'Uthibitisho Umefanikiwa' : 'Mawasiliano Yameshindwa'}
+                                                </p>
+                                                <p className="text-[11px] mt-0.5">{vfdTestResult.message}</p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

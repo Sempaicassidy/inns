@@ -91,7 +91,7 @@ class SmsWalletService
                 'sms_wallet_id' => $wallet->id,
                 'recipient_phone' => $recipientPhone,
                 'message' => $messageText,
-                'sender_id' => $senderId ?: 'THEINNS',
+                'sender_id' => $senderId ?: 'THE INNS',
                 'characters_count' => mb_strlen($messageText),
                 'segments_count' => $segments,
                 'credits_deducted' => $credits,

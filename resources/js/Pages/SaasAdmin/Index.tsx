@@ -670,17 +670,17 @@ export default function SaasAdminDashboard({
     });
 
     const smsConfigForm = useForm({
-        sender_id: sms_provider?.sender_id || 'SWALATECH',
-        base_url: sms_provider?.base_url || 'https://api.swalasms.com',
-        username: sms_provider?.username || 'SwalaSMS',
+        sender_id: sms_provider?.sender_id || 'DARSMS',
+        base_url: sms_provider?.base_url || 'https://dev.darsms.co.tz/api/v1',
+        username: sms_provider?.username || 'DarSMS Portal',
         password: '',
         api_token: '',
         is_active: sms_provider?.is_active ?? true,
     });
 
     const testSmsForm = useForm({
-        phone: '+255779646632',
-        message: 'Habari! Ujumbe huu unathibitisha kuwa SwalaSMS Gateway inafanya kazi kikamilifu ndani ya THE INNS.',
+        phone: '+255688172822',
+        message: 'Habari! Ujumbe huu unathibitisha kuwa SMS Gateway inafanya kazi kikamilifu ndani ya THE INNS.',
     });
 
     const waConfigForm = useForm({
@@ -3943,9 +3943,9 @@ export default function SaasAdminDashboard({
                         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                             <div>
                                 <h3 className="font-extrabold text-base text-slate-900">
-                                    SwalaSMS Gateway Settings
+                                    Dar SMS Gateway Settings
                                 </h3>
-                                <p className="text-xs text-slate-500">Sanidi vigezo vya SwalaSMS Developer API</p>
+                                <p className="text-xs text-slate-500">Sanidi vigezo vya Dar SMS Developer API (dev.darsms.co.tz)</p>
                             </div>
                             <button
                                 type="button"
@@ -3958,18 +3958,18 @@ export default function SaasAdminDashboard({
 
                         <form onSubmit={submitSmsConfig} className="space-y-4 pt-4 text-xs">
                             <div>
-                                <label className="font-bold text-slate-700 block mb-1">Official Sender ID *</label>
+                                <label className="font-bold text-slate-700 block mb-1">Approved Sender ID *</label>
                                 <input
                                     type="text"
                                     required
                                     maxLength={11}
                                     value={smsConfigForm.data.sender_id}
                                     onChange={(e) => smsConfigForm.setData('sender_id', e.target.value)}
-                                    placeholder="SWALATECH"
+                                    placeholder="DARSMS"
                                     className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold"
                                 />
                                 <span className="text-[10px] text-slate-400 block mt-0.5">
-                                    Tumia <strong>SWALATECH</strong> kwa majaribio, au weka Sender ID yako iliyoidhinishwa kwenye portal ya SwalaSMS.
+                                    Tumia <strong>DARSMS</strong> kutuma kwa namba yoyote ya Tanzania bila uhitaji wa kusajili namba kwenye majaribio.
                                 </span>
                             </div>
 
@@ -3980,31 +3980,37 @@ export default function SaasAdminDashboard({
                                     required
                                     value={smsConfigForm.data.base_url}
                                     onChange={(e) => smsConfigForm.setData('base_url', e.target.value)}
-                                    placeholder="https://api.swalasms.com"
+                                    placeholder="https://dev.darsms.co.tz/api/v1"
                                     className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono"
                                 />
                             </div>
 
                             <div>
-                                <label className="font-bold text-slate-700 block mb-1">API Username / Account *</label>
+                                <label className="font-bold text-slate-700 block mb-1">Account Label / Username *</label>
                                 <input
                                     type="text"
                                     required
                                     value={smsConfigForm.data.username}
                                     onChange={(e) => smsConfigForm.setData('username', e.target.value)}
+                                    placeholder="DarSMS Portal"
                                     className="w-full px-3 py-2 rounded-xl border border-slate-300"
                                 />
                             </div>
 
                             <div>
-                                <label className="font-bold text-slate-700 block mb-1">SwalaSMS Bearer Token / API Key (swl_live_...)</label>
+                                <label className="font-bold text-slate-700 block mb-1">
+                                    Dar SMS API Key * (darsms_...)
+                                </label>
                                 <input
                                     type="password"
                                     value={smsConfigForm.data.password}
                                     onChange={(e) => smsConfigForm.setData('password', e.target.value)}
-                                    placeholder="Enter SwalaSMS API Key (swl_live_...)"
+                                    placeholder="darsms_xxxxxxxxxxxxxxxxxxxxxxxxxx"
                                     className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono"
                                 />
+                                <span className="text-[10px] text-slate-400 block mt-0.5">
+                                    Kutoka kwenye ukurasa wa <strong>API Keys</strong> kwenye portal ya Dar SMS.
+                                </span>
                             </div>
 
                             <div className="flex items-center gap-2 pt-2">
@@ -4016,7 +4022,7 @@ export default function SaasAdminDashboard({
                                     className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                                 />
                                 <label htmlFor="sms_active_toggle" className="font-bold text-slate-700">
-                                    SwalaSMS Gateway is Live & Active
+                                    Dar SMS Gateway is Live & Active
                                 </label>
                             </div>
 
@@ -4033,7 +4039,7 @@ export default function SaasAdminDashboard({
                                     disabled={smsConfigForm.processing}
                                     className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold cursor-pointer"
                                 >
-                                    Save SwalaSMS Settings
+                                    Save Dar SMS Settings
                                 </button>
                             </div>
                         </form>

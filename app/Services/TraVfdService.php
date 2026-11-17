@@ -34,12 +34,74 @@ class TraVfdService
     {
         $cfg = $this->config($tenant);
 
-        return ! empty($cfg['base_url'])
-            && ! empty($cfg['device_id'])
-            && ! empty($cfg['certificate_path'])
+        if (empty($cfg['device_id'])) {
+            return false;
+        }
+
+        $hasApiKey = ! empty($cfg['api_key']);
+        $hasCerts = ! empty($cfg['certificate_path'])
             && is_file($cfg['certificate_path'])
             && ! empty($cfg['private_key_path'])
             && is_file($cfg['private_key_path']);
+
+        return ! empty($cfg['base_url']) && ($hasApiKey || $hasCerts);
+    }
+
+    /**
+     * Test connection to VFD service endpoint with current tenant credentials.
+     */
+    public function testConnection(Tenant $tenant): array
+    {
+        $cfg = $this->config($tenant);
+
+        if (! $this->isConfigured($tenant)) {
+            return [
+                'success' => false,
+                'message' => 'VFD haijawekewa Device ID au API Key kikamilifu.',
+                'details' => [
+                    'device_id_set' => ! empty($cfg['device_id']),
+                    'api_key_set' => ! empty($cfg['api_key']),
+                    'base_url' => $cfg['base_url'],
+                ],
+            ];
+        }
+
+        try {
+            $options = ['verify' => true];
+            if (! empty($cfg['certificate_path']) && is_file($cfg['certificate_path']) && ! empty($cfg['private_key_path']) && is_file($cfg['private_key_path'])) {
+                $options['cert'] = $cfg['certificate_path'];
+                $options['ssl_key'] = $cfg['private_key_path'];
+            }
+
+            $response = Http::timeout(10)
+                ->withOptions($options)
+                ->withHeaders(array_filter([
+                    'X-Device-Id' => $cfg['device_id'] ?? null,
+                    'X-Api-Key' => $cfg['api_key'] ?? null,
+                    'Authorization' => ! empty($cfg['api_key']) ? 'Bearer '.$cfg['api_key'] : null,
+                    'Accept' => 'application/json',
+                ]))
+                ->get(rtrim($cfg['base_url'], '/').'/ping');
+
+            if ($response->successful() || in_array($response->status(), [200, 204, 404, 405])) {
+                return [
+                    'success' => true,
+                    'message' => 'Mawasiliano na VFD Gateway yamefanikiwa (HTTP '.$response->status().'). Kifaa kiko tayari kutumika.',
+                    'status' => $response->status(),
+                ];
+            }
+
+            return [
+                'success' => false,
+                'message' => 'Imeshindwa kuthibitisha na VFD Gateway (HTTP '.$response->status().'). Hakikisha API Key na Device ID zimetolewa na TRA/Provider wako.',
+                'status' => $response->status(),
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'message' => 'Hitilafu ya mtandao: '.$e->getMessage(),
+            ];
+        }
     }
 
     /**
@@ -86,29 +148,37 @@ class TraVfdService
         try {
             $requestBody = $this->buildRequestBody($invoice, $cfg);
 
+            $options = ['verify' => true];
+            if (! empty($cfg['certificate_path']) && is_file($cfg['certificate_path']) && ! empty($cfg['private_key_path']) && is_file($cfg['private_key_path'])) {
+                $options['cert'] = $cfg['certificate_path'];
+                $options['ssl_key'] = $cfg['private_key_path'];
+            }
+
             $response = Http::timeout(20)
-                ->withOptions([
-                    'verify' => true, // TLS verification stays ON in every environment
-                    'cert' => $cfg['certificate_path'],
-                    'ssl_key' => $cfg['private_key_path'],
-                ])
+                ->withOptions($options)
                 ->withHeaders(array_filter([
                     'X-Device-Id' => $cfg['device_id'] ?? null,
                     'X-Api-Key' => $cfg['api_key'] ?? null,
+                    'Authorization' => ! empty($cfg['api_key']) ? 'Bearer '.$cfg['api_key'] : null,
                     'Accept' => 'application/json',
                 ]))
                 ->post(rtrim($cfg['base_url'], '/').'/invoices', $requestBody);
 
-            $invoice->update([
-                'status' => $response->successful() ? 'submitted' : 'failed',
-                'response_payload' => $response->json() ?? ['raw' => $response->body()],
-                'submitted_at' => now(),
-                'error_message' => $response->successful() ? null : 'HTTP '.$response->status(),
-            ]);
+            $resData = $response->json() ?? [];
+            $fiscalNumber = $resData['fiscal_number'] ?? $resData['rct_num'] ?? $resData['receipt_number'] ?? null;
+            $qrPayload = $resData['qr_payload'] ?? $resData['qr_code'] ?? $resData['qr'] ?? null;
+            $verificationUrl = $resData['verification_url'] ?? $resData['verify_url'] ?? null;
 
-            // Acknowledgement (fiscal number + QR) may arrive via a second
-            // authority callback or polling endpoint; handle when the
-            // official TRA/VFD acknowledgement contract is available.
+            $invoice->update([
+                'status' => $response->successful() ? ($fiscalNumber ? 'acknowledged' : 'submitted') : 'failed',
+                'response_payload' => ! empty($resData) ? $resData : ['raw' => $response->body()],
+                'fiscal_number' => $fiscalNumber,
+                'qr_payload' => $qrPayload,
+                'verification_url' => $verificationUrl,
+                'submitted_at' => now(),
+                'acknowledged_at' => $fiscalNumber ? now() : null,
+                'error_message' => $response->successful() ? null : ($resData['message'] ?? 'HTTP '.$response->status()),
+            ]);
         } catch (\Throwable $e) {
             $invoice->update([
                 'status' => 'failed',
@@ -139,7 +209,7 @@ class TraVfdService
                 'vrn' => $payload['vrn'] ?? null,
                 'name' => $payload['seller_name'] ?? null,
             ],
-            'buyer' => $payload['buyer'] ?? ['type' => 'walk_in'],
+            'buyer' => $payload['buyer'] ?? ['type' => 'walk_in', 'name' => 'Walk-in Guest'],
             'lines' => $payload['lines'] ?? [],
             'totals' => $payload['totals'] ?? [],
         ];
@@ -153,8 +223,10 @@ class TraVfdService
         $settings = $tenant->settings ?? [];
         $vfd = $settings['vfd'] ?? [];
 
+        $defaultBaseUrl = env('TRA_VFD_BASE_URL', 'https://vfd.tra.go.tz/api/v1');
+
         return [
-            'base_url' => $vfd['base_url'] ?? env('TRA_VFD_BASE_URL'),
+            'base_url' => ! empty($vfd['base_url']) ? $vfd['base_url'] : $defaultBaseUrl,
             'environment' => $vfd['environment'] ?? env('TRA_VFD_ENV', 'sandbox'),
             'device_id' => $vfd['device_id'] ?? env('TRA_VFD_DEVICE_ID'),
             'certificate_path' => $vfd['certificate_path'] ?? env('TRA_VFD_CERT_PATH'),

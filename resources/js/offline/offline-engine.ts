@@ -8,6 +8,7 @@ import { synchronize, downloadTenantBootstrap } from './sync';
 import { db } from './database';
 import { registerDevice } from './device';
 import { cacheOnlineSession, getActiveOfflineSession } from './auth';
+import { OFFLINE_CONFIG } from './config';
 
 export type OfflineEngineStatus = 'ONLINE' | 'OFFLINE' | 'SYNCING' | 'PENDING' | 'SERVER_UNREACHABLE';
 
@@ -79,10 +80,19 @@ export class OfflineEngine extends EventTarget {
         // 3. Periodic Auto-Sync Timer when online
         if (!this.autoSyncInterval) {
             this.autoSyncInterval = setInterval(() => {
+                if (typeof document !== 'undefined' && document.hidden) return;
                 if (this.tenantId && network.isOnline() && !this.syncing) {
                     this.syncNow();
                 }
-            }, 30000);
+            }, OFFLINE_CONFIG.syncInterval);
+
+            if (typeof document !== 'undefined') {
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible' && this.tenantId && network.isOnline() && !this.syncing) {
+                        this.syncNow();
+                    }
+                });
+            }
         }
 
         this.initialized = true;

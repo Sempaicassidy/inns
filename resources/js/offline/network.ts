@@ -23,8 +23,16 @@ class NetworkManager extends EventTarget {
             // Start background ping checks
             this.checkServerConnectivity();
             this.pingTimer = setInterval(() => {
+                if (typeof document !== 'undefined' && document.hidden) return;
                 this.checkServerConnectivity();
             }, OFFLINE_CONFIG.pingInterval);
+
+            // Re-check immediately when tab becomes visible
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    this.checkServerConnectivity();
+                }
+            });
         }
     }
 

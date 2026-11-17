@@ -30,8 +30,11 @@ export default function OfflineSyncManager() {
     const [isUnlockModalOpen, setIsUnlockModalOpen] = useState<boolean>(false);
     const [syncNotification, setSyncNotification] = useState<string | null>(null);
 
-    // Initialize Offline Engine for active tenant
+    // Initialize Offline Engine for active tenant (skip for SaaS platform admin)
     useEffect(() => {
+        if (typeof window !== 'undefined' && window.location.pathname.includes('/saas-admin')) {
+            return;
+        }
         if (auth?.tenant?.id) {
             offlineEngine.initialize(auth.tenant.id, auth.user);
         }
@@ -82,6 +85,11 @@ export default function OfflineSyncManager() {
     // Automatic system pre-caching when online: Pre-caches core modules and Inertia states
     useEffect(() => {
         if (typeof window === 'undefined' || !navigator.onLine || !('caches' in window)) return;
+        if (window.location.pathname.includes('/saas-admin')) return;
+
+        // Only run precache once per session to avoid unnecessary network traffic
+        if (sessionStorage.getItem('the_inns_offline_precached')) return;
+        sessionStorage.setItem('the_inns_offline_precached', '1');
 
         const downloadSystemForOffline = async () => {
             try {

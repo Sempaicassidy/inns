@@ -160,6 +160,9 @@ class FolioController extends Controller
             // Record fiscal document for TRA/VFD (submits only when configured)
             $tenant = Tenant::find($user->tenant_id);
             if ($tenant) {
+                $guestName = $folio->reservation?->guest?->full_name ?? $folio->stay?->guest?->full_name ?? 'Hotel Guest';
+                $guestPhone = $folio->reservation?->guest?->phone ?? $folio->stay?->guest?->phone ?? null;
+
                 app(TraVfdService::class)->recordInvoice(
                     $tenant,
                     'folio_payment',
@@ -168,8 +171,13 @@ class FolioController extends Controller
                         'tin' => $tenant->settings['tin'] ?? null,
                         'vrn' => $tenant->settings['vrn'] ?? null,
                         'seller_name' => $tenant->name,
+                        'buyer' => [
+                            'type' => 'guest',
+                            'name' => $guestName,
+                            'phone' => $guestPhone,
+                        ],
                         'lines' => [[
-                            'description' => 'Guest folio payment',
+                            'description' => "Guest folio payment ({$validated['payment_method']})",
                             'quantity' => 1,
                             'unit_price_minor' => $amountMinor,
                             'total_minor' => $amountMinor,

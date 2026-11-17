@@ -246,18 +246,25 @@ export default function PwaNotificationManager() {
             }
         };
 
-        // Run check on window focus
+        // Run check on window focus or visibility change
         const handleWindowFocus = () => {
-            checkForNewNotifications();
+            if (typeof document !== 'undefined' && !document.hidden) {
+                checkForNewNotifications();
+            }
         };
 
         window.addEventListener('focus', handleWindowFocus);
+        document.addEventListener('visibilitychange', handleWindowFocus);
 
-        // Interval poll every 20 seconds
-        const pollInterval = setInterval(checkForNewNotifications, 20000);
+        // Interval poll every 45 seconds (pauses when tab is hidden)
+        const pollInterval = setInterval(() => {
+            if (typeof document !== 'undefined' && document.hidden) return;
+            checkForNewNotifications();
+        }, 45000);
 
         return () => {
             window.removeEventListener('focus', handleWindowFocus);
+            document.removeEventListener('visibilitychange', handleWindowFocus);
             clearInterval(pollInterval);
         };
     }, []);

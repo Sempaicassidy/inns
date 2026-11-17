@@ -6,6 +6,7 @@ use App\Models\BusinessDate;
 use App\Models\Property;
 use App\Models\Tenant;
 use App\Services\TenantDataPurgeService;
+use App\Services\TraVfdService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -43,6 +44,8 @@ class TenantSettingsController extends Controller
         $businessDate = $bDateRecord?->current_business_date?->format('Y-m-d') ?? now()->format('Y-m-d');
 
         $settings = $tenant->settings ?? [];
+        $vfd = $settings['vfd'] ?? [];
+        $vfdService = app(TraVfdService::class);
 
         return Inertia::render('Settings/TenantSettings', [
             'tenant' => [
@@ -56,6 +59,11 @@ class TenantSettingsController extends Controller
                 'tin' => $settings['tin'] ?? ($property?->tax_config['tin'] ?? '102-458-999'),
                 'vrn' => $settings['vrn'] ?? ($property?->tax_config['vrn'] ?? '40-001234-A'),
                 'business_license' => $settings['business_license'] ?? 'BL-2026-00918',
+                'vfd_device_id' => $vfd['device_id'] ?? env('TRA_VFD_DEVICE_ID', ''),
+                'vfd_api_key' => $vfd['api_key'] ?? env('TRA_VFD_API_KEY', ''),
+                'vfd_base_url' => $vfd['base_url'] ?? env('TRA_VFD_BASE_URL', 'https://vfd.tra.go.tz/api/v1'),
+                'vfd_environment' => $vfd['environment'] ?? env('TRA_VFD_ENV', 'sandbox'),
+                'vfd_is_configured' => $vfdService->isConfigured($tenant),
                 'phone' => $settings['phone'] ?? $property?->phone ?? '+255 754 000 111',
                 'email' => $settings['email'] ?? $property?->email ?? 'info@theinns.co.tz',
                 'address' => $settings['address'] ?? $property?->address ?? 'Plot 42, Safari Way, P.O. Box 1042',
@@ -104,6 +112,10 @@ class TenantSettingsController extends Controller
             'tin' => 'nullable|string|max:50',
             'vrn' => 'nullable|string|max:50',
             'business_license' => 'nullable|string|max:80',
+            'vfd_device_id' => 'nullable|string|max:100',
+            'vfd_api_key' => 'nullable|string|max:255',
+            'vfd_base_url' => 'nullable|string|max:255',
+            'vfd_environment' => 'nullable|string|in:sandbox,production',
             'phone' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:100',
             'address' => 'nullable|string|max:255',
@@ -129,6 +141,18 @@ class TenantSettingsController extends Controller
         $settings['tin'] = $validated['tin'] ?? null;
         $settings['vrn'] = $validated['vrn'] ?? null;
         $settings['business_license'] = $validated['business_license'] ?? null;
+
+        // VFD Settings
+        $vfd = $settings['vfd'] ?? [];
+        $vfd['device_id'] = $validated['vfd_device_id'] ?? null;
+        $vfd['api_key'] = $validated['vfd_api_key'] ?? null;
+        if (! empty($validated['vfd_base_url'])) {
+            $vfd['base_url'] = $validated['vfd_base_url'];
+        }
+        if (! empty($validated['vfd_environment'])) {
+            $vfd['environment'] = $validated['vfd_environment'];
+        }
+        $settings['vfd'] = $vfd;
         $settings['phone'] = $validated['phone'] ?? null;
         $settings['email'] = $validated['email'] ?? null;
         $settings['address'] = $validated['address'] ?? null;
@@ -154,6 +178,7 @@ class TenantSettingsController extends Controller
             $taxConfig = $property->tax_config ?? [];
             $taxConfig['tin'] = $validated['tin'] ?? null;
             $taxConfig['vrn'] = $validated['vrn'] ?? null;
+            $taxConfig['vfd_device_id'] = $validated['vfd_device_id'] ?? null;
 
             $property->update([
                 'phone' => $validated['phone'] ?? $property->phone,
@@ -251,5 +276,45 @@ class TenantSettingsController extends Controller
 
             return redirect()->back()->with('error', $err);
         }
+    }
+
+    /**
+     * Test connection to VFD service endpoint using tenant credentials.
+     */
+    public function testVfd(Request $request, TraVfdService $vfdService): JsonResponse
+    {
+        $user = $request->user();
+        $allowedRoles = ['general_manager', 'manager', 'owner', 'admin', 'super_admin'];
+        if (! in_array($user->active_role, $allowedRoles) && ! in_array($user->role, $allowedRoles) && ! $user->isSuperAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        $tenant = $user->tenant ?? Tenant::find($user->tenant_id);
+        if (! $tenant) {
+            return response()->json(['success' => false, 'message' => 'Hotel workspace not found.'], 404);
+        }
+
+        // Allow testing unsaved on-the-fly inputs from frontend form
+        if ($request->filled('vfd_device_id') || $request->filled('vfd_api_key')) {
+            $settings = $tenant->settings ?? [];
+            $vfd = $settings['vfd'] ?? [];
+            if ($request->filled('vfd_device_id')) {
+                $vfd['device_id'] = $request->input('vfd_device_id');
+            }
+            if ($request->filled('vfd_api_key')) {
+                $vfd['api_key'] = $request->input('vfd_api_key');
+            }
+            if ($request->filled('vfd_base_url')) {
+                $vfd['base_url'] = $request->input('vfd_base_url');
+            }
+            if ($request->filled('vfd_environment')) {
+                $vfd['environment'] = $request->input('vfd_environment');
+            }
+            $tenant->settings = array_merge($settings, ['vfd' => $vfd]);
+        }
+
+        $result = $vfdService->testConnection($tenant);
+
+        return response()->json($result);
     }
 }

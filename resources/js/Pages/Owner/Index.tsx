@@ -303,7 +303,7 @@ export default function OwnerPortalIndex({
         switch (method.toLowerCase()) {
             case 'cash':
                 return {
-                    name: 'Cash (Taslimu)',
+                    name: 'Cash',
                     category: 'Cash On Hand',
                     icon: Banknote,
                     badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -588,100 +588,163 @@ export default function OwnerPortalIndex({
                                 </div>
                             )}
 
-                            {/* Section 1: Executive Financial Performance */}
+                            {/* ─── EXECUTIVE PAYMENT CHANNELS & COLLECTIONS BREAKDOWN ─── */}
                             <section className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <h2 className="text-base font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                                        <Activity className="w-4 h-4 text-[#D4AF37]" />
-                                        <span>Group Financial Overview</span>
-                                    </h2>
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                                    {/* Card 1: Month Revenue */}
-                                    <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-[#D4AF37]/50 transition">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-                                                Consolidated Revenue
-                                            </span>
-                                            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-                                                <TrendingUp className="w-5 h-5" />
-                                            </div>
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <Wallet className="w-5 h-5 text-emerald-600" />
+                                            <h3 className="text-base sm:text-lg font-black text-slate-950">
+                                                Collections by Payment Mode & Channel
+                                            </h3>
                                         </div>
-                                        <h3 className="text-2xl sm:text-3xl font-black text-slate-950 mt-3 tracking-tight">
-                                            {formatTzs(metrics.group_month_revenue_minor)}
-                                        </h3>
-                                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 font-medium">
-                                            <span>Today:</span>
-                                            <span className="font-extrabold text-emerald-600">
-                                                {formatTzs(metrics.group_today_revenue_minor)}
-                                            </span>
-                                        </div>
+                                        <p className="text-xs text-slate-500 mt-0.5">
+                                            Real-time tender breakdown across Cash-on-hand, M-Pesa, Tigo Pesa, Airtel Money, and Bank Deposits
+                                        </p>
                                     </div>
 
-                                    {/* Card 2: Operating Profit (GOP) */}
-                                    <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-[#D4AF37]/50 transition">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-                                                Operating Profit (GOP)
+                                    {/* Aggregate Total Badge */}
+                                    <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-slate-200/80 shadow-2xs self-start sm:self-auto">
+                                        <div className="text-right">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                                                Total Tender ({period.toUpperCase()})
                                             </span>
-                                            <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
-                                                <DollarSign className="w-5 h-5" />
-                                            </div>
-                                        </div>
-                                        <h3 className="text-2xl sm:text-3xl font-black text-amber-800 mt-3 tracking-tight">
-                                            {formatTzs(metrics.group_gop_minor)}
-                                        </h3>
-                                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 font-medium">
-                                            <span>Net GOP Margin:</span>
-                                            <span className="font-extrabold text-amber-800">
-                                                {metrics.group_gop_margin_percent}%
+                                            <span className="text-sm sm:text-base font-black text-emerald-700">
+                                                {formatTzs((analytics?.payments_by_method ?? []).reduce((acc, p) => acc + (p.total_minor || 0), 0))}
                                             </span>
                                         </div>
-                                    </div>
-
-                                    {/* Card 3: Room Occupancy */}
-                                    <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-[#D4AF37]/50 transition">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-                                                Average Occupancy
-                                            </span>
-                                            <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                                                <Bed className="w-5 h-5" />
-                                            </div>
-                                        </div>
-                                        <h3 className="text-2xl sm:text-3xl font-black text-slate-950 mt-3 tracking-tight">
-                                            {metrics.group_occupancy_rate}%
-                                        </h3>
-                                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 font-medium">
-                                            <span>Occupied:</span>
-                                            <span className="font-bold text-slate-800">
-                                                {metrics.total_occupied_group} of {metrics.total_rooms_group} rooms
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {/* Card 4: Target Realization */}
-                                    <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-[#D4AF37]/50 transition">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-                                                Monthly Target Progress
-                                            </span>
-                                            <div className="w-10 h-10 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
-                                                <Target className="w-5 h-5" />
-                                            </div>
-                                        </div>
-                                        <h3 className="text-2xl sm:text-3xl font-black text-purple-700 mt-3 tracking-tight">
-                                            {metrics.group_target_progress_percent}%
-                                        </h3>
-                                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 font-medium">
-                                            <span>Target:</span>
-                                            <span className="font-bold text-slate-800">
-                                                {metrics.group_target_minor > 0 ? formatTzs(metrics.group_target_minor) : 'Unset'}
-                                            </span>
+                                        <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 font-bold flex items-center justify-center">
+                                            <Coins className="w-4 h-4" />
                                         </div>
                                     </div>
                                 </div>
+
+                                {(!analytics?.payments_by_method || analytics.payments_by_method.length === 0) ? (
+                                    <div className="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-xs text-center text-slate-400">
+                                        <Wallet className="w-10 h-10 mx-auto mb-2 text-slate-300 opacity-60" />
+                                        <p className="text-xs font-semibold">No payment collections recorded in the selected period ({period.toUpperCase()}).</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        {/* Multi-channel proportion visual bar */}
+                                        {(() => {
+                                            const totalMinor = (analytics.payments_by_method ?? []).reduce((acc, p) => acc + (p.total_minor || 0), 0);
+                                            if (totalMinor <= 0) return null;
+                                            return (
+                                                <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2">
+                                                    <div className="flex items-center justify-between text-xs">
+                                                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                                                            Channel Revenue Share
+                                                        </span>
+                                                        <span className="text-[11px] font-bold text-slate-600">
+                                                            {(analytics.payments_by_method ?? []).reduce((acc, p) => acc + (p.count || 0), 0)} Total Transactions
+                                                        </span>
+                                                    </div>
+                                                    <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
+                                                        {analytics.payments_by_method.map((p) => {
+                                                            const pct = totalMinor > 0 ? (p.total_minor / totalMinor) * 100 : 0;
+                                                            if (pct <= 0) return null;
+                                                            const details = getPaymentMethodDetails(p.method);
+                                                            return (
+                                                                <div
+                                                                    key={p.method}
+                                                                    className={`${details.barClass} h-full transition-all duration-500 hover:opacity-85`}
+                                                                    style={{ width: `${pct}%` }}
+                                                                    title={`${details.name}: ${formatTzs(p.total_minor)} (${Math.round(pct)}%)`}
+                                                                />
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+
+                                        {/* Dynamic Responsive Grid / Flex of payment method cards */}
+                                        {(() => {
+                                            const paymentCount = (analytics.payments_by_method ?? []).length;
+                                            const gridColsClass =
+                                                paymentCount === 1
+                                                    ? 'grid-cols-1'
+                                                    : paymentCount === 2
+                                                        ? 'grid-cols-1 sm:grid-cols-2'
+                                                        : paymentCount === 3
+                                                            ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+                                                            : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
+
+                                            return (
+                                                <div className={`grid gap-5 ${gridColsClass}`}>
+                                                    {analytics.payments_by_method.map((p) => {
+                                                        const details = getPaymentMethodDetails(p.method);
+                                                        const totalMinor = (analytics.payments_by_method ?? []).reduce((acc, item) => acc + (item.total_minor || 0), 0);
+                                                        const sharePct = totalMinor > 0 ? Math.round((p.total_minor / totalMinor) * 100) : 0;
+                                                        const IconComponent = details.icon;
+
+                                                        return (
+                                                            <div
+                                                                key={p.method}
+                                                                className={`bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-[#D4AF37]/50 transition flex flex-col justify-between`}
+                                                            >
+                                                                <div>
+                                                                    <div className="flex items-center justify-between gap-3">
+                                                                        <div className="flex items-center gap-3 min-w-0">
+                                                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border ${details.badgeClass} shadow-2xs`}>
+                                                                                <IconComponent className="w-6 h-6" />
+                                                                            </div>
+                                                                            <div className="min-w-0">
+                                                                                <h4 className="text-sm sm:text-base font-black text-slate-900 truncate" title={details.name}>
+                                                                                    {details.name}
+                                                                                </h4>
+                                                                                <span className="text-[11px] font-extrabold text-slate-400 block uppercase tracking-wider mt-0.5">
+                                                                                    {details.category}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div className="flex items-center gap-1.5 shrink-0 bg-slate-50 border border-slate-200/60 px-2.5 py-1 rounded-xl">
+                                                                            <span className="text-xs font-black text-slate-800">
+                                                                                {sharePct}%
+                                                                            </span>
+                                                                            <span className="text-[10px] font-bold text-slate-400 uppercase">Share</span>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="mt-5 pt-1">
+                                                                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">
+                                                                            Tender Volume
+                                                                        </span>
+                                                                        <div className="flex items-baseline justify-between gap-3 flex-wrap">
+                                                                            <h3 className={`text-2xl sm:text-3xl font-black ${details.accentColor} tracking-tight whitespace-nowrap`}>
+                                                                                {formatTzs(p.total_minor)}
+                                                                            </h3>
+                                                                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200/60 text-xs font-medium text-slate-600 whitespace-nowrap">
+                                                                                <span className="font-black text-slate-900">{p.count}</span>
+                                                                                <span>{p.count === 1 ? 'transaction' : 'transactions'}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Progress bar indicating share */}
+                                                                <div className="mt-5 pt-3.5 border-t border-slate-100">
+                                                                    <div className="flex items-center justify-between text-xs mb-2">
+                                                                        <span className="text-[11px] font-bold text-slate-400">Channel Contribution</span>
+                                                                        <span className="font-extrabold text-slate-700 text-xs">{sharePct}% of period tender</span>
+                                                                    </div>
+                                                                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden shadow-inner">
+                                                                        <div
+                                                                            className={`h-2 rounded-full ${details.barClass} transition-all duration-500`}
+                                                                            style={{ width: `${Math.min(100, Math.max(3, sharePct))}%` }}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            );
+                                        })()}
+                                    </>
+                                )}
                             </section>
 
                             {/* ─── EXECUTIVE BUSINESS ANALYTICS & REVENUE TRAJECTORY ─── */}
@@ -878,140 +941,100 @@ export default function OwnerPortalIndex({
                                     </div>
                                 </section>
                             )}
-
-                            {/* ─── EXECUTIVE PAYMENT CHANNELS & COLLECTIONS BREAKDOWN ─── */}
+                            {/* Section 1: Executive Financial Performance */}
                             <section className="space-y-4">
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <Wallet className="w-5 h-5 text-emerald-600" />
-                                            <h3 className="text-base sm:text-lg font-black text-slate-950">
-                                                Collections by Payment Mode & Channel
-                                            </h3>
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-base font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                                        <Activity className="w-4 h-4 text-[#D4AF37]" />
+                                        <span>Group Financial Overview</span>
+                                    </h2>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                                    {/* Card 1: Month Revenue */}
+                                    <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-[#D4AF37]/50 transition">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                                                Consolidated Revenue
+                                            </span>
+                                            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                                                <TrendingUp className="w-5 h-5" />
+                                            </div>
                                         </div>
-                                        <p className="text-xs text-slate-500 mt-0.5">
-                                            Real-time tender breakdown across Cash-on-hand, M-Pesa, Tigo Pesa, Airtel Money, and Bank Deposits
-                                        </p>
+                                        <h3 className="text-2xl sm:text-3xl font-black text-slate-950 mt-3 tracking-tight">
+                                            {formatTzs(metrics.group_month_revenue_minor)}
+                                        </h3>
+                                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 font-medium">
+                                            <span>Today:</span>
+                                            <span className="font-extrabold text-emerald-600">
+                                                {formatTzs(metrics.group_today_revenue_minor)}
+                                            </span>
+                                        </div>
                                     </div>
 
-                                    {/* Aggregate Total Badge */}
-                                    <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-slate-200/80 shadow-2xs self-start sm:self-auto">
-                                        <div className="text-right">
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                                                Total Tender ({period.toUpperCase()})
+                                    {/* Card 2: Operating Profit (GOP) */}
+                                    <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-[#D4AF37]/50 transition">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                                                Operating Profit (GOP)
                                             </span>
-                                            <span className="text-sm sm:text-base font-black text-emerald-700">
-                                                {formatTzs((analytics?.payments_by_method ?? []).reduce((acc, p) => acc + (p.total_minor || 0), 0))}
+                                            <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
+                                                <DollarSign className="w-5 h-5" />
+                                            </div>
+                                        </div>
+                                        <h3 className="text-2xl sm:text-3xl font-black text-amber-800 mt-3 tracking-tight">
+                                            {formatTzs(metrics.group_gop_minor)}
+                                        </h3>
+                                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 font-medium">
+                                            <span>Net GOP Margin:</span>
+                                            <span className="font-extrabold text-amber-800">
+                                                {metrics.group_gop_margin_percent}%
                                             </span>
                                         </div>
-                                        <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 font-bold flex items-center justify-center">
-                                            <Coins className="w-4 h-4" />
+                                    </div>
+
+                                    {/* Card 3: Room Occupancy */}
+                                    <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-[#D4AF37]/50 transition">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                                                Average Occupancy
+                                            </span>
+                                            <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                                                <Bed className="w-5 h-5" />
+                                            </div>
+                                        </div>
+                                        <h3 className="text-2xl sm:text-3xl font-black text-slate-950 mt-3 tracking-tight">
+                                            {metrics.group_occupancy_rate}%
+                                        </h3>
+                                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 font-medium">
+                                            <span>Occupied:</span>
+                                            <span className="font-bold text-slate-800">
+                                                {metrics.total_occupied_group} of {metrics.total_rooms_group} rooms
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Card 4: Target Realization */}
+                                    <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-[#D4AF37]/50 transition">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                                                Monthly Target Progress
+                                            </span>
+                                            <div className="w-10 h-10 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+                                                <Target className="w-5 h-5" />
+                                            </div>
+                                        </div>
+                                        <h3 className="text-2xl sm:text-3xl font-black text-purple-700 mt-3 tracking-tight">
+                                            {metrics.group_target_progress_percent}%
+                                        </h3>
+                                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 font-medium">
+                                            <span>Target:</span>
+                                            <span className="font-bold text-slate-800">
+                                                {metrics.group_target_minor > 0 ? formatTzs(metrics.group_target_minor) : 'Unset'}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
-
-                                {(!analytics?.payments_by_method || analytics.payments_by_method.length === 0) ? (
-                                    <div className="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-xs text-center text-slate-400">
-                                        <Wallet className="w-10 h-10 mx-auto mb-2 text-slate-300 opacity-60" />
-                                        <p className="text-xs font-semibold">No payment collections recorded in the selected period ({period.toUpperCase()}).</p>
-                                    </div>
-                                ) : (
-                                    <>
-                                        {/* Multi-channel proportion visual bar */}
-                                        {(() => {
-                                            const totalMinor = (analytics.payments_by_method ?? []).reduce((acc, p) => acc + (p.total_minor || 0), 0);
-                                            if (totalMinor <= 0) return null;
-                                            return (
-                                                <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2">
-                                                    <div className="flex items-center justify-between text-xs">
-                                                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-                                                            Channel Revenue Share
-                                                        </span>
-                                                        <span className="text-[11px] font-bold text-slate-600">
-                                                            {(analytics.payments_by_method ?? []).reduce((acc, p) => acc + (p.count || 0), 0)} Total Transactions
-                                                        </span>
-                                                    </div>
-                                                    <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
-                                                        {analytics.payments_by_method.map((p) => {
-                                                            const pct = totalMinor > 0 ? (p.total_minor / totalMinor) * 100 : 0;
-                                                            if (pct <= 0) return null;
-                                                            const details = getPaymentMethodDetails(p.method);
-                                                            return (
-                                                                <div
-                                                                    key={p.method}
-                                                                    className={`${details.barClass} h-full transition-all duration-500 hover:opacity-85`}
-                                                                    style={{ width: `${pct}%` }}
-                                                                    title={`${details.name}: ${formatTzs(p.total_minor)} (${Math.round(pct)}%)`}
-                                                                />
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })()}
-
-                                        {/* Grid of payment method cards */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                            {analytics.payments_by_method.map((p) => {
-                                                const details = getPaymentMethodDetails(p.method);
-                                                const totalMinor = (analytics.payments_by_method ?? []).reduce((acc, item) => acc + (item.total_minor || 0), 0);
-                                                const sharePct = totalMinor > 0 ? Math.round((p.total_minor / totalMinor) * 100) : 0;
-                                                const IconComponent = details.icon;
-
-                                                return (
-                                                    <div
-                                                        key={p.method}
-                                                        className={`bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs transition hover:shadow-md ${details.borderHover} flex flex-col justify-between`}
-                                                    >
-                                                        <div>
-                                                            <div className="flex items-start justify-between gap-2">
-                                                                <div className="flex items-center gap-2.5">
-                                                                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${details.badgeClass}`}>
-                                                                        <IconComponent className="w-5 h-5" />
-                                                                    </div>
-                                                                    <div className="min-w-0">
-                                                                        <h4 className="text-xs font-black text-slate-900 truncate" title={details.name}>
-                                                                            {details.name}
-                                                                        </h4>
-                                                                        <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">
-                                                                            {details.category}
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-
-                                                                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 shrink-0">
-                                                                    {sharePct}%
-                                                                </span>
-                                                            </div>
-
-                                                            <div className="mt-4">
-                                                                <div className={`text-xl sm:text-2xl font-black ${details.accentColor} tracking-tight`}>
-                                                                    {formatTzs(p.total_minor)}
-                                                                </div>
-                                                                <div className="flex items-center justify-between text-xs text-slate-500 mt-1">
-                                                                    <span>Transactions:</span>
-                                                                    <span className="font-extrabold text-slate-800">
-                                                                        {p.count} txn{p.count === 1 ? '' : 's'}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Progress bar indicating share */}
-                                                        <div className="mt-4 pt-3 border-t border-slate-100">
-                                                            <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                                                                <div
-                                                                    className={`h-1.5 rounded-full ${details.barClass}`}
-                                                                    style={{ width: `${Math.min(100, Math.max(4, sharePct))}%` }}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </>
-                                )}
                             </section>
 
                             {/* Highlights Grid: Directives & Audit Watchlist */}

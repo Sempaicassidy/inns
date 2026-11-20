@@ -780,7 +780,321 @@ export default function OwnerPortalIndex({
                                 </div>
                             </section>
 
-                            {/* ─── SECTION 1: PRIMARY FINANCIAL KPIS ───────────────────────── */}
+                            {/* ─── 1. EXECUTIVE PAYMENT CHANNELS & COLLECTIONS (IMAGE 1) ───── */}
+                            <section className="space-y-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <Wallet className="w-5 h-5 text-emerald-600" />
+                                            <h3 className="text-base sm:text-lg font-black text-slate-950">
+                                                Collections by Payment Mode & Channel
+                                            </h3>
+                                        </div>
+                                        <p className="text-xs text-slate-500 mt-0.5">
+                                            Real-time tender breakdown across Cash, M-Pesa, Tigo Pesa, Airtel Money, and Bank Deposits
+                                        </p>
+                                    </div>
+
+                                    {/* Aggregate Total Badge */}
+                                    <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-slate-200/80 shadow-2xs self-start sm:self-auto">
+                                        <div className="text-right">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                                                Total Tender ({period.toUpperCase()})
+                                            </span>
+                                            <span className="text-sm sm:text-base font-black text-emerald-700">
+                                                {formatTzs((analytics?.payments_by_method ?? []).reduce((acc, p) => acc + (p.total_minor || 0), 0))}
+                                            </span>
+                                        </div>
+                                        <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 font-bold flex items-center justify-center">
+                                            <Coins className="w-4 h-4" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {(!analytics?.payments_by_method || analytics.payments_by_method.length === 0) ? (
+                                    <div className="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-xs text-center text-slate-400">
+                                        <Wallet className="w-10 h-10 mx-auto mb-2 text-slate-300 opacity-60" />
+                                        <p className="text-xs font-semibold">No payment collections recorded in the selected period ({period.toUpperCase()}).</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        {/* Multi-channel proportion visual bar */}
+                                        {(() => {
+                                            const totalMinor = (analytics.payments_by_method ?? []).reduce((acc, p) => acc + (p.total_minor || 0), 0);
+                                            if (totalMinor <= 0) return null;
+                                            return (
+                                                <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2">
+                                                    <div className="flex items-center justify-between text-xs">
+                                                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                                                            Channel Revenue Share
+                                                        </span>
+                                                        <span className="text-[11px] font-bold text-slate-600">
+                                                            {(analytics.payments_by_method ?? []).reduce((acc, p) => acc + (p.count || 0), 0)} Total Transactions
+                                                        </span>
+                                                    </div>
+                                                    <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
+                                                        {analytics.payments_by_method.map((p) => {
+                                                            const pct = totalMinor > 0 ? (p.total_minor / totalMinor) * 100 : 0;
+                                                            if (pct <= 0) return null;
+                                                            const details = getPaymentMethodDetails(p.method);
+                                                            return (
+                                                                <div
+                                                                    key={p.method}
+                                                                    className={`${details.barClass} h-full transition-all duration-500 hover:opacity-85`}
+                                                                    style={{ width: `${pct}%` }}
+                                                                    title={`${details.name}: ${formatTzs(p.total_minor)} (${Math.round(pct)}%)`}
+                                                                />
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+
+                                        {/* Dynamic Responsive Grid of payment cards */}
+                                        {(() => {
+                                            const paymentCount = (analytics.payments_by_method ?? []).length;
+                                            const gridColsClass =
+                                                paymentCount === 1
+                                                    ? 'grid-cols-1'
+                                                    : paymentCount === 2
+                                                        ? 'grid-cols-1 sm:grid-cols-2'
+                                                        : paymentCount === 3
+                                                            ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+                                                            : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
+
+                                            return (
+                                                <div className={`grid gap-5 ${gridColsClass}`}>
+                                                    {analytics.payments_by_method.map((p) => {
+                                                        const details = getPaymentMethodDetails(p.method);
+                                                        const totalMinor = (analytics.payments_by_method ?? []).reduce((acc, item) => acc + (item.total_minor || 0), 0);
+                                                        const sharePct = totalMinor > 0 ? Math.round((p.total_minor / totalMinor) * 100) : 0;
+                                                        const IconComponent = details.icon;
+
+                                                        return (
+                                                            <div
+                                                                key={p.method}
+                                                                className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-slate-300 transition flex flex-col justify-between"
+                                                            >
+                                                                <div>
+                                                                    <div className="flex items-center justify-between gap-3">
+                                                                        <div className="flex items-center gap-3 min-w-0">
+                                                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border ${details.badgeClass} shadow-2xs`}>
+                                                                                <IconComponent className="w-6 h-6" />
+                                                                            </div>
+                                                                            <div className="min-w-0">
+                                                                                <h4 className="text-sm sm:text-base font-black text-slate-900 truncate" title={details.name}>
+                                                                                    {details.name}
+                                                                                </h4>
+                                                                                <span className="text-[11px] font-extrabold text-slate-400 block uppercase tracking-wider mt-0.5">
+                                                                                    {details.category}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div className="flex items-center gap-1.5 shrink-0 bg-slate-50 border border-slate-200/60 px-2.5 py-1 rounded-xl">
+                                                                            <span className="text-xs font-black text-slate-800">
+                                                                                {sharePct}%
+                                                                            </span>
+                                                                            <span className="text-[10px] font-bold text-slate-400 uppercase">Share</span>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="mt-5 pt-1">
+                                                                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">
+                                                                            Tender Volume
+                                                                        </span>
+                                                                        <div className="flex items-baseline justify-between gap-3 flex-wrap">
+                                                                            <h3 className={`text-2xl sm:text-3xl font-black ${details.accentColor} tracking-tight whitespace-nowrap`}>
+                                                                                {formatTzs(p.total_minor)}
+                                                                            </h3>
+                                                                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200/60 text-xs font-medium text-slate-600 whitespace-nowrap">
+                                                                                <span className="font-black text-slate-900">{p.count}</span>
+                                                                                <span>{p.count === 1 ? 'transaction' : 'transactions'}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Progress bar indicating share */}
+                                                                <div className="mt-5 pt-3.5 border-t border-slate-100">
+                                                                    <div className="flex items-center justify-between text-xs mb-2">
+                                                                        <span className="text-[11px] font-bold text-slate-400">Channel Contribution</span>
+                                                                        <span className="font-extrabold text-slate-700 text-xs">{sharePct}% of period tender</span>
+                                                                    </div>
+                                                                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden shadow-inner">
+                                                                        <div
+                                                                            className={`h-2 rounded-full ${details.barClass} transition-all duration-500`}
+                                                                            style={{ width: `${Math.min(100, Math.max(3, sharePct))}%` }}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            );
+                                        })()}
+                                    </>
+                                )}
+                            </section>
+
+                            {/* ─── 2. REVENUE TRAJECTORY & DEPARTMENTAL YIELD (IMAGE 3) ────── */}
+                            {analytics && (
+                                <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    {/* Left 2 Cols: Revenue Trajectory Bar Chart */}
+                                    <div className="lg:col-span-2 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
+                                        <div>
+                                            <div className="flex items-center justify-between mb-4">
+                                                <div>
+                                                    <h4 className="text-sm font-black text-slate-950 flex items-center gap-2">
+                                                        <Activity className="w-4 h-4 text-emerald-600" />
+                                                        <span>Revenue Trajectory & Daily Pacing</span>
+                                                    </h4>
+                                                    <p className="text-xs text-slate-400 mt-0.5">
+                                                        Recognized cash flow pace across accommodation & POS outlets
+                                                    </p>
+                                                </div>
+                                                <span className="text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">
+                                                    Total: {formatTzs(analytics.comparison?.revenue_minor ?? metrics.group_month_revenue_minor)}
+                                                </span>
+                                            </div>
+
+                                            {(!analytics.revenue_trend || analytics.revenue_trend.length === 0) ? (
+                                                <div className="py-16 text-center text-slate-400 text-xs font-medium">
+                                                    <BarChart3 className="w-10 h-10 mx-auto mb-2 text-slate-300 opacity-60" />
+                                                    <p>No transaction flow recorded in this timeframe.</p>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-end gap-2 h-44 pt-6 pb-2">
+                                                    {analytics.revenue_trend.map((point: any, idx: number) => {
+                                                        const max = Math.max(...analytics.revenue_trend.map((p: any) => p.total_minor), 1);
+                                                        const h = Math.max(8, Math.round((point.total_minor / max) * 100));
+                                                        return (
+                                                            <div
+                                                                key={idx}
+                                                                className="flex-1 flex flex-col items-center gap-1.5 min-w-0 group relative"
+                                                            >
+                                                                {/* Tooltip on hover */}
+                                                                <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition pointer-events-none bg-slate-900 text-white text-[10px] font-bold py-1 px-2 rounded-lg shadow-lg whitespace-nowrap z-20">
+                                                                    {point.label}: {formatTzs(point.total_minor)}
+                                                                </div>
+                                                                <div className="w-full flex flex-col justify-end h-32">
+                                                                    <div
+                                                                        className="w-full bg-blue-600 hover:bg-blue-500 rounded-t-lg transition-all duration-300"
+                                                                        style={{ height: `${h}%` }}
+                                                                    />
+                                                                </div>
+                                                                <span className="text-[10px] font-bold text-slate-400 truncate w-full text-center">
+                                                                    {point.label}
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                                            <div className="flex items-center gap-4">
+                                                <span className="flex items-center gap-1.5">
+                                                    <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
+                                                    Recognized Revenue
+                                                </span>
+                                            </div>
+                                            <span className="font-bold text-slate-700">Period: {period.toUpperCase()}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Right 1 Col: Department Revenue Contribution */}
+                                    <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
+                                        <div>
+                                            <h4 className="text-sm font-black text-slate-950 flex items-center gap-2 mb-1">
+                                                <DollarSign className="w-4 h-4 text-emerald-600" />
+                                                <span>Departmental Yield</span>
+                                            </h4>
+                                            <p className="text-xs text-slate-400 mb-4">
+                                                Revenue breakdown across operational profit centers
+                                            </p>
+
+                                            <div className="space-y-4">
+                                                {/* Rooms */}
+                                                <div>
+                                                    <div className="flex items-center justify-between text-xs mb-1">
+                                                        <span className="font-extrabold text-slate-800 flex items-center gap-1.5">
+                                                            <Bed className="w-3.5 h-3.5 text-blue-600" />
+                                                            <span>Rooms & Lodging</span>
+                                                        </span>
+                                                        <span className="font-black text-slate-900">
+                                                            {formatTzs(Math.max(0, (analytics.comparison?.revenue_minor ?? 0) - (analytics.comparison?.pos_revenue_minor ?? 0)))}
+                                                        </span>
+                                                    </div>
+                                                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                                        <div
+                                                            className="h-2 rounded-full bg-blue-600"
+                                                            style={{
+                                                                width: `${analytics.comparison?.revenue_minor > 0
+                                                                    ? Math.round((Math.max(0, analytics.comparison.revenue_minor - (analytics.comparison.pos_revenue_minor ?? 0)) / analytics.comparison.revenue_minor) * 100)
+                                                                    : 100}%`
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                {/* POS & Dining / Bar */}
+                                                <div>
+                                                    <div className="flex items-center justify-between text-xs mb-1">
+                                                        <span className="font-extrabold text-slate-800 flex items-center gap-1.5">
+                                                            <UtensilsCrossed className="w-3.5 h-3.5 text-amber-600" />
+                                                            <span>Food, Dining & Bar (POS)</span>
+                                                        </span>
+                                                        <span className="font-black text-slate-900">
+                                                            {formatTzs(analytics.comparison?.pos_revenue_minor ?? 0)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                                        <div
+                                                            className="h-2 rounded-full bg-amber-500"
+                                                            style={{
+                                                                width: `${analytics.comparison?.revenue_minor > 0
+                                                                    ? Math.round(((analytics.comparison.pos_revenue_minor ?? 0) / analytics.comparison.revenue_minor) * 100)
+                                                                    : 0}%`
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                {/* Other Outlets / Departments */}
+                                                {(analytics.departments ?? []).slice(0, 3).map((dept: any, i: number) => (
+                                                    <div key={i}>
+                                                        <div className="flex items-center justify-between text-xs mb-1">
+                                                            <span className="font-bold text-slate-700 capitalize">{dept.name}</span>
+                                                            <span className="font-black text-slate-900">{formatTzs(dept.revenue_minor)}</span>
+                                                        </div>
+                                                        <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                                            <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${Math.min(100, Math.round((dept.revenue_minor / Math.max(analytics.comparison?.revenue_minor ?? 1, 1)) * 100))}%` }} />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Key Efficiency Ratios */}
+                                        <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 gap-3 text-xs">
+                                            <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-200/60">
+                                                <span className="text-[10px] uppercase font-bold text-slate-400 block">Operating Margin</span>
+                                                <span className="font-black text-amber-800 text-sm">{metrics.group_gop_margin_percent}% GOP</span>
+                                            </div>
+                                            <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-200/60">
+                                                <span className="text-[10px] uppercase font-bold text-slate-400 block">Occupancy Rate</span>
+                                                <span className="font-black text-slate-900 text-sm">{metrics.group_occupancy_rate}% Booked</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+                            )}
+
+                            {/* ─── 3. PRIMARY FINANCIAL KPIS (IMAGE 2) ───────────────────────── */}
                             <section className="space-y-4">
                                 <div className="flex items-center justify-between">
                                     <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-2">
@@ -957,7 +1271,7 @@ export default function OwnerPortalIndex({
                                 </div>
                             </section>
 
-                            {/* ─── SECTION 2: SECONDARY FINANCIAL BALANCE & LIABILITIES ──── */}
+                            {/* ─── 4. SECONDARY FINANCIAL BALANCE & LIABILITIES ──── */}
                             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                                 {/* Card 1: Outstanding Receivables */}
                                 <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs">
@@ -1032,7 +1346,7 @@ export default function OwnerPortalIndex({
                                 </div>
                             </section>
 
-                            {/* ─── SECTION 3: OPERATIONAL CAPACITY & HOSPITALITY YIELD ───── */}
+                            {/* ─── 5. OPERATIONAL CAPACITY & HOSPITALITY YIELD ───── */}
                             <section className="space-y-4">
                                 <div className="flex items-center justify-between">
                                     <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-2">
@@ -1144,321 +1458,7 @@ export default function OwnerPortalIndex({
                                 </div>
                             </section>
 
-                            {/* ─── SECTION 4: REVENUE TRAJECTORY & DEPARTMENTAL YIELD ────── */}
-                            {analytics && (
-                                <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    {/* Left 2 Cols: Revenue Trajectory Bar Chart */}
-                                    <div className="lg:col-span-2 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
-                                        <div>
-                                            <div className="flex items-center justify-between mb-4">
-                                                <div>
-                                                    <h4 className="text-sm font-black text-slate-950 flex items-center gap-2">
-                                                        <Activity className="w-4 h-4 text-emerald-600" />
-                                                        <span>Revenue Trajectory & Daily Pacing</span>
-                                                    </h4>
-                                                    <p className="text-xs text-slate-400 mt-0.5">
-                                                        Recognized cash flow pace across accommodation & POS outlets
-                                                    </p>
-                                                </div>
-                                                <span className="text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">
-                                                    Total: {formatTzs(analytics.comparison?.revenue_minor ?? metrics.group_month_revenue_minor)}
-                                                </span>
-                                            </div>
-
-                                            {(!analytics.revenue_trend || analytics.revenue_trend.length === 0) ? (
-                                                <div className="py-16 text-center text-slate-400 text-xs font-medium">
-                                                    <BarChart3 className="w-10 h-10 mx-auto mb-2 text-slate-300 opacity-60" />
-                                                    <p>No transaction flow recorded in this timeframe.</p>
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-end gap-2 h-44 pt-6 pb-2">
-                                                    {analytics.revenue_trend.map((point: any, idx: number) => {
-                                                        const max = Math.max(...analytics.revenue_trend.map((p: any) => p.total_minor), 1);
-                                                        const h = Math.max(8, Math.round((point.total_minor / max) * 100));
-                                                        return (
-                                                            <div
-                                                                key={idx}
-                                                                className="flex-1 flex flex-col items-center gap-1.5 min-w-0 group relative"
-                                                            >
-                                                                {/* Tooltip on hover */}
-                                                                <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition pointer-events-none bg-slate-900 text-white text-[10px] font-bold py-1 px-2 rounded-lg shadow-lg whitespace-nowrap z-20">
-                                                                    {point.label}: {formatTzs(point.total_minor)}
-                                                                </div>
-                                                                <div className="w-full flex flex-col justify-end h-32">
-                                                                    <div
-                                                                        className="w-full bg-blue-600 hover:bg-blue-500 rounded-t-lg transition-all duration-300"
-                                                                        style={{ height: `${h}%` }}
-                                                                    />
-                                                                </div>
-                                                                <span className="text-[10px] font-bold text-slate-400 truncate w-full text-center">
-                                                                    {point.label}
-                                                                </span>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                                            <div className="flex items-center gap-4">
-                                                <span className="flex items-center gap-1.5">
-                                                    <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
-                                                    Recognized Revenue
-                                                </span>
-                                            </div>
-                                            <span className="font-bold text-slate-700">Period: {period.toUpperCase()}</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Right 1 Col: Department Revenue Contribution */}
-                                    <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
-                                        <div>
-                                            <h4 className="text-sm font-black text-slate-950 flex items-center gap-2 mb-1">
-                                                <DollarSign className="w-4 h-4 text-emerald-600" />
-                                                <span>Departmental Yield</span>
-                                            </h4>
-                                            <p className="text-xs text-slate-400 mb-4">
-                                                Revenue breakdown across operational profit centers
-                                            </p>
-
-                                            <div className="space-y-4">
-                                                {/* Rooms */}
-                                                <div>
-                                                    <div className="flex items-center justify-between text-xs mb-1">
-                                                        <span className="font-extrabold text-slate-800 flex items-center gap-1.5">
-                                                            <Bed className="w-3.5 h-3.5 text-blue-600" />
-                                                            <span>Rooms & Lodging</span>
-                                                        </span>
-                                                        <span className="font-black text-slate-900">
-                                                            {formatTzs(Math.max(0, (analytics.comparison?.revenue_minor ?? 0) - (analytics.comparison?.pos_revenue_minor ?? 0)))}
-                                                        </span>
-                                                    </div>
-                                                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                                                        <div
-                                                            className="h-2 rounded-full bg-blue-600"
-                                                            style={{
-                                                                width: `${analytics.comparison?.revenue_minor > 0
-                                                                    ? Math.round((Math.max(0, analytics.comparison.revenue_minor - (analytics.comparison.pos_revenue_minor ?? 0)) / analytics.comparison.revenue_minor) * 100)
-                                                                    : 100}%`
-                                                            }}
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                {/* POS & Dining / Bar */}
-                                                <div>
-                                                    <div className="flex items-center justify-between text-xs mb-1">
-                                                        <span className="font-extrabold text-slate-800 flex items-center gap-1.5">
-                                                            <UtensilsCrossed className="w-3.5 h-3.5 text-amber-600" />
-                                                            <span>Food, Dining & Bar (POS)</span>
-                                                        </span>
-                                                        <span className="font-black text-slate-900">
-                                                            {formatTzs(analytics.comparison?.pos_revenue_minor ?? 0)}
-                                                        </span>
-                                                    </div>
-                                                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                                                        <div
-                                                            className="h-2 rounded-full bg-amber-500"
-                                                            style={{
-                                                                width: `${analytics.comparison?.revenue_minor > 0
-                                                                    ? Math.round(((analytics.comparison.pos_revenue_minor ?? 0) / analytics.comparison.revenue_minor) * 100)
-                                                                    : 0}%`
-                                                            }}
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                {/* Other Outlets / Departments */}
-                                                {(analytics.departments ?? []).slice(0, 3).map((dept: any, i: number) => (
-                                                    <div key={i}>
-                                                        <div className="flex items-center justify-between text-xs mb-1">
-                                                            <span className="font-bold text-slate-700 capitalize">{dept.name}</span>
-                                                            <span className="font-black text-slate-900">{formatTzs(dept.revenue_minor)}</span>
-                                                        </div>
-                                                        <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                                                            <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${Math.min(100, Math.round((dept.revenue_minor / Math.max(analytics.comparison?.revenue_minor ?? 1, 1)) * 100))}%` }} />
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {/* Key Efficiency Ratios */}
-                                        <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 gap-3 text-xs">
-                                            <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-200/60">
-                                                <span className="text-[10px] uppercase font-bold text-slate-400 block">Operating Margin</span>
-                                                <span className="font-black text-amber-800 text-sm">{metrics.group_gop_margin_percent}% GOP</span>
-                                            </div>
-                                            <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-200/60">
-                                                <span className="text-[10px] uppercase font-bold text-slate-400 block">Occupancy Rate</span>
-                                                <span className="font-black text-slate-900 text-sm">{metrics.group_occupancy_rate}% Booked</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </section>
-                            )}
-
-                            {/* ─── SECTION 5: EXECUTIVE PAYMENT CHANNELS & COLLECTIONS ───── */}
-                            <section className="space-y-4">
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <Wallet className="w-5 h-5 text-emerald-600" />
-                                            <h3 className="text-base sm:text-lg font-black text-slate-950">
-                                                Collections by Payment Mode & Channel
-                                            </h3>
-                                        </div>
-                                        <p className="text-xs text-slate-500 mt-0.5">
-                                            Real-time tender breakdown across Cash, M-Pesa, Tigo Pesa, Airtel Money, and Bank Deposits
-                                        </p>
-                                    </div>
-
-                                    {/* Aggregate Total Badge */}
-                                    <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-slate-200/80 shadow-2xs self-start sm:self-auto">
-                                        <div className="text-right">
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                                                Total Tender ({period.toUpperCase()})
-                                            </span>
-                                            <span className="text-sm sm:text-base font-black text-emerald-700">
-                                                {formatTzs((analytics?.payments_by_method ?? []).reduce((acc, p) => acc + (p.total_minor || 0), 0))}
-                                            </span>
-                                        </div>
-                                        <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 font-bold flex items-center justify-center">
-                                            <Coins className="w-4 h-4" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {(!analytics?.payments_by_method || analytics.payments_by_method.length === 0) ? (
-                                    <div className="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-xs text-center text-slate-400">
-                                        <Wallet className="w-10 h-10 mx-auto mb-2 text-slate-300 opacity-60" />
-                                        <p className="text-xs font-semibold">No payment collections recorded in the selected period ({period.toUpperCase()}).</p>
-                                    </div>
-                                ) : (
-                                    <>
-                                        {/* Multi-channel proportion visual bar */}
-                                        {(() => {
-                                            const totalMinor = (analytics.payments_by_method ?? []).reduce((acc, p) => acc + (p.total_minor || 0), 0);
-                                            if (totalMinor <= 0) return null;
-                                            return (
-                                                <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2">
-                                                    <div className="flex items-center justify-between text-xs">
-                                                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-                                                            Channel Revenue Share
-                                                        </span>
-                                                        <span className="text-[11px] font-bold text-slate-600">
-                                                            {(analytics.payments_by_method ?? []).reduce((acc, p) => acc + (p.count || 0), 0)} Total Transactions
-                                                        </span>
-                                                    </div>
-                                                    <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
-                                                        {analytics.payments_by_method.map((p) => {
-                                                            const pct = totalMinor > 0 ? (p.total_minor / totalMinor) * 100 : 0;
-                                                            if (pct <= 0) return null;
-                                                            const details = getPaymentMethodDetails(p.method);
-                                                            return (
-                                                                <div
-                                                                    key={p.method}
-                                                                    className={`${details.barClass} h-full transition-all duration-500 hover:opacity-85`}
-                                                                    style={{ width: `${pct}%` }}
-                                                                    title={`${details.name}: ${formatTzs(p.total_minor)} (${Math.round(pct)}%)`}
-                                                                />
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })()}
-
-                                        {/* Dynamic Responsive Grid of payment cards */}
-                                        {(() => {
-                                            const paymentCount = (analytics.payments_by_method ?? []).length;
-                                            const gridColsClass =
-                                                paymentCount === 1
-                                                    ? 'grid-cols-1'
-                                                    : paymentCount === 2
-                                                        ? 'grid-cols-1 sm:grid-cols-2'
-                                                        : paymentCount === 3
-                                                            ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
-                                                            : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
-
-                                            return (
-                                                <div className={`grid gap-5 ${gridColsClass}`}>
-                                                    {analytics.payments_by_method.map((p) => {
-                                                        const details = getPaymentMethodDetails(p.method);
-                                                        const totalMinor = (analytics.payments_by_method ?? []).reduce((acc, item) => acc + (item.total_minor || 0), 0);
-                                                        const sharePct = totalMinor > 0 ? Math.round((p.total_minor / totalMinor) * 100) : 0;
-                                                        const IconComponent = details.icon;
-
-                                                        return (
-                                                            <div
-                                                                key={p.method}
-                                                                className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-slate-300 transition flex flex-col justify-between"
-                                                            >
-                                                                <div>
-                                                                    <div className="flex items-center justify-between gap-3">
-                                                                        <div className="flex items-center gap-3 min-w-0">
-                                                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border ${details.badgeClass} shadow-2xs`}>
-                                                                                <IconComponent className="w-6 h-6" />
-                                                                            </div>
-                                                                            <div className="min-w-0">
-                                                                                <h4 className="text-sm sm:text-base font-black text-slate-900 truncate" title={details.name}>
-                                                                                    {details.name}
-                                                                                </h4>
-                                                                                <span className="text-[11px] font-extrabold text-slate-400 block uppercase tracking-wider mt-0.5">
-                                                                                    {details.category}
-                                                                                </span>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div className="flex items-center gap-1.5 shrink-0 bg-slate-50 border border-slate-200/60 px-2.5 py-1 rounded-xl">
-                                                                            <span className="text-xs font-black text-slate-800">
-                                                                                {sharePct}%
-                                                                            </span>
-                                                                            <span className="text-[10px] font-bold text-slate-400 uppercase">Share</span>
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div className="mt-5 pt-1">
-                                                                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">
-                                                                            Tender Volume
-                                                                        </span>
-                                                                        <div className="flex items-baseline justify-between gap-3 flex-wrap">
-                                                                            <h3 className={`text-2xl sm:text-3xl font-black ${details.accentColor} tracking-tight whitespace-nowrap`}>
-                                                                                {formatTzs(p.total_minor)}
-                                                                            </h3>
-                                                                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200/60 text-xs font-medium text-slate-600 whitespace-nowrap">
-                                                                                <span className="font-black text-slate-900">{p.count}</span>
-                                                                                <span>{p.count === 1 ? 'transaction' : 'transactions'}</span>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Progress bar indicating share */}
-                                                                <div className="mt-5 pt-3.5 border-t border-slate-100">
-                                                                    <div className="flex items-center justify-between text-xs mb-2">
-                                                                        <span className="text-[11px] font-bold text-slate-400">Channel Contribution</span>
-                                                                        <span className="font-extrabold text-slate-700 text-xs">{sharePct}% of period tender</span>
-                                                                    </div>
-                                                                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden shadow-inner">
-                                                                        <div
-                                                                            className={`h-2 rounded-full ${details.barClass} transition-all duration-500`}
-                                                                            style={{ width: `${Math.min(100, Math.max(3, sharePct))}%` }}
-                                                                        />
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            );
-                                        })()}
-                                    </>
-                                )}
-                            </section>
-
-                            {/* ─── SECTION 6: OPERATIONAL ACTIVITY & AUDIT WATCHLISTS ───── */}
+                            {/* ─── 6. OPERATIONAL ACTIVITY & AUDIT WATCHLISTS ───── */}
                             <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 {/* Table 1: Recent Financial Settlements */}
                                 <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">

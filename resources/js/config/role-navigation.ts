@@ -323,7 +323,6 @@ export const roleNavigation: Record<string, RoleNavigationDef> = {
             { name: 'Executive Directives', route: 'owner.index', params: { tab: 'directives' }, icon: 'Send', active: ['owner.*'], tab: 'directives' },
             { name: 'Loss Prevention & Audit', route: 'owner.index', params: { tab: 'audit' }, icon: 'ShieldAlert', active: ['owner.*'], tab: 'audit' },
             { name: 'Consolidated Financials', route: 'owner.index', params: { tab: 'financials' }, icon: 'DollarSign', active: ['owner.*'], tab: 'financials', feature: 'accounting' },
-            { name: 'Properties & Branches', route: 'branches.index', icon: 'Layers', active: ['branches.*'], feature: 'multi_branch' },
             { name: 'Hotel Reports & Analytics', route: 'reports.index', icon: 'BarChart3', active: ['reports.*'], feature: 'hotel_reports' },
             { name: 'Restaurant & POS Sales', route: 'pos.index', icon: 'Utensils', active: ['pos.*'], feature: 'restaurant_pos' },
             { name: 'Grocery & Supermarket', route: 'grocery.dashboard', icon: 'ShoppingBag', active: ['grocery.*'], feature: 'grocery_pos' },

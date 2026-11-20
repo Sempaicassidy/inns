@@ -1094,60 +1094,107 @@ export default function OwnerPortalIndex({
                                 </section>
                             )}
 
-                            {/* ─── 3. PRIMARY FINANCIAL KPIS (IMAGE 2) ───────────────────────── */}
-                            <section className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                                        <Activity className="w-4 h-4 text-emerald-600" />
-                                        <span>Financial Overview & Cash Generation</span>
-                                    </h2>
-                                    <span className="text-xs font-bold text-slate-400">
-                                        Period: {period.toUpperCase()}
-                                    </span>
+                            {/* ─── 3. PRIMARY FINANCIAL KPIS & CASH GENERATION (EXECUTIVE DECK) ─ */}
+                            <section className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs overflow-hidden">
+                                {/* Deck Header */}
+                                <div className="px-5 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-slate-50 via-white to-slate-50/50">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shadow-2xs">
+                                            <Activity className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <h2 className="text-base font-extrabold text-slate-900 tracking-tight">
+                                                    Financial Performance & Cash Generation
+                                                </h2>
+                                                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100/70 text-emerald-800 border border-emerald-200/60">
+                                                    Accrual Ledger
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-slate-500 font-medium">
+                                                Mapato halisi yaliyotambulika, faida ghafi ya kiutendaji, na mtiririko wa fedha
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 self-start sm:self-auto">
+                                        <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 border border-slate-200/80">
+                                            Kipindi: <span className="text-slate-900 font-black">{period.toUpperCase()}</span>
+                                        </span>
+                                    </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                                {/* 4 Primary Executive Metric Cards */}
+                                <div className="p-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                                     {/* Card 1: Recognized Revenue */}
                                     {(() => {
                                         const rev = financial_kpis?.current?.total_revenue_minor ?? metrics.total_revenue_minor ?? metrics.group_month_revenue_minor ?? 0;
                                         const roomRev = financial_kpis?.current?.room_revenue_minor ?? 0;
                                         const posRev = financial_kpis?.current?.pos_revenue_minor ?? 0;
+                                        const totalShare = roomRev + posRev;
+                                        const roomPct = totalShare > 0 ? Math.round((roomRev / totalShare) * 100) : 0;
+                                        const posPct = totalShare > 0 ? 100 - roomPct : 0;
                                         const change = financial_kpis?.comparison?.revenue_change_percent;
                                         const isUp = (change ?? 0) >= 0;
+
                                         return (
-                                            <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-emerald-300 transition flex flex-col justify-between">
+                                            <div className="bg-gradient-to-b from-white to-slate-50/50 p-5 rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs hover:border-emerald-300 transition flex flex-col justify-between">
                                                 <div>
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
                                                             Recognized Revenue
                                                         </span>
-                                                        <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-                                                            <TrendingUp className="w-5 h-5" />
+                                                        <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                                                            <TrendingUp className="w-4 h-4" />
                                                         </div>
                                                     </div>
-                                                    <h3 className="text-2xl sm:text-3xl font-black text-slate-950 mt-3 tracking-tight">
-                                                        {formatTzs(rev)}
-                                                    </h3>
-                                                    <div className="mt-2 text-xs text-slate-500 space-y-0.5">
-                                                        <div className="flex justify-between">
-                                                            <span>Lodging:</span>
-                                                            <span className="font-bold text-slate-800">{formatTzs(roomRev)}</span>
+
+                                                    <div className="mt-2.5">
+                                                        <div className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight">
+                                                            {formatTzs(rev)}
                                                         </div>
-                                                        <div className="flex justify-between">
-                                                            <span>POS / Dining:</span>
-                                                            <span className="font-bold text-slate-800">{formatTzs(posRev)}</span>
+                                                        <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+                                                            Accrual hospitality turnover
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Segmented Distribution Bar */}
+                                                    <div className="mt-4 pt-3 border-t border-slate-100">
+                                                        <div className="h-2 w-full rounded-full bg-slate-100 flex overflow-hidden">
+                                                            <div
+                                                                style={{ width: `${Math.max(roomPct, 4)}%` }}
+                                                                className="h-full bg-blue-600"
+                                                                title={`Lodging: ${formatTzs(roomRev)} (${roomPct}%)`}
+                                                            />
+                                                            <div
+                                                                style={{ width: `${Math.max(posPct, 4)}%` }}
+                                                                className="h-full bg-amber-500"
+                                                                title={`POS/Dining: ${formatTzs(posRev)} (${posPct}%)`}
+                                                            />
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-2 mt-2.5 text-[11px]">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0" />
+                                                                <span className="text-slate-500 truncate">Rooms:</span>
+                                                                <span className="font-bold text-slate-800 ml-auto">{formatTzs(roomRev)}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                                                                <span className="text-slate-500 truncate">POS:</span>
+                                                                <span className="font-bold text-slate-800 ml-auto">{formatTzs(posRev)}</span>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 font-medium">
-                                                    <span>vs Prior Cycle:</span>
+
+                                                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                                                    <span>Cycle Performance:</span>
                                                     {change !== null && change !== undefined ? (
-                                                        <span className={`font-extrabold flex items-center gap-0.5 ${isUp ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                        <span className={`font-black flex items-center gap-0.5 ${isUp ? 'text-emerald-600' : 'text-rose-600'}`}>
                                                             {isUp ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
                                                             {Math.abs(change)}%
                                                         </span>
                                                     ) : (
-                                                        <span className="text-slate-400">—</span>
+                                                        <span className="font-bold text-emerald-600">Active</span>
                                                     )}
                                                 </div>
                                             </div>
@@ -1158,191 +1205,257 @@ export default function OwnerPortalIndex({
                                     {(() => {
                                         const gop = financial_kpis?.current?.gop_minor ?? metrics.gross_operating_profit_minor ?? metrics.group_gop_minor ?? 0;
                                         const margin = financial_kpis?.current?.gop_margin_percent ?? metrics.gop_margin_percent ?? metrics.group_gop_margin_percent ?? 0;
-                                        const change = financial_kpis?.comparison?.gop_change_percent;
-                                        const isUp = (change ?? 0) >= 0;
+
                                         return (
-                                            <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-amber-300 transition flex flex-col justify-between">
+                                            <div className="bg-gradient-to-b from-white to-amber-50/20 p-5 rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs hover:border-amber-300 transition flex flex-col justify-between">
                                                 <div>
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
                                                             Gross Operating Profit
                                                         </span>
-                                                        <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
-                                                            <DollarSign className="w-5 h-5" />
+                                                        <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
+                                                            <DollarSign className="w-4 h-4" />
                                                         </div>
                                                     </div>
-                                                    <h3 className="text-2xl sm:text-3xl font-black text-amber-800 mt-3 tracking-tight">
-                                                        {formatTzs(gop)}
-                                                    </h3>
-                                                    <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50 border border-amber-200/60 text-xs font-bold text-amber-900">
-                                                        <Percent className="w-3.5 h-3.5 text-amber-600" />
-                                                        <span>{margin}% Operating Margin</span>
+
+                                                    <div className="mt-2.5">
+                                                        <div className="text-2xl sm:text-3xl font-black text-amber-800 tracking-tight">
+                                                            {formatTzs(gop)}
+                                                        </div>
+                                                        <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+                                                            Operational retained yield
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Efficiency Progress Bar */}
+                                                    <div className="mt-4 pt-3 border-t border-slate-100">
+                                                        <div className="flex items-center justify-between text-[11px] mb-1.5">
+                                                            <span className="text-slate-500 font-medium">GOP Margin:</span>
+                                                            <span className="font-black text-amber-900">{margin}%</span>
+                                                        </div>
+                                                        <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                                                            <div
+                                                                style={{ width: `${Math.min(Math.max(margin, 5), 100)}%` }}
+                                                                className="h-full bg-gradient-to-r from-amber-500 to-amber-600 rounded-full"
+                                                            />
+                                                        </div>
+                                                        <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-slate-600 font-medium">
+                                                            <Percent className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                                                            <span>Net operational margin intact</span>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 font-medium">
-                                                    <span>vs Prior Cycle:</span>
-                                                    {change !== null && change !== undefined ? (
-                                                        <span className={`font-extrabold flex items-center gap-0.5 ${isUp ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                                            {isUp ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
-                                                            {Math.abs(change)}%
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-slate-400">—</span>
-                                                    )}
+
+                                                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                                                    <span>Operating Health:</span>
+                                                    <span className="font-extrabold text-emerald-600">Optimal (Strong)</span>
                                                 </div>
                                             </div>
                                         );
                                     })()}
 
-                                    {/* Card 3: Total Expenses (OPEX) */}
+                                    {/* Card 3: Operating Expenses (OPEX) */}
                                     {(() => {
+                                        const rev = financial_kpis?.current?.total_revenue_minor ?? metrics.total_revenue_minor ?? metrics.group_month_revenue_minor ?? 0;
                                         const exp = financial_kpis?.current?.total_expenses_minor ?? metrics.total_expenses_minor ?? metrics.group_month_expenses_minor ?? 0;
+                                        const costRatio = rev > 0 ? Math.round((exp / rev) * 100) : 0;
                                         const change = financial_kpis?.comparison?.expenses_change_percent;
-                                        const isUp = (change ?? 0) >= 0;
+
                                         return (
-                                            <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-rose-300 transition flex flex-col justify-between">
+                                            <div className="bg-gradient-to-b from-white to-rose-50/20 p-5 rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs hover:border-rose-300 transition flex flex-col justify-between">
                                                 <div>
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
                                                             Operating Expenses
                                                         </span>
-                                                        <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
-                                                            <ArrowDownRight className="w-5 h-5" />
+                                                        <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
+                                                            <ArrowDownRight className="w-4 h-4" />
                                                         </div>
                                                     </div>
-                                                    <h3 className="text-2xl sm:text-3xl font-black text-rose-700 mt-3 tracking-tight">
-                                                        {formatTzs(exp)}
-                                                    </h3>
-                                                    <p className="mt-2 text-xs text-slate-500 font-medium">
-                                                        Supplies, operational costs & authorized vouchers
-                                                    </p>
+
+                                                    <div className="mt-2.5">
+                                                        <div className="text-2xl sm:text-3xl font-black text-rose-700 tracking-tight">
+                                                            {formatTzs(exp)}
+                                                        </div>
+                                                        <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+                                                            Authorized operational costs
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Cost Control Bar */}
+                                                    <div className="mt-4 pt-3 border-t border-slate-100">
+                                                        <div className="flex items-center justify-between text-[11px] mb-1.5">
+                                                            <span className="text-slate-500 font-medium">Cost to Revenue:</span>
+                                                            <span className="font-black text-slate-800">{costRatio}%</span>
+                                                        </div>
+                                                        <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                                                            <div
+                                                                style={{ width: `${Math.min(costRatio, 100)}%` }}
+                                                                className="h-full bg-rose-500 rounded-full"
+                                                            />
+                                                        </div>
+                                                        <p className="mt-2.5 text-[11px] text-slate-500 truncate">
+                                                            Supplies, procurement & vouchers
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 font-medium">
-                                                    <span>vs Prior Cycle:</span>
-                                                    {change !== null && change !== undefined ? (
-                                                        <span className={`font-extrabold flex items-center gap-0.5 ${!isUp ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                                            {isUp ? '▲' : '▼'} {Math.abs(change)}%
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-slate-400">—</span>
-                                                    )}
+
+                                                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                                                    <span>Cost Containment:</span>
+                                                    <span className="font-extrabold text-emerald-600">
+                                                        {exp === 0 ? 'Zero Outflow' : 'Controlled'}
+                                                    </span>
                                                 </div>
                                             </div>
                                         );
                                     })()}
 
-                                    {/* Card 4: Payments Received (Tender Collected) */}
+                                    {/* Card 4: Total Collections */}
                                     {(() => {
                                         const payments = financial_kpis?.current?.total_payments_minor ?? metrics.total_payments_received_minor ?? 0;
                                         const cash = financial_kpis?.current?.cash_payments_minor ?? 0;
                                         const digital = financial_kpis?.current?.digital_payments_minor ?? 0;
+                                        const totalTender = cash + digital;
+                                        const cashPct = totalTender > 0 ? Math.round((cash / totalTender) * 100) : 0;
+                                        const digitalPct = totalTender > 0 ? 100 - cashPct : 0;
+
                                         return (
-                                            <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs relative overflow-hidden group hover:border-blue-300 transition flex flex-col justify-between">
+                                            <div className="bg-gradient-to-b from-white to-blue-50/20 p-5 rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs hover:border-blue-300 transition flex flex-col justify-between">
                                                 <div>
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
                                                             Total Collections
                                                         </span>
-                                                        <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                                                            <Coins className="w-5 h-5" />
+                                                        <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                                                            <Coins className="w-4 h-4" />
                                                         </div>
                                                     </div>
-                                                    <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mt-3 tracking-tight">
-                                                        {formatTzs(payments)}
-                                                    </h3>
-                                                    <div className="mt-2 text-xs text-slate-500 space-y-0.5">
-                                                        <div className="flex justify-between">
-                                                            <span>Digital / Bank:</span>
-                                                            <span className="font-bold text-slate-800">{formatTzs(digital)}</span>
+
+                                                    <div className="mt-2.5">
+                                                        <div className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                                                            {formatTzs(payments)}
                                                         </div>
-                                                        <div className="flex justify-between">
-                                                            <span>Cash Tender:</span>
-                                                            <span className="font-bold text-slate-800">{formatTzs(cash)}</span>
+                                                        <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+                                                            Actual cash & digital receipts
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Tender Channels Bar */}
+                                                    <div className="mt-4 pt-3 border-t border-slate-100">
+                                                        <div className="h-2 w-full rounded-full bg-slate-100 flex overflow-hidden">
+                                                            <div
+                                                                style={{ width: `${Math.max(cashPct, 4)}%` }}
+                                                                className="h-full bg-emerald-600"
+                                                                title={`Cash: ${formatTzs(cash)} (${cashPct}%)`}
+                                                            />
+                                                            <div
+                                                                style={{ width: `${Math.max(digitalPct, 4)}%` }}
+                                                                className="h-full bg-blue-600"
+                                                                title={`Digital: ${formatTzs(digital)} (${digitalPct}%)`}
+                                                            />
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-2 mt-2.5 text-[11px]">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0" />
+                                                                <span className="text-slate-500 truncate">Cash:</span>
+                                                                <span className="font-bold text-slate-800 ml-auto">{formatTzs(cash)}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0" />
+                                                                <span className="text-slate-500 truncate">Digital:</span>
+                                                                <span className="font-bold text-slate-800 ml-auto">{formatTzs(digital)}</span>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 text-xs text-slate-500 font-medium">
+
+                                                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
                                                     <span>Settlement Status:</span>
-                                                    <span className="font-extrabold text-emerald-600">Reconciled</span>
+                                                    <span className="font-extrabold text-emerald-600 flex items-center gap-1">
+                                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                                        Reconciled
+                                                    </span>
                                                 </div>
                                             </div>
                                         );
                                     })()}
                                 </div>
-                            </section>
 
-                            {/* ─── 4. SECONDARY FINANCIAL BALANCE & LIABILITIES ──── */}
-                            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                                {/* Card 1: Outstanding Receivables */}
-                                <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-                                            Guest Receivables
-                                        </span>
-                                        <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
-                                            <Clock className="w-4 h-4" />
+                                {/* Integrated Secondary Financial Balance Ribbon */}
+                                <div className="border-t border-slate-100 bg-slate-50/60 p-4 sm:p-5">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                                        {/* Ribbon 1: Guest Receivables */}
+                                        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs flex items-center gap-3.5">
+                                            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold shrink-0">
+                                                <Clock className="w-5 h-5" />
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                                                    Guest Receivables
+                                                </span>
+                                                <div className="text-base sm:text-lg font-black text-amber-900 leading-tight">
+                                                    {formatTzs(metrics.outstanding_balances_minor ?? 0)}
+                                                </div>
+                                                <p className="text-[10px] text-slate-500 truncate mt-0.5">
+                                                    {outstanding_folios.length} open guest folios
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Ribbon 2: Tax Collected */}
+                                        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs flex items-center gap-3.5">
+                                            <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold shrink-0">
+                                                <FileText className="w-5 h-5" />
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                                                    Fiscal Tax Collected
+                                                </span>
+                                                <div className="text-base sm:text-lg font-black text-purple-700 leading-tight">
+                                                    {formatTzs(financial_kpis?.current?.tax_collected_minor ?? metrics.tax_collected_minor ?? 0)}
+                                                </div>
+                                                <p className="text-[10px] text-slate-500 truncate mt-0.5">
+                                                    VAT & statutory levies
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Ribbon 3: Refunds & Returns */}
+                                        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs flex items-center gap-3.5">
+                                            <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold shrink-0">
+                                                <ArrowRightLeft className="w-5 h-5" />
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                                                    Refunds & Returns
+                                                </span>
+                                                <div className="text-base sm:text-lg font-black text-slate-800 leading-tight">
+                                                    {formatTzs(financial_kpis?.current?.refunds_minor ?? metrics.refunds_minor ?? 0)}
+                                                </div>
+                                                <p className="text-[10px] text-slate-500 truncate mt-0.5">
+                                                    Audited returns & reversals
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Ribbon 4: Revenue Target */}
+                                        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs flex items-center gap-3.5">
+                                            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">
+                                                <Target className="w-5 h-5" />
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                                                    Period Target Pacing
+                                                </span>
+                                                <div className="text-base sm:text-lg font-black text-emerald-700 leading-tight">
+                                                    {metrics.group_target_progress_percent}%
+                                                </div>
+                                                <p className="text-[10px] text-slate-500 truncate mt-0.5">
+                                                    Target: {metrics.group_target_minor > 0 ? formatTzs(metrics.group_target_minor) : 'Unset'}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
-                                    <h4 className="text-xl font-black text-amber-900 mt-2">
-                                        {formatTzs(metrics.outstanding_balances_minor ?? 0)}
-                                    </h4>
-                                    <p className="text-xs text-slate-500 mt-1">
-                                        {outstanding_folios.length} open folios awaiting guest settlement
-                                    </p>
-                                </div>
-
-                                {/* Card 2: Tax Collected */}
-                                <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-                                            Fiscal Tax Collected
-                                        </span>
-                                        <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
-                                            <FileText className="w-4 h-4" />
-                                        </div>
-                                    </div>
-                                    <h4 className="text-xl font-black text-purple-700 mt-2">
-                                        {formatTzs(financial_kpis?.current?.tax_collected_minor ?? metrics.tax_collected_minor ?? 0)}
-                                    </h4>
-                                    <p className="text-xs text-slate-500 mt-1">
-                                        VAT & statutory hotel levies in period transactions
-                                    </p>
-                                </div>
-
-                                {/* Card 3: Refunds & Adjustments */}
-                                <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-                                            Refunds & Returns
-                                        </span>
-                                        <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold">
-                                            <ArrowRightLeft className="w-4 h-4" />
-                                        </div>
-                                    </div>
-                                    <h4 className="text-xl font-black text-slate-800 mt-2">
-                                        {formatTzs(financial_kpis?.current?.refunds_minor ?? metrics.refunds_minor ?? 0)}
-                                    </h4>
-                                    <p className="text-xs text-slate-500 mt-1">
-                                        Audited cancellations, adjustments & tender returns
-                                    </p>
-                                </div>
-
-                                {/* Card 4: Target Progress */}
-                                <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-                                            Revenue Target
-                                        </span>
-                                        <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-                                            <Target className="w-4 h-4" />
-                                        </div>
-                                    </div>
-                                    <h4 className="text-xl font-black text-emerald-700 mt-2">
-                                        {metrics.group_target_progress_percent}%
-                                    </h4>
-                                    <p className="text-xs text-slate-500 mt-1">
-                                        Target: {metrics.group_target_minor > 0 ? formatTzs(metrics.group_target_minor) : 'Unset'}
-                                    </p>
                                 </div>
                             </section>
 

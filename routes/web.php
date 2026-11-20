@@ -44,6 +44,14 @@ Route::get('/', function () {
     ]);
 })->name('home');
 
+Route::get('/request-demo', function () {
+    return redirect('/#request-demo');
+})->name('request-demo');
+
+Route::get('/demo', function () {
+    return redirect('/#request-demo');
+});
+
 // PWA Assets (Web Manifest & Service Worker)
 Route::get('/manifest.webmanifest', function () {
     return response()->file(public_path('manifest.webmanifest'), [

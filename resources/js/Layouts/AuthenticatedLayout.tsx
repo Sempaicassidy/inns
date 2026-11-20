@@ -174,15 +174,17 @@ export default function AuthenticatedLayout({
 
     const isFeatureAllowed = (featureKey?: string) => {
         if (!featureKey) return true;
-        if (isSuperAdmin || (auth as any)?.is_impersonating) return true;
+        // Global SaaS platform super admin on platform tabs
+        if (activeRole === 'super_admin' && !user?.tenant_id) return true;
         const features = (auth as any)?.tenant?.features;
-        if (!features) return true;
-        return features[featureKey] !== false;
+        if (!features) return false;
+        return Boolean(features[featureKey]);
     };
 
     const isRoleAllowed = (roles?: string[]): boolean => {
         if (!roles || roles.length === 0) return true;
-        if (isSuperAdmin || (auth as any)?.is_impersonating || isOwner) return true;
+        if (activeRole === 'super_admin' && !user?.tenant_id) return true;
+        if (isOwner) return true;
         return roles.includes(activeRole);
     };
 
@@ -243,7 +245,7 @@ export default function AuthenticatedLayout({
             }
             : resolveNavItem(def)
     );
-    const navItems = ((isSuperAdmin || isOwner) ? resolvedNav : filterItemsByFeature(resolvedNav))
+    const navItems = (activeRole === 'super_admin' && !user?.tenant_id ? resolvedNav : filterItemsByFeature(resolvedNav))
         .filter((item: any) => !item.hrOnly || canAccessHr);
 
     const getRoleTitle = (role?: string) => {

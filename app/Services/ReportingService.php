@@ -15,6 +15,7 @@ use App\Models\Property;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\Stay;
+use App\Models\Tenant;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -111,10 +112,22 @@ class ReportingService
         $method = $filters['payment_method'] ?? null;
 
         // POS Orders
+        $tenant = Tenant::find($tenantId);
+        $hasRestaurant = $tenant ? $tenant->hasFeature('restaurant_pos') : true;
+        $hasGrocery = $tenant ? $tenant->hasFeature('grocery_pos') : true;
+
         $posQuery = PosOrder::where('tenant_id', $tenantId)
             ->when($propertyId, fn ($q) => $q->where('property_id', $propertyId))
             ->whereBetween('created_at', [$start, $end])
             ->with(['room', 'items']);
+
+        if (! $hasRestaurant && ! $hasGrocery) {
+            $posQuery->whereRaw('1 = 0');
+        } elseif (! $hasRestaurant) {
+            $posQuery->where('outlet_type', 'grocery');
+        } elseif (! $hasGrocery) {
+            $posQuery->where('outlet_type', '!=', 'grocery');
+        }
 
         if ($search) {
             $posQuery->where(function ($q) use ($search) {
@@ -772,6 +785,16 @@ class ReportingService
                 $departments['room']['expenses_minor'] += (int) $e->amount_minor;
             } else {
                 $departments['other']['expenses_minor'] += (int) $e->amount_minor;
+            }
+        }
+
+        $tenant = Tenant::find($tenantId);
+        if ($tenant) {
+            if (! $tenant->hasFeature('restaurant_pos')) {
+                unset($departments['restaurant'], $departments['bar']);
+            }
+            if (! $tenant->hasFeature('grocery_pos')) {
+                unset($departments['grocery']);
             }
         }
 

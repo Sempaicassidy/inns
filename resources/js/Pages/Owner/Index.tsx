@@ -262,6 +262,7 @@ export default function OwnerPortalIndex({
     inspectingPropertyId,
 }: OwnerProps) {
     const [currentTab, setCurrentTab] = useState(tab || 'overview');
+    const features = ((auth as any)?.tenant?.features || tenant?.features || {}) as Record<string, boolean>;
     const [overviewStartDate, setOverviewStartDate] = useState(start_date || '');
     const [overviewEndDate, setOverviewEndDate] = useState(end_date || '');
     const [overviewPropertyId, setOverviewPropertyId] = useState(selected_property_id || '');
@@ -586,22 +587,24 @@ export default function OwnerPortalIndex({
                         <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 border-t border-slate-100">
                             <nav className="flex items-center gap-1.5 sm:gap-2 flex-wrap" aria-label="Executive Navigation">
                                 {[
-                                    { id: 'overview', label: 'Overview' },
-                                    { id: 'branches', label: 'Branches' },
-                                    { id: 'reports', label: 'Reports Center' },
-                                    { id: 'financials', label: 'Financials' },
+                                    { id: 'overview', label: 'Overview', show: true },
+                                    { id: 'branches', label: 'Branches', show: features.multi_branch !== false && (multiBranchData.length > 1 || (tenant as any)?.max_branches > 1) },
+                                    { id: 'reports', label: 'Reports Center', show: features.hotel_reports !== false },
+                                    { id: 'financials', label: 'Financials', show: features.accounting !== false },
                                     {
                                         id: 'approvals',
                                         label: 'Approvals',
                                         count: metrics.pending_approvals_count,
+                                        show: true,
                                     },
                                     {
                                         id: 'directives',
                                         label: 'Directives',
                                         count: metrics.active_directives_count,
+                                        show: true,
                                     },
-                                    { id: 'audit', label: 'Audit & Risk' },
-                                ].map(tabItem => {
+                                    { id: 'audit', label: 'Audit & Risk', show: true },
+                                ].filter(tabItem => tabItem.show !== false).map(tabItem => {
                                     const isActive = currentTab === tabItem.id;
                                     return (
                                         <button
@@ -1041,31 +1044,44 @@ export default function OwnerPortalIndex({
                                                     </div>
                                                 </div>
 
-                                                {/* POS & Dining / Bar */}
-                                                <div>
-                                                    <div className="flex items-center justify-between text-xs mb-1">
-                                                        <span className="font-extrabold text-slate-800 flex items-center gap-1.5">
-                                                            <UtensilsCrossed className="w-3.5 h-3.5 text-amber-600" />
-                                                            <span>Food, Dining & Bar (POS)</span>
-                                                        </span>
-                                                        <span className="font-black text-slate-900">
-                                                            {formatTzs(analytics.comparison?.pos_revenue_minor ?? 0)}
-                                                        </span>
+                                                {/* POS & Dining / Bar - Only when restaurant_pos is enabled */}
+                                                {features.restaurant_pos !== false && (
+                                                    <div>
+                                                        <div className="flex items-center justify-between text-xs mb-1">
+                                                            <span className="font-extrabold text-slate-800 flex items-center gap-1.5">
+                                                                <UtensilsCrossed className="w-3.5 h-3.5 text-amber-600" />
+                                                                <span>Food, Dining & Bar (POS)</span>
+                                                            </span>
+                                                            <span className="font-black text-slate-900">
+                                                                {formatTzs(analytics.comparison?.pos_revenue_minor ?? 0)}
+                                                            </span>
+                                                        </div>
+                                                        <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                                            <div
+                                                                className="h-2 rounded-full bg-amber-500"
+                                                                style={{
+                                                                    width: `${analytics.comparison?.revenue_minor > 0
+                                                                        ? Math.round(((analytics.comparison.pos_revenue_minor ?? 0) / analytics.comparison.revenue_minor) * 100)
+                                                                        : 0}%`
+                                                                }}
+                                                            />
+                                                        </div>
                                                     </div>
-                                                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                                                        <div
-                                                            className="h-2 rounded-full bg-amber-500"
-                                                            style={{
-                                                                width: `${analytics.comparison?.revenue_minor > 0
-                                                                    ? Math.round(((analytics.comparison.pos_revenue_minor ?? 0) / analytics.comparison.revenue_minor) * 100)
-                                                                    : 0}%`
-                                                            }}
-                                                        />
-                                                    </div>
-                                                </div>
+                                                )}
 
-                                                {/* Other Outlets / Departments */}
-                                                {(analytics.departments ?? []).slice(0, 3).map((dept: any, i: number) => (
+                                                {/* Other Outlets / Departments - Respecting Tenant Enabled Modules */}
+                                                {(analytics.departments ?? [])
+                                                    .filter((dept: any) => {
+                                                        const name = (dept.name || '').toLowerCase();
+                                                        if (name.includes('restaurant') || name.includes('bar') || name.includes('dining') || name.includes('food')) {
+                                                            return features.restaurant_pos !== false;
+                                                        }
+                                                        if (name.includes('grocery') || name.includes('minimart') || name.includes('supermarket') || name.includes('market')) {
+                                                            return features.grocery_pos !== false;
+                                                        }
+                                                        return true;
+                                                    })
+                                                    .slice(0, 3).map((dept: any, i: number) => (
                                                     <div key={i}>
                                                         <div className="flex items-center justify-between text-xs mb-1">
                                                             <span className="font-bold text-slate-700 capitalize">{dept.name}</span>
@@ -1161,27 +1177,31 @@ export default function OwnerPortalIndex({
                                                     <div className="mt-4 pt-3 border-t border-slate-100">
                                                         <div className="h-2 w-full rounded-full bg-slate-100 flex overflow-hidden">
                                                             <div
-                                                                style={{ width: `${Math.max(roomPct, 4)}%` }}
+                                                                style={{ width: `${features.restaurant_pos !== false ? Math.max(roomPct, 4) : 100}%` }}
                                                                 className="h-full bg-blue-600"
                                                                 title={`Lodging: ${formatTzs(roomRev)} (${roomPct}%)`}
                                                             />
-                                                            <div
-                                                                style={{ width: `${Math.max(posPct, 4)}%` }}
-                                                                className="h-full bg-amber-500"
-                                                                title={`POS/Dining: ${formatTzs(posRev)} (${posPct}%)`}
-                                                            />
+                                                            {features.restaurant_pos !== false && (
+                                                                <div
+                                                                    style={{ width: `${Math.max(posPct, 4)}%` }}
+                                                                    className="h-full bg-amber-500"
+                                                                    title={`POS/Dining: ${formatTzs(posRev)} (${posPct}%)`}
+                                                                />
+                                                            )}
                                                         </div>
-                                                        <div className="grid grid-cols-2 gap-2 mt-2.5 text-[11px]">
+                                                        <div className={`grid ${features.restaurant_pos !== false ? 'grid-cols-2' : 'grid-cols-1'} gap-2 mt-2.5 text-[11px]`}>
                                                             <div className="flex items-center gap-1.5">
                                                                 <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0" />
                                                                 <span className="text-slate-500 truncate">Rooms:</span>
                                                                 <span className="font-bold text-slate-800 ml-auto">{formatTzs(roomRev)}</span>
                                                             </div>
-                                                            <div className="flex items-center gap-1.5">
-                                                                <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
-                                                                <span className="text-slate-500 truncate">POS:</span>
-                                                                <span className="font-bold text-slate-800 ml-auto">{formatTzs(posRev)}</span>
-                                                            </div>
+                                                            {features.restaurant_pos !== false && (
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                                                                    <span className="text-slate-500 truncate">POS:</span>
+                                                                    <span className="font-bold text-slate-800 ml-auto">{formatTzs(posRev)}</span>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -2436,13 +2456,13 @@ export default function OwnerPortalIndex({
                             </div>
 
                             {/* Comparison KPI cards */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                            <div className={`grid grid-cols-1 sm:grid-cols-2 ${features.restaurant_pos !== false ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-5`}>
                                 {[
-                                    { label: 'Revenue', value: analytics.comparison.revenue_minor, prev: analytics.comparison.previous_revenue_minor, change: analytics.comparison.revenue_change_percent, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                                    { label: 'Expenses', value: analytics.comparison.expenses_minor, prev: analytics.comparison.previous_expenses_minor, change: analytics.comparison.expenses_change_percent, icon: ArrowDownRight, color: 'text-rose-600', bg: 'bg-rose-50' },
-                                    { label: 'Net GOP Profit', value: analytics.comparison.gop_minor, prev: analytics.comparison.previous_gop_minor, change: analytics.comparison.gop_change_percent, icon: DollarSign, color: 'text-amber-800', bg: 'bg-amber-50' },
-                                    { label: 'POS & Dining Revenue', value: analytics.comparison.pos_revenue_minor, prev: analytics.comparison.previous_pos_revenue_minor, change: null, icon: UtensilsCrossed, color: 'text-blue-600', bg: 'bg-blue-50' },
-                                ].map((kpi) => {
+                                    { label: 'Revenue', value: analytics.comparison.revenue_minor, prev: analytics.comparison.previous_revenue_minor, change: analytics.comparison.revenue_change_percent, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50', show: true },
+                                    { label: 'Expenses', value: analytics.comparison.expenses_minor, prev: analytics.comparison.previous_expenses_minor, change: analytics.comparison.expenses_change_percent, icon: ArrowDownRight, color: 'text-rose-600', bg: 'bg-rose-50', show: true },
+                                    { label: 'Net GOP Profit', value: analytics.comparison.gop_minor, prev: analytics.comparison.previous_gop_minor, change: analytics.comparison.gop_change_percent, icon: DollarSign, color: 'text-amber-800', bg: 'bg-amber-50', show: true },
+                                    { label: 'POS & Dining Revenue', value: analytics.comparison.pos_revenue_minor, prev: analytics.comparison.previous_pos_revenue_minor, change: null, icon: UtensilsCrossed, color: 'text-blue-600', bg: 'bg-blue-50', show: features.restaurant_pos !== false },
+                                ].filter(kpi => kpi.show !== false).map((kpi) => {
                                     const Icon = kpi.icon;
                                     const isUp = (kpi.change ?? 0) >= 0;
                                     return (

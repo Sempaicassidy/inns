@@ -136,16 +136,67 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Determine if a role belongs to a module not enabled for this user's tenant.
+     */
+    public function isRoleDisabledByTenantFeatures(string $role): bool
+    {
+        if ($this->role === 'super_admin' || (is_array($this->roles) && in_array('super_admin', $this->roles, true))) {
+            return false;
+        }
+
+        $tenant = $this->tenant;
+        if (! $tenant) {
+            return false;
+        }
+
+        if (! $tenant->hasFeature('restaurant_pos') && in_array($role, ['pos_cashier', 'cashier', 'waiter', 'bartender', 'chef', 'restaurant_cashier', 'restaurant_staff', 'restaurant_pos'], true)) {
+            return true;
+        }
+
+        if (! $tenant->hasFeature('grocery_pos') && in_array($role, ['grocery_cashier', 'supermarket_cashier'], true)) {
+            return true;
+        }
+
+        if (! $tenant->hasFeature('hr_payroll') && in_array($role, ['hr_manager', 'hr'], true)) {
+            return true;
+        }
+
+        if (! $tenant->hasFeature('inventory') && in_array($role, ['storekeeper', 'procurement_manager'], true)) {
+            return true;
+        }
+
+        if (! $tenant->hasFeature('accounting') && in_array($role, ['accountant', 'senior_accountant', 'finance_officer'], true)) {
+            return true;
+        }
+
+        if (! $tenant->hasFeature('housekeeping') && in_array($role, ['housekeeper', 'housekeeping_supervisor'], true)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Get the currently active role in session or fallback to default.
      */
     public function getActiveRoleAttribute(): string
     {
         $sessionRole = session('active_role');
         if ($sessionRole && (in_array($sessionRole, $this->roles_list) || $this->role === 'super_admin')) {
-            return self::canonicalRole($sessionRole);
+            $canonical = self::canonicalRole($sessionRole);
+            if (! $this->isRoleDisabledByTenantFeatures($canonical)) {
+                return $canonical;
+            }
         }
 
-        return self::canonicalRole($this->roles_list[0] ?? $this->role ?? 'staff');
+        foreach ($this->roles_list as $roleCandidate) {
+            $canonical = self::canonicalRole($roleCandidate);
+            if (! $this->isRoleDisabledByTenantFeatures($canonical)) {
+                return $canonical;
+            }
+        }
+
+        return self::canonicalRole($this->role ?? 'staff');
     }
 
     /**
@@ -357,7 +408,7 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         return $this->role === 'super_admin'
-            || $this->active_role === 'super_admin'
+            || (session('active_role') === 'super_admin')
             || (is_array($this->roles) && in_array('super_admin', $this->roles))
             || in_array('super_admin', $this->roles_list);
     }

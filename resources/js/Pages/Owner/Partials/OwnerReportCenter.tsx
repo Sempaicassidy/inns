@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
+import { PageProps } from '@/types';
 import {
     Activity,
     ArrowDownRight,
@@ -91,6 +92,9 @@ export default function OwnerReportCenter({
     selectedPropertyId,
     formatTzs,
 }: OwnerReportCenterProps) {
+    const pageProps = usePage<PageProps>().props;
+    const features = ((pageProps.auth as any)?.tenant?.features || {}) as Record<string, boolean>;
+
     const [currentReport, setCurrentReport] = useState(reportType || 'sales');
     const [filterStart, setFilterStart] = useState(startDate || reportData?.start_date || '');
     const [filterEnd, setFilterEnd] = useState(endDate || reportData?.end_date || '');
@@ -358,12 +362,18 @@ export default function OwnerReportCenter({
                             >
                                 <option value="">All Departments</option>
                                 <option value="room">Rooms & Accommodation</option>
-                                <option value="restaurant">Restaurant & Kitchen</option>
-                                <option value="bar">Bar & Beverage</option>
+                                {features.restaurant_pos !== false && (
+                                    <>
+                                        <option value="restaurant">Restaurant & Kitchen</option>
+                                        <option value="bar">Bar & Beverage</option>
+                                    </>
+                                )}
                                 <option value="laundry">Laundry</option>
                                 <option value="conference">Conference & Banquets</option>
                                 <option value="tour">Tours & Safari</option>
-                                <option value="grocery">Mini Market / Retail</option>
+                                {features.grocery_pos !== false && (
+                                    <option value="grocery">Mini Market / Retail</option>
+                                )}
                             </select>
                         </div>
                     )}

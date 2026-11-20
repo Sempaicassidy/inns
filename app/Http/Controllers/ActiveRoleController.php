@@ -43,6 +43,12 @@ class ActiveRoleController extends Controller
             ]);
         }
 
+        if ($user->isRoleDisabledByTenantFeatures($selectedRole)) {
+            throw ValidationException::withMessages([
+                'role' => 'Moduli ya jukumu hili haijawashwa kwenye hoteli yako (module is disabled).',
+            ]);
+        }
+
         $previousRole = $user->active_role;
         session(['active_role' => $selectedRole]);
 

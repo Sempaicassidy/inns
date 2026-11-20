@@ -405,11 +405,23 @@ class OwnerDashboardService
             $folioTaxMinor = (int) (clone $folioLinesQuery)->sum('tax_minor');
 
             // Direct POS Sales (Paid tenders that were NOT billed to room folio)
+            $tenant = Tenant::find($tenantId);
+            $hasRestaurant = $tenant ? $tenant->hasFeature('restaurant_pos') : true;
+            $hasGrocery = $tenant ? $tenant->hasFeature('grocery_pos') : true;
+
             $posQuery = PosOrder::where('tenant_id', $tenantId)
                 ->when($selectedPropertyId, fn ($q) => $q->where('property_id', $selectedPropertyId), fn ($q) => $q->whereIn('property_id', $propertyIds))
                 ->where('payment_status', 'paid')
                 ->where('payment_method', '!=', 'room_folio')
                 ->whereBetween('created_at', [$from, $to]);
+
+            if (! $hasRestaurant && ! $hasGrocery) {
+                $posQuery->whereRaw('1 = 0');
+            } elseif (! $hasRestaurant) {
+                $posQuery->where('outlet_type', 'grocery');
+            } elseif (! $hasGrocery) {
+                $posQuery->where('outlet_type', '!=', 'grocery');
+            }
 
             $posRevenueMinor = (int) (clone $posQuery)->sum('total_minor');
             $posTaxMinor = (int) (clone $posQuery)->sum('tax_minor');
@@ -730,6 +742,16 @@ class OwnerDashboardService
                     'orders' => (int) $pos->orders_count,
                     'revenue_minor' => (int) $pos->revenue_minor,
                 ];
+            }
+        }
+
+        $tenant = Tenant::find($tenantId);
+        if ($tenant) {
+            if (! $tenant->hasFeature('restaurant_pos')) {
+                unset($departmentsMap['Restaurant Dining'], $departmentsMap['Bar & Beverage']);
+            }
+            if (! $tenant->hasFeature('grocery_pos')) {
+                unset($departmentsMap['Mini Market & Retail']);
             }
         }
 

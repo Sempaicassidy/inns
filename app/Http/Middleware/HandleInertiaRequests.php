@@ -260,6 +260,7 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
                 'active_role' => $user?->active_role,
                 'available_roles' => $user ? collect($user->roles_list)
+                    ->filter(fn (string $role) => ! $user->isRoleDisabledByTenantFeatures(User::canonicalRole($role)))
                     ->map(fn (string $role) => User::getRoleMetadata($role) + ['assigned' => true])
                     ->values()
                     ->all() : [],

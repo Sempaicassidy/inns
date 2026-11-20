@@ -102,6 +102,7 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
 
     // 1.01 Hotel Owner Executive Portal & Chain of Command
     Route::get('/owner', [OwnerPortalController::class, 'index'])->name('owner.index');
+    Route::get('/owner/reports/export', [OwnerPortalController::class, 'exportReport'])->name('owner.reports.export');
     Route::post('/owner/directives', [OwnerPortalController::class, 'storeDirective'])->name('owner.directives.store');
     Route::put('/owner/directives/{directive}', [OwnerPortalController::class, 'updateDirective'])->name('owner.directives.update');
     Route::delete('/owner/directives/{directive}', [OwnerPortalController::class, 'deleteDirective'])->name('owner.directives.destroy');
@@ -279,6 +280,7 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
     // 10. Manager Executive Reports & Analytics
     Route::middleware(['tenant.feature:hotel_reports', 'module.access:executive_reports'])->group(function () {
         Route::get('/reports', [ReportsController::class, 'index'])->name('reports.index');
+        Route::get('/reports/export', [ReportsController::class, 'exportReport'])->name('reports.export');
     });
 
     // 10-FO. Front Office Shift Progress Reports (Receptionist Operational Reporting)

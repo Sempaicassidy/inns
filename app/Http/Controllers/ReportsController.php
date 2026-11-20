@@ -333,28 +333,25 @@ class ReportsController extends Controller
             ];
         });
 
-        // 6. STORE & INVENTORY OVERVIEW DATA
+        // 6. STORE & INVENTORY OVERVIEW DATA (Strictly real database inventory records)
         $storeItems = $posItems->map(function ($item, $idx) use ($startDate) {
             $soldQty = (int) PosOrderItem::where('pos_item_id', $item->id)
                 ->whereHas('order', fn ($q) => $q->where('created_at', '>=', $startDate))
                 ->sum('quantity');
 
             $catName = $item->category?->name ?? 'General Store';
-            $stockQty = $item->is_available ? max(6, 45 - ($soldQty % 40)) : 0;
-            $reorderLevel = 10;
+            $stockQty = (int) ($item->stock_quantity ?? 0);
+            $reorderLevel = (int) ($item->reorder_level ?? 10);
             $status = $stockQty === 0 ? 'out_of_stock' : ($stockQty <= $reorderLevel ? 'low_stock' : 'optimal');
-            $unitCostMinor = (int) ($item->price_minor * 0.6);
+            $unitCostMinor = (int) ($item->cost_price_minor ?: ($item->price_minor * 0.6));
             $stockValuationMinor = $stockQty * $unitCostMinor;
-
-            $lower = strtolower($item->name);
-            $unit = str_contains($lower, 'juice') || str_contains($lower, 'beer') || str_contains($lower, 'wine') || str_contains($lower, 'soda') ? 'Bottles' : (str_contains($lower, 'meat') || str_contains($lower, 'rice') ? 'Kg' : 'Units');
 
             return [
                 'id' => $item->id,
                 'sku' => $item->code ?? sprintf('SKU-%04d', $idx + 101),
                 'name' => $item->name,
                 'category' => $catName,
-                'unit' => $unit,
+                'unit' => $item->unit ?? 'Units',
                 'current_stock' => $stockQty,
                 'reorder_level' => $reorderLevel,
                 'unit_cost_minor' => $unitCostMinor,
@@ -364,17 +361,29 @@ class ReportsController extends Controller
             ];
         });
 
-        $hotelConsumables = [
-            ['sku' => 'HK-TWL-01', 'name' => 'Bath Towels (White 70x140cm)', 'category' => 'Housekeeping Linens', 'unit' => 'Pcs', 'current_stock' => 45, 'reorder_level' => 15, 'unit_cost_minor' => 1800000, 'total_valuation_minor' => 45 * 1800000, 'status' => 'optimal', 'units_issued' => 8],
-            ['sku' => 'HK-SHT-02', 'name' => 'King Bed Sheets (300 Thread)', 'category' => 'Housekeeping Linens', 'unit' => 'Pcs', 'current_stock' => 32, 'reorder_level' => 12, 'unit_cost_minor' => 3500000, 'total_valuation_minor' => 32 * 3500000, 'status' => 'optimal', 'units_issued' => 4],
-            ['sku' => 'AM-SOP-01', 'name' => 'Guest Mini Soaps (40g Box)', 'category' => 'Guest Amenities', 'unit' => 'Boxes', 'current_stock' => 120, 'reorder_level' => 30, 'unit_cost_minor' => 150000, 'total_valuation_minor' => 120 * 150000, 'status' => 'optimal', 'units_issued' => 45],
-            ['sku' => 'AM-WTR-01', 'name' => 'Complimentary Mineral Water 500ml', 'category' => 'Guest Amenities', 'unit' => 'Cartons', 'current_stock' => 8, 'reorder_level' => 10, 'unit_cost_minor' => 900000, 'total_valuation_minor' => 8 * 900000, 'status' => 'low_stock', 'units_issued' => 22],
-            ['sku' => 'MT-BLB-01', 'name' => 'Warm LED Bulbs 9W E27', 'category' => 'Maintenance Supplies', 'unit' => 'Pcs', 'current_stock' => 18, 'reorder_level' => 10, 'unit_cost_minor' => 450000, 'total_valuation_minor' => 18 * 450000, 'status' => 'optimal', 'units_issued' => 3],
-            ['sku' => 'KT-OIL-01', 'name' => 'Pure Cooking Oil (20L Jerrycan)', 'category' => 'Kitchen Provisions', 'unit' => 'Jerrycans', 'current_stock' => 4, 'reorder_level' => 5, 'unit_cost_minor' => 8500000, 'total_valuation_minor' => 4 * 8500000, 'status' => 'low_stock', 'units_issued' => 6],
-            ['sku' => 'KT-RCE-01', 'name' => 'Grade 1 Basmati Rice (25kg Bag)', 'category' => 'Kitchen Provisions', 'unit' => 'Bags', 'current_stock' => 2, 'reorder_level' => 4, 'unit_cost_minor' => 9500000, 'total_valuation_minor' => 2 * 9500000, 'status' => 'low_stock', 'units_issued' => 5],
-        ];
+        // Also include any records from dedicated inventory_items table
+        $inventoryItems = \App\Models\InventoryItem::where('tenant_id', $tenantId)->get()->map(function ($inv) {
+            $stockQty = (int) ($inv->stock_quantity ?? 0);
+            $reorderLevel = (int) ($inv->reorder_level ?? 5);
+            $unitCostMinor = (int) ($inv->unit_cost_minor ?? 0);
+            $status = $stockQty === 0 ? 'out_of_stock' : ($stockQty <= $reorderLevel ? 'low_stock' : 'optimal');
 
-        $completeStoreItems = $storeItems->concat(collect($hotelConsumables)->map(fn ($item, $i) => array_merge($item, ['id' => 'consumable_'.$i])));
+            return [
+                'id' => $inv->id,
+                'sku' => $inv->sku ?? 'INV-'.$inv->id,
+                'name' => $inv->name,
+                'category' => $inv->category ?? 'Supplies',
+                'unit' => $inv->unit ?? 'Units',
+                'current_stock' => $stockQty,
+                'reorder_level' => $reorderLevel,
+                'unit_cost_minor' => $unitCostMinor,
+                'total_valuation_minor' => $stockQty * $unitCostMinor,
+                'status' => $status,
+                'units_issued' => 0,
+            ];
+        });
+
+        $completeStoreItems = $storeItems->concat($inventoryItems)->values();
 
         $totalStoreValuationMinor = (int) $completeStoreItems->sum('total_valuation_minor');
         $lowStockCount = $completeStoreItems->where('status', 'low_stock')->count();
@@ -606,9 +615,22 @@ class ReportsController extends Controller
     }
 
     /**
+     * Export report data as Excel-compatible CSV.
+     */
+    public function exportReport(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $user = $request->user();
+        $property = $user->property ?? Property::first();
+        $tenantId = $user->tenant_id ?? $property?->tenant_id;
+        $reportType = (string) $request->input('report_type', 'sales');
+
+        return app(\App\Services\ReportingService::class)->exportCsv((string) $tenantId, $reportType, $request);
+    }
+
+    /**
      * Store & Inventory dedicated route handler.
      */
-    public function inventoryIndex(Request $request): RedirectResponse
+    public function inventoryIndex(Request $request): \Illuminate\Http\RedirectResponse
     {
         return redirect()->route('reports.index', ['tab' => 'store']);
     }

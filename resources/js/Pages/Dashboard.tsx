@@ -225,7 +225,7 @@ export default function Dashboard({
     const formatPaymentMethod = (method: string) => {
         const names: Record<string, string> = {
             cash: 'Cash',
-            mpesa: 'M-Pesa',
+            mpesa: 'Mobile Money Collection',
             tigopesa: 'Tigo Pesa',
             airtelmoney: 'Airtel Money',
             halopesa: 'Halo Pesa',
@@ -251,8 +251,9 @@ export default function Dashboard({
                     borderHover: 'hover:border-emerald-300',
                 };
             case 'mpesa':
+            case 'mobile_money':
                 return {
-                    name: 'M-Pesa (Vodacom)',
+                    name: 'Mobile Money Collection',
                     category: 'Mobile Money',
                     icon: Smartphone,
                     badgeClass: 'bg-red-50 text-red-700 border-red-200',

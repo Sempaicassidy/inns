@@ -230,9 +230,9 @@ class PosController extends Controller
                     foreach ($orderLines as $l) {
                         $linesPayload[] = [
                             'description' => $l['item']->name ?? 'POS Item',
-                            'quantity' => $l['qty'],
+                            'quantity' => $l['quantity'] ?? $l['qty'] ?? 1,
                             'unit_price_minor' => $l['unit_price_minor'],
-                            'total_minor' => $l['line_total'],
+                            'total_minor' => $l['total_minor'] ?? $l['line_total'] ?? 0,
                         ];
                     }
 

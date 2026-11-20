@@ -411,42 +411,138 @@ class GroceryController extends Controller
                 'total_minor' => (int) $p->total_minor,
             ]);
 
-        $lowStockItems = PosItem::where('tenant_id', $tenantId)
+        $groceryCategories = PosCategory::where('tenant_id', $tenantId)
             ->where('department', 'grocery')
-            ->where('is_available', true)
-            ->whereColumn('stock_quantity', '<=', 'reorder_level')
-            ->orderBy('stock_quantity')
-            ->take(8)
-            ->get(['id', 'name', 'stock_quantity', 'reorder_level', 'unit'])
-            ->map(fn ($i) => [
-                'id' => $i->id,
-                'name' => $i->name,
-                'stock_quantity' => (int) $i->stock_quantity,
-                'reorder_level' => (int) $i->reorder_level,
-                'unit' => $i->unit ?? 'pcs',
-            ]);
+            ->orderBy('sort_order')
+            ->get();
 
-        $totalSkus = PosItem::where('tenant_id', $tenantId)
+        $items = PosItem::with('category')
+            ->where('tenant_id', $tenantId)
             ->where('department', 'grocery')
-            ->where('is_available', true)
-            ->count();
+            ->orderBy('name')
+            ->get()
+            ->map(function ($item) {
+                $cost = (int) ($item->cost_price_minor ?? 0);
+                $price = (int) $item->price_minor;
+                $marginPct = $price > 0 ? round((($price - $cost) / $price) * 100, 1) : 0;
+                $stockVal = $cost * ($item->stock_quantity ?? 0);
 
-        $recentOrders = PosOrder::with('room')
+                return [
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'code' => $item->code ?? 'SKU-'.substr($item->id, 0, 6),
+                    'pos_category_id' => $item->pos_category_id,
+                    'category_name' => $item->category?->name ?? 'Grocery',
+                    'price_minor' => $price,
+                    'cost_price_minor' => $cost,
+                    'stock_quantity' => (int) ($item->stock_quantity ?? 0),
+                    'reorder_level' => (int) ($item->reorder_level ?? 10),
+                    'unit' => $item->unit ?? 'pcs',
+                    'is_available' => (bool) $item->is_available,
+                    'margin_pct' => $marginPct,
+                    'stock_valuation_minor' => $stockVal,
+                    'status' => ($item->stock_quantity ?? 0) <= 0
+                        ? 'out_of_stock'
+                        : (($item->stock_quantity ?? 0) <= ($item->reorder_level ?? 10) ? 'low_stock' : 'optimal'),
+                ];
+            });
+
+        $totalItemsCount = $items->count();
+        $totalCostValuation = $items->sum('stock_valuation_minor');
+        $totalRetailValuation = $items->sum(fn ($i) => $i['price_minor'] * $i['stock_quantity']);
+        $lowStockCount = $items->where('status', 'low_stock')->count();
+        $outOfStockCount = $items->where('status', 'out_of_stock')->count();
+        $optimalCount = $items->where('status', 'optimal')->count();
+
+        $lowStockItems = $items->whereIn('status', ['low_stock', 'out_of_stock'])->values();
+
+        $categoryBreakdown = $groceryCategories->map(function ($cat) use ($items) {
+            $catItems = $items->where('pos_category_id', $cat->id);
+            $costVal = $catItems->sum('stock_valuation_minor');
+            $retailVal = $catItems->sum(fn ($i) => $i['price_minor'] * $i['stock_quantity']);
+
+            return [
+                'id' => $cat->id,
+                'name' => $cat->name,
+                'items_count' => $catItems->count(),
+                'cost_valuation_minor' => $costVal,
+                'retail_valuation_minor' => $retailVal,
+                'margin_profit_minor' => max(0, $retailVal - $costVal),
+                'low_stock_count' => $catItems->where('status', 'low_stock')->count(),
+                'out_of_stock_count' => $catItems->where('status', 'out_of_stock')->count(),
+            ];
+        });
+
+        $recentOrders = PosOrder::with(['items', 'room'])
             ->where('tenant_id', $tenantId)
             ->where('outlet_type', 'grocery')
             ->latest()
-            ->take(10)
+            ->take(25)
             ->get()
-            ->map(fn ($order) => [
-                'id' => $order->id,
-                'order_number' => $order->order_number,
-                'guest_name' => $order->guest_name ?? 'Walk-In Customer',
-                'room_number' => $order->room?->room_number ?? null,
-                'total_minor' => $order->total_minor,
-                'payment_method' => $order->payment_method ?? 'cash',
-                'payment_status' => $order->payment_status,
-                'created_at' => $order->created_at->format('d M Y, H:i'),
-            ]);
+            ->map(function ($order) {
+                return [
+                    'id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'order_type' => $order->order_type,
+                    'table_number' => $order->table_number,
+                    'room_number' => $order->room?->room_number ?? null,
+                    'guest_name' => $order->guest_name ?? 'Walk-In Customer',
+                    'total_minor' => (int) $order->total_minor,
+                    'subtotal_minor' => (int) ($order->subtotal_minor ?? $order->total_minor),
+                    'tax_minor' => (int) ($order->tax_minor ?? 0),
+                    'payment_method' => $order->payment_method ?? 'cash',
+                    'payment_status' => $order->payment_status,
+                    'status' => $order->status,
+                    'items_count' => $order->items->count(),
+                    'created_at' => $order->created_at->format('d M Y, H:i'),
+                    'raw_created_at' => $order->created_at->toIso8601String(),
+                    'items' => $order->items->map(fn ($item) => [
+                        'id' => $item->id,
+                        'item_name' => $item->item_name,
+                        'quantity' => (int) $item->quantity,
+                        'unit_price_minor' => (int) $item->unit_price_minor,
+                        'total_minor' => (int) $item->total_minor,
+                    ])->values()->all(),
+                ];
+            });
+
+        $movements = StockMovement::with(['posItem', 'user'])
+            ->where('tenant_id', $tenantId)
+            ->whereNotNull('pos_item_id')
+            ->latest()
+            ->take(20)
+            ->get()
+            ->map(function ($m) {
+                return [
+                    'id' => $m->id,
+                    'item_name' => $m->posItem?->name ?? 'Grocery Item',
+                    'movement_type' => $m->movement_type,
+                    'quantity' => (int) $m->quantity,
+                    'unit_cost_minor' => (int) ($m->unit_cost_minor ?? 0),
+                    'reference_no' => $m->reference_no ?? '—',
+                    'notes' => $m->notes ?? '—',
+                    'performed_by' => $m->user?->name ?? 'Manager',
+                    'created_at' => $m->created_at->format('d M Y, H:i'),
+                ];
+            });
+
+        $activeStays = Stay::with(['room', 'guest', 'folio', 'reservationRoom.reservation.folios', 'reservationRoom.reservation.guest'])
+            ->where('tenant_id', $tenantId)
+            ->whereNull('checked_out_at')
+            ->get()
+            ->map(function ($stay) {
+                $res = $stay->reservationRoom?->reservation;
+                $folioId = $stay->folio?->id
+                    ?? $res?->folios?->where('status', 'open')->first()?->id
+                    ?? $res?->folios?->first()?->id;
+
+                return [
+                    'stay_id' => $stay->id,
+                    'room_number' => $stay->room?->room_number ?? '—',
+                    'guest_name' => $stay->guest?->full_name ?? $res?->guest?->full_name ?? 'Guest',
+                    'folio_id' => $folioId,
+                ];
+            });
 
         return Inertia::render('Grocery/Dashboard', [
             'stats' => [
@@ -454,17 +550,23 @@ class GroceryController extends Controller
                 'month_revenue_minor' => $monthRevenueMinor,
                 'today_order_count' => $todayOrderCount,
                 'items_sold_today' => $itemsSoldToday,
-                'total_skus' => $totalSkus,
-                'low_stock_count' => PosItem::where('tenant_id', $tenantId)
-                    ->where('department', 'grocery')
-                    ->where('is_available', true)
-                    ->whereColumn('stock_quantity', '<=', 'reorder_level')
-                    ->count(),
+                'total_skus' => $totalItemsCount,
+                'in_stock_count' => $optimalCount + $lowStockCount,
+                'low_stock_count' => $lowStockCount,
+                'out_of_stock_count' => $outOfStockCount,
+                'optimal_count' => $optimalCount,
+                'total_cost_valuation_minor' => $totalCostValuation,
+                'total_retail_valuation_minor' => $totalRetailValuation,
             ],
+            'items' => $items,
+            'categories' => $groceryCategories,
+            'categoryBreakdown' => $categoryBreakdown,
             'topItemsToday' => $topItemsToday,
             'paymentBreakdown' => $paymentBreakdown,
             'lowStockItems' => $lowStockItems,
             'recentOrders' => $recentOrders,
+            'recentMovements' => $movements,
+            'activeStays' => $activeStays,
         ]);
     }
 

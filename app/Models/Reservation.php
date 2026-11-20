@@ -74,6 +74,11 @@ class Reservation extends Model
         return $this->hasMany(ReservationRoom::class);
     }
 
+    public function rooms(): HasMany
+    {
+        return $this->hasMany(ReservationRoom::class);
+    }
+
     public function folios(): HasMany
     {
         return $this->hasMany(Folio::class);

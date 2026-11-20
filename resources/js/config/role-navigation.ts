@@ -179,6 +179,16 @@ export const roleNavigation: Record<string, RoleNavigationDef> = {
                 ...saasTab('overview'),
             },
             {
+                section: 'tenant_inspection',
+                title: 'AUDIT & INSPECTION CENTER',
+                icon: 'ShieldCheck',
+                items: [
+                    { name: 'Global Tenant Directory', route: 'saas-admin.inspection.index', icon: 'Building2', active: ['saas-admin.inspection.index', 'saas-admin.inspection.show'] },
+                    { name: 'Global Activity Timeline', route: 'saas-admin.inspection.timeline', icon: 'Clock', active: ['saas-admin.inspection.timeline'] },
+                    { name: 'Cross-Tenant Financials', route: 'saas-admin.inspection.financials', icon: 'TrendingUp', active: ['saas-admin.inspection.financials'] },
+                ],
+            },
+            {
                 section: 'tenant_management',
                 title: 'TENANT MANAGEMENT',
                 icon: 'Building2',

@@ -1622,7 +1622,14 @@ export default function SaasAdminDashboard({
                                                         {t.is_active ? 'Active' : 'Suspended'}
                                                     </span>
                                                 </td>
-                                                <td className="py-3 px-4 text-right">
+                                                <td className="py-3 px-4 text-right flex items-center justify-end gap-1.5">
+                                                    <Link
+                                                        href={route('saas-admin.inspection.show', t.id)}
+                                                        className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 font-bold text-xs rounded-lg transition inline-flex items-center gap-1"
+                                                    >
+                                                        <Shield className="w-3 h-3" />
+                                                        Inspect
+                                                    </Link>
                                                     <button
                                                         type="button"
                                                         onClick={() => handleImpersonate(t.id, t.name)}
@@ -1798,6 +1805,16 @@ export default function SaasAdminDashboard({
 
                                                 <td className="py-4 px-5 text-right">
                                                     <div className="flex items-center justify-end gap-1.5">
+                                                        {/* Deep Inspect */}
+                                                        <Link
+                                                            href={route('saas-admin.inspection.show', tenant.id)}
+                                                            title="Deep Audit & Inspect Tenant Workspace"
+                                                            className="px-2.5 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                                                        >
+                                                            <Shield className="w-3.5 h-3.5" />
+                                                            <span>Inspect</span>
+                                                        </Link>
+
                                                         {/* Impersonate / Access Workspace */}
                                                         <button
                                                             type="button"

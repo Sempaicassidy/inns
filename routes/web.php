@@ -26,6 +26,7 @@ use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\RestaurantController;
 use App\Http\Controllers\RoomTypeController;
 use App\Http\Controllers\SaasAdminController;
+use App\Http\Controllers\TenantInspectionController;
 use App\Http\Controllers\SpreadsheetDataEntryController;
 use App\Http\Controllers\TenantSettingsController;
 use App\Http\Controllers\WhatsAppController;
@@ -325,6 +326,15 @@ Route::middleware(['auth', 'verified', 'tenant.isolation'])->group(function () {
         Route::post('/saas-admin/tenants/{tenant}/toggle', [SaasAdminController::class, 'toggleTenantStatus'])->name('saas-admin.tenants.toggle');
         Route::post('/saas-admin/tenants/{tenant}/impersonate', [SaasAdminController::class, 'impersonateTenant'])->name('saas-admin.tenants.impersonate');
         Route::post('/saas-admin/impersonate/leave', [SaasAdminController::class, 'leaveImpersonation'])->name('saas-admin.impersonate.leave');
+
+        // Super Admin Global Tenant Monitoring, Inspection & Audit Center
+        Route::get('/saas-admin/inspection', [TenantInspectionController::class, 'index'])->name('saas-admin.inspection.index');
+        Route::get('/saas-admin/inspection/timeline', [TenantInspectionController::class, 'timeline'])->name('saas-admin.inspection.timeline');
+        Route::get('/saas-admin/inspection/financials', [TenantInspectionController::class, 'financials'])->name('saas-admin.inspection.financials');
+        Route::get('/saas-admin/inspection/{tenant}', [TenantInspectionController::class, 'show'])->name('saas-admin.inspection.show');
+        Route::post('/saas-admin/inspection/{tenant}/session/start', [TenantInspectionController::class, 'startSession'])->name('saas-admin.inspection.session.start');
+        Route::post('/saas-admin/inspection/session/{session}/end', [TenantInspectionController::class, 'endSession'])->name('saas-admin.inspection.session.end');
+        Route::get('/saas-admin/inspection/{tenant}/export', [TenantInspectionController::class, 'exportReport'])->name('saas-admin.inspection.export');
 
         // SaaS Billing, Quotations, Invoices, Payments, Receipts
         Route::post('/saas-admin/quotations', [SaasAdminController::class, 'storeQuotation'])->name('saas-admin.quotations.store');

@@ -136,7 +136,7 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
         property_name: '',
         contact_name: '',
         phone: '',
-        rooms_count: '1-20 Rooms',
+        rooms_count: '1-15 Rooms',
         city: 'Dar es Salaam',
         demo_type: 'In-Person Walkthrough (Tanzania)',
         notes: '',
@@ -147,7 +147,7 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
         e.preventDefault();
         setDemoSubmitted(true);
         const text = encodeURIComponent(
-            `Habari THE INNS Team,\n\nNahitaji Live Demo & 14-Day Free Trial:\n• Jina la Hoteli/Lodge: ${demoForm.property_name}\n• Mhusika/Jina: ${demoForm.contact_name}\n• Simu: ${demoForm.phone}\n• Ukubwa wa Hoteli: ${demoForm.rooms_count}\n• Mji/Mkoa: ${demoForm.city}\n• Aina ya Demo: ${demoForm.demo_type}\n• Maelezo: ${demoForm.notes || 'Tayari kwa demo'}`
+            `Hello THE INNS Team,\n\nI would like to request a Live Demo & 14-Day Free Trial:\n• Hotel/Property Name: ${demoForm.property_name}\n• Contact Person: ${demoForm.contact_name}\n• Phone: ${demoForm.phone}\n• Property Size: ${demoForm.rooms_count}\n• Location/City: ${demoForm.city}\n• Preferred Demo Mode: ${demoForm.demo_type}\n• Notes: ${demoForm.notes || 'Ready for demo'}`
         );
         window.open(`https://wa.me/255744396220?text=${text}`, '_blank');
     };
@@ -1512,10 +1512,10 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                             Schedule a Live Demo & 14-Day Free Pilot
                         </span>
                         <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight">
-                            Omba Demo & Jaribu THE INNS Bure kwa Siku 14
+                            Request a Demo & Try THE INNS Free for 14 Days
                         </h2>
                         <p className="mt-4 text-sm sm:text-base text-slate-300 leading-relaxed">
-                            Ona jinsi mfumo unavyodhibiti mapato, kuondoa mianya ya upotevu kwenye POS, na kuweka hesabu zote za chumba, chakula na kinywaji hadharani kwa wakati halisi.
+                            Discover how THE INNS automates revenue control, eliminates POS shrinkage, and delivers real-time financial transparency across rooms, dining, and bar operations.
                         </p>
                     </div>
 
@@ -1525,24 +1525,24 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                             <div className="bg-white/5 border border-white/10 rounded-3xl p-6 sm:p-8 backdrop-blur-sm">
                                 <h3 className="text-lg font-black text-[#D4AF37] flex items-center gap-2">
                                     <ShieldCheck className="w-5 h-5 text-[#D4AF37]" />
-                                    Nini Kinajumuishwa kwenye Demo?
+                                    What is Included in Your Demo?
                                 </h3>
                                 <ul className="mt-5 space-y-3.5 text-xs sm:text-[13px] text-slate-200">
                                     <li className="flex items-start gap-2.5">
                                         <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                                        <span><b>Mfumo Halisi wa Majaribio (14-Day Free Trial):</b> Akaunti kamili iliyoandaliwa kwa majina na bei za vyumba vyako.</span>
+                                        <span><b>Full 14-Day Free Trial Account:</b> A complete, production-ready system tailored with your property's room categories, rates, and amenities.</span>
                                     </li>
                                     <li className="flex items-start gap-2.5">
                                         <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                                        <span><b>Mafunzo ya Bure kwa Watumishi:</b> Receptionist, Wahudumu wa Bar/Restaurant, na Wahasibu watafundishwa hatua kwa hatua.</span>
+                                        <span><b>Complimentary Staff Training:</b> Step-by-step onboarding for front-desk receptionists, restaurant & bar waitstaff, storekeepers, and accountants.</span>
                                     </li>
                                     <li className="flex items-start gap-2.5">
                                         <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                                        <span><b>Uhakiki wa TRA & Namba za Ankara:</b> Ufungaji wa stakabadhi za kodi na orodha ya bidhaa za stoo.</span>
+                                        <span><b>TRA Fiscal & Invoice Verification:</b> Integration with tax fiscalization requirements, official receipting, and store inventory catalogs.</span>
                                     </li>
                                     <li className="flex items-start gap-2.5">
                                         <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                                        <span><b>Usaidizi wa Saa 24/7 Tanzania:</b> Timu yetu ipo tayari kufika hotelini kwako au kukuhudumia mtandaoni.</span>
+                                        <span><b>24/7 Dedicated Support in Tanzania:</b> Our engineering and hospitality support team is available on-site and online around the clock.</span>
                                     </li>
                                 </ul>
                             </div>
@@ -1550,21 +1550,21 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                             {/* Direct WhatsApp & Hotline Box */}
                             <div className="bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-3xl p-6 sm:p-7">
                                 <span className="text-[11px] font-black uppercase tracking-wider text-[#D4AF37] block">
-                                    Mawasiliano ya Haraka (Sales Hotlines)
+                                    Direct Consultation & Sales Hotlines
                                 </span>
                                 <p className="text-xs text-slate-300 mt-1">
-                                    Piga simu au tuma ujumbe moja kwa moja kwa timu yetu ya mauzo:
+                                    Call or message our hospitality enterprise team directly:
                                 </p>
 
                                 <div className="mt-4 flex flex-col gap-2.5">
                                     <a
-                                        href="https://wa.me/255744396220?text=Habari%20THE%20INNS%20Team%2C%20nahitaji%20Live%20Demo%20na%2014-Day%20Free%20Trial%20kwa%20ajili%20ya%20Hoteli%20yangu."
+                                        href="https://wa.me/255744396220?text=Hello%20THE%20INNS%20Team%2C%20I%20would%20like%20to%20request%20a%20Live%20Demo%20and%2014-Day%20Free%20Pilot%20for%20my%20property."
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition shadow-sm cursor-pointer"
                                     >
                                         <MessageSquare className="w-4 h-4 fill-white" />
-                                        <span>Ongea Nasi Moja kwa Moja WhatsApp</span>
+                                        <span>Chat Directly with Us on WhatsApp</span>
                                     </a>
 
                                     <div className="pt-2 text-xs text-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1594,21 +1594,21 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                             <div className="flex items-center justify-between pb-5 border-b border-slate-100 mb-6">
                                 <div>
                                     <h3 className="text-xl font-black text-[#1E3A5F]">
-                                        Fomu ya Maombi ya Demo & Majaribio
+                                        Demo & Free Pilot Request Form
                                     </h3>
                                     <p className="text-xs text-slate-500 mt-1">
-                                        Jaza taarifa fupi hapa chini, tutakupigia ndani ya dakika 15.
+                                        Fill in your details below and our team will get in touch within 15 minutes.
                                     </p>
                                 </div>
                                 <span className="px-3 py-1 bg-amber-50 text-amber-700 font-bold text-[11px] rounded-full border border-amber-200">
-                                    Bila Malipo Yoyote
+                                    100% Free • No Obligation
                                 </span>
                             </div>
 
                             {demoSubmitted && (
                                 <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-3">
                                     <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                                    <span>Asante sana! Ujumbe wako umefunguliwa kwenye WhatsApp. Timu yetu inawasiliana nawe mara moja.</span>
+                                    <span>Thank you! Your request has been opened in WhatsApp. Our team will contact you shortly.</span>
                                 </div>
                             )}
 
@@ -1616,12 +1616,12 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-xs font-bold text-slate-700 mb-1">
-                                            Jina la Hoteli / Lodge / Resort *
+                                            Hotel / Lodge / Resort Name *
                                         </label>
                                         <input
                                             type="text"
                                             required
-                                            placeholder="Mfano: Serengeti Heritage Lodge"
+                                            placeholder="e.g., Serengeti Heritage Lodge"
                                             value={demoForm.property_name}
                                             onChange={(e) => setDemoForm({ ...demoForm, property_name: e.target.value })}
                                             className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#1E3A5F] focus:border-transparent outline-none transition"
@@ -1629,12 +1629,12 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-slate-700 mb-1">
-                                            Jina Lako Kamili / Wadhifa *
+                                            Your Full Name & Role *
                                         </label>
                                         <input
                                             type="text"
                                             required
-                                            placeholder="Mfano: John Doe (General Manager)"
+                                            placeholder="e.g., John Doe (General Manager)"
                                             value={demoForm.contact_name}
                                             onChange={(e) => setDemoForm({ ...demoForm, contact_name: e.target.value })}
                                             className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#1E3A5F] focus:border-transparent outline-none transition"
@@ -1645,12 +1645,12 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-xs font-bold text-slate-700 mb-1">
-                                            Namba ya Simu / WhatsApp *
+                                            Phone Number / WhatsApp *
                                         </label>
                                         <input
                                             type="tel"
                                             required
-                                            placeholder="0744 396 220"
+                                            placeholder="+255 744 396 220"
                                             value={demoForm.phone}
                                             onChange={(e) => setDemoForm({ ...demoForm, phone: e.target.value })}
                                             className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#1E3A5F] focus:border-transparent outline-none transition"
@@ -1658,17 +1658,17 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-slate-700 mb-1">
-                                            Idadi ya Vyumba (Capacity)
+                                            Room Capacity
                                         </label>
                                         <select
                                             value={demoForm.rooms_count}
                                             onChange={(e) => setDemoForm({ ...demoForm, rooms_count: e.target.value })}
                                             className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#1E3A5F] focus:border-transparent outline-none transition bg-white"
                                         >
-                                            <option value="1-15 Rooms">Vyumba 1 - 15 (Boutique / Guest House)</option>
-                                            <option value="16-35 Rooms">Vyumba 16 - 35 (Standard Lodge)</option>
-                                            <option value="36-80 Rooms">Vyumba 36 - 80 (Full Hotel & Resort)</option>
-                                            <option value="80+ Rooms / Chain">Vyumba 80+ au Matawi Mengi (Hotel Chain)</option>
+                                            <option value="1-15 Rooms">1 - 15 Rooms (Boutique / Guest House)</option>
+                                            <option value="16-35 Rooms">16 - 35 Rooms (Standard Lodge)</option>
+                                            <option value="36-80 Rooms">36 - 80 Rooms (Full Hotel & Resort)</option>
+                                            <option value="80+ Rooms / Chain">80+ Rooms or Multi-Branch Chain</option>
                                         </select>
                                     </div>
                                 </div>
@@ -1676,7 +1676,7 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-xs font-bold text-slate-700 mb-1">
-                                            Mkoa / Eneo la Biashara
+                                            Region / Location
                                         </label>
                                         <select
                                             value={demoForm.city}
@@ -1687,35 +1687,35 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                                             <option value="Arusha / Kilimanjaro">Arusha / Moshi / Kilimanjaro</option>
                                             <option value="Zanzibar">Zanzibar (Unguja / Pemba)</option>
                                             <option value="Morogoro">Morogoro</option>
-                                            <option value="Mwanza">Mwanza & Kanda ya Ziwa</option>
+                                            <option value="Mwanza">Mwanza & Lake Victoria Zone</option>
                                             <option value="Dodoma">Dodoma</option>
-                                            <option value="Mbeya / Iringa">Mbeya / Iringa / Nyanda za Juu</option>
-                                            <option value="Mkoa Mwingine">Mkoa Mwingine Tanzania</option>
+                                            <option value="Mbeya / Iringa">Mbeya / Iringa / Southern Highlands</option>
+                                            <option value="Other Region">Other Region in Tanzania</option>
                                         </select>
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-slate-700 mb-1">
-                                            Namna ya Kufanya Demo
+                                            Preferred Demo Mode
                                         </label>
                                         <select
                                             value={demoForm.demo_type}
                                             onChange={(e) => setDemoForm({ ...demoForm, demo_type: e.target.value })}
                                             className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#1E3A5F] focus:border-transparent outline-none transition bg-white"
                                         >
-                                            <option value="In-Person Walkthrough (Tanzania)">Kutembelewa Hotelini (In-Person)</option>
-                                            <option value="Online Video Demo (Google Meet/Zoom)">Mtandaoni (Google Meet / Zoom)</option>
-                                            <option value="Instant WhatsApp Guided Setup">Kuanzishiwa Akaunti Moja kwa Moja WhatsApp</option>
+                                            <option value="In-Person Walkthrough (Tanzania)">In-Person Walkthrough (On-Site at Your Property)</option>
+                                            <option value="Online Video Demo (Google Meet/Zoom)">Online Video Walkthrough (Google Meet / Zoom)</option>
+                                            <option value="Instant WhatsApp Guided Setup">Instant WhatsApp Guided Setup</option>
                                         </select>
                                     </div>
                                 </div>
 
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                                        Maelezo ya Ziada (Hiari)
+                                        Additional Requirements (Optional)
                                     </label>
                                     <textarea
                                         rows={2}
-                                        placeholder="Ungependa kujumuisha Restaurant POS, Minimart, au kuhamisha data za zamani?"
+                                        placeholder="Interested in Restaurant POS, Supermarket/Retail, Bar Tabs, or migrating data from legacy software?"
                                         value={demoForm.notes}
                                         onChange={(e) => setDemoForm({ ...demoForm, notes: e.target.value })}
                                         className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#1E3A5F] focus:border-transparent outline-none transition resize-none"
@@ -1727,17 +1727,17 @@ export default function Welcome({ auth, canLogin = true, canRegister = true, use
                                         type="submit"
                                         className="w-full py-4 px-6 bg-[#D4AF37] hover:bg-[#B8960C] text-[#1E3A5F] font-black text-sm rounded-xl shadow-lg shadow-[#D4AF37]/30 transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer"
                                     >
-                                        <span>Tuma Maombi ya Demo & 14-Day Free Trial</span>
+                                        <span>Submit Demo Request & Start 14-Day Free Pilot</span>
                                         <ArrowRight className="w-4 h-4 stroke-[2.5]" />
                                     </button>
                                 </div>
 
                                 <div className="text-[11px] text-slate-500 text-center flex items-center justify-center gap-4 pt-1">
-                                    <span>✓ Hakuna kadi ya benki inayohitajika</span>
+                                    <span>✓ No credit card required</span>
                                     <span>•</span>
-                                    <span>✓ Jaribio la bure la siku 14</span>
+                                    <span>✓ Full 14-day free pilot</span>
                                     <span>•</span>
-                                    <span>✓ Huduma ya haraka Tanzania</span>
+                                    <span>✓ Fast local setup in Tanzania</span>
                                 </div>
                             </form>
                         </div>
